@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>SkyRoute - Google Photorealistic 3D Flight Experience</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300D4FF'><path d='M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z'/></svg>" />
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 3D Map Viewport -->
+      <div id="map-container"></div>
+
+      <!-- Left Sidebar (Departures & Flight Info) -->
+      <div id="left-panel-container">
+        <div id="flight-panel-root"></div>
+        <div id="flight-info-root"></div>
+      </div>
+
+      <!-- Top Right Floating Controls -->
+      <div id="map-controls-container"></div>
+
+      <!-- Bottom Playback Controller -->
+      <div id="playback-container"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+
