@@ -41,7 +41,7 @@ export interface FlightDeparture {
   destinationCity: string;
   scheduledTime: string;
   gate: string;
-  status: 'On Time' | 'Boarding' | 'Departed';
+  status: string;
 }
 
 export interface TelemetryData {
@@ -58,10 +58,5 @@ export interface TelemetryData {
   isClimbing: boolean;
   isDescent: boolean;
   flightPhase: 'Takeoff' | 'Climb' | 'Cruise' | 'Descent' | 'Approach' | 'Landed';
-}
-
-export interface FlightDataProvider {
-  getDepartures(): Promise<FlightDeparture[]>;
-  getRoute(routeId: string): Promise<FlightRoute>;
 }
 

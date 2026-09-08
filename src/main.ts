@@ -1,25 +1,14 @@
+import { FlightExperience } from './flight/FlightExperience';
 /**
  * SkyRoute Application Entry Point
  * Orchestrates Google Photorealistic 3D Maps, Boeing 787-10 model, flight telemetry, and UI.
  */
 
-import {
-  AIRCRAFT_MODEL_URL,
-  AIRCRAFT_SCALE_NORMAL,
-  AIRCRAFT_SCALE_OVERVIEW,
-  DEFAULT_PLAYBACK_SPEED,
-} from './config';
+import { AIRCRAFT_MODEL_URL } from './config';
 import { loadMaps3DLibrary, createMap3DElement } from './map/initMap3D';
 import { AircraftController } from './map/AircraftController';
 import { RouteRenderer } from './map/RouteRenderer';
 import { CameraController } from './map/CameraController';
-import { DemoFlightProvider } from './flight/DemoFlightProvider';
-import { FlightAnimator } from './flight/FlightAnimator';
-import { FlightPanel } from './ui/FlightPanel';
-import { FlightInfo } from './ui/FlightInfo';
-import { PlaybackControls } from './ui/PlaybackControls';
-import { PanelVisibility } from './ui/PanelVisibility';
-import { MapControls } from './ui/MapControls';
 import { LoadingOverlay } from './ui/LoadingOverlay';
 import { ErrorOverlay } from './ui/ErrorOverlay';
 
@@ -78,142 +67,10 @@ async function initSkyRoute(): Promise<void> {
   const routeRenderer = new RouteRenderer(maps3dLib, map);
   const cameraController = new CameraController(map);
 
-  // 6. Initialize Flight Data & Animator
-  const flightProvider = new DemoFlightProvider();
-  const departures = await flightProvider.getDepartures();
-  const initialRouteId = departures[0]?.id || 'hnd-cts';
-  const initialRoute = await flightProvider.getRoute(initialRouteId);
-
-  // 7. Setup UI Components
-  const flightPanelRoot = document.getElementById('flight-panel-root');
-  const flightInfoRoot = document.getElementById('flight-info-root');
-  const playbackRoot = document.getElementById('playback-container');
-  const mapControlsRoot = document.getElementById('map-controls-container');
-
-  if (!flightPanelRoot || !flightInfoRoot || !playbackRoot || !mapControlsRoot) {
-    throw new Error('UI root elements not found.');
-  }
-
-  const flightInfo = new FlightInfo(flightInfoRoot);
-  flightInfo.setRoute(initialRoute);
-
-  let playbackControls: PlaybackControls;
-
-  const animator = new FlightAnimator((telemetry) => {
-    // Synchronize aircraft 3D model
-    aircraft.update(telemetry);
-
-    // Synchronize camera tracking in FOLLOW mode
-    cameraController.update(telemetry);
-
-    // Update real-time telemetry HUD
-    flightInfo.updateTelemetry(telemetry);
-
-    // Update seek progress slider
-    playbackControls.setProgress(telemetry.progress);
-    playbackControls.setPlayingState(animator.getIsPlaying(), animator.getDirection());
-  });
-
-  playbackControls = new PlaybackControls(playbackRoot, {
-    onTogglePlay: () => {
-      const playing = animator.togglePlay();
-      playbackControls.setPlayingState(playing, 1);
-    },
-    onToggleReverse: () => {
-      const revPlaying = animator.toggleReverse();
-      playbackControls.setPlayingState(revPlaying, -1);
-    },
-    onRestart: () => {
-      animator.restart();
-      playbackControls.setPlayingState(true, 1);
-    },
-    onSpeedChange: (speed) => {
-      animator.setSpeed(speed);
-    },
-    onSeek: (progress) => {
-      animator.seek(progress);
-    },
-  });
-
-  const flightPanel = new FlightPanel(flightPanelRoot);
-
-  const mapControls = new MapControls(mapControlsRoot, {
-    onMapModeChange: (mode) => {
-      map.mode = mode;
-    },
-    onCameraModeChange: (camMode) => {
-      cameraController.setMode(camMode);
-      cameraController.update(animator.calculateTelemetryAt(animator.getProgress()));
-      if (camMode === 'OVERVIEW') {
-        aircraft.setScale(AIRCRAFT_SCALE_OVERVIEW);
-      } else {
-        aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
-      }
-    },
-    onOpenMobileDepartures: () => {
-      flightPanel.toggleMobileDrawer();
-    },
-    onOffsetChange: (deltaDeg) => {
-      cameraController.setHeadingOffset(deltaDeg);
-      cameraController.update(animator.calculateTelemetryAt(animator.getProgress()));
-    },
-    onTiltChange: (deltaDeg) => {
-      cameraController.setTilt(deltaDeg);
-      cameraController.update(animator.calculateTelemetryAt(animator.getProgress()));
-    },
-  });
-
-  new PanelVisibility();
-
-  // Camera mode change sync
-  cameraController.onModeChange((mode) => {
-    mapControls.setCameraMode(mode);
-    if (mode === 'OVERVIEW') {
-      aircraft.setScale(AIRCRAFT_SCALE_OVERVIEW);
-    } else {
-      aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
-    }
-  });
-
-  // 8. Route Selection Handler
-  async function selectRoute(routeId: string): Promise<void> {
-    const route = await flightProvider.getRoute(routeId);
-
-    // Update 3D aerial path
-    routeRenderer.setRoute(route.waypoints);
-
-    // Update camera target
-    cameraController.setRoute(route);
-
-    // Update HUD display
-    flightInfo.setRoute(route);
-
-    // Reset and start flight trajectory
-    animator.setRoute(route);
-    playbackControls.setPlayingState(true);
-    animator.play();
-  }
-
-  flightPanel.setDepartures(departures, initialRouteId);
-  flightPanel.onSelect((id) => {
-    selectRoute(id);
-  });
-
-  // 9. Load initial route and start demonstration
-  routeRenderer.setRoute(initialRoute.waypoints);
-  cameraController.setRoute(initialRoute);
-  animator.setRoute(initialRoute);
-
-  // Start at the configured default speed
-  animator.setSpeed(DEFAULT_PLAYBACK_SPEED);
-  playbackControls.setSpeed(DEFAULT_PLAYBACK_SPEED);
-
-  // Ready! Dismiss loading screen and begin flight
+  const actualTrackRenderer = new RouteRenderer(maps3dLib, map);
+  const experience = new FlightExperience(aircraft, cameraController, routeRenderer, actualTrackRenderer, map);
   loading.hide();
-  animator.play();
-  playbackControls.setPlayingState(true);
-
-  console.log('SkyRoute initialized successfully.');
+  await experience.start();
 }
 
 // Start application on DOM ready

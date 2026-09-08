@@ -1,0 +1,24 @@
+﻿{
+  "description": "Synthetic fixtures, not actual FlightAware flights. Times are relative to server start.",
+  "flights": [
+    {"id":"mock-ana53","ident":"ANA53","operator":"ANA","number":"53","destination":"RJCC","aircraft":"B788","minutes":1},
+    {"id":"mock-jal107","ident":"JAL107","operator":"JAL","number":"107","destination":"RJOO","aircraft":"B738","minutes":20},
+    {"id":"mock-ana247","ident":"ANA247","operator":"ANA","number":"247","destination":"RJFF","aircraft":"B763","minutes":30},
+    {"id":"mock-jal903","ident":"JAL903","operator":"JAL","number":"903","destination":"ROAH","aircraft":"A359","minutes":45},
+    {"id":"mock-ana55","ident":"ANA55","operator":"ANA","number":"55","destination":"RJCC","aircraft":"B789","minutes":60},
+    {"id":"mock-jal109","ident":"JAL109","operator":"JAL","number":"109","destination":"RJOO","aircraft":"B738","minutes":75},
+    {"id":"mock-ana249","ident":"ANA249","operator":"ANA","number":"249","destination":"RJFF","aircraft":"B788","minutes":90},
+    {"id":"mock-jal905","ident":"JAL905","operator":"JAL","number":"905","destination":"ROAH","aircraft":"A359","minutes":105,"cancelled":true},
+    {"id":"mock-ana57","ident":"ANA57","operator":"ANA","number":"57","destination":"RJCC","aircraft":"B789","minutes":120},
+    {"id":"mock-jal111","ident":"JAL111","operator":"JAL","number":"111","destination":"RJOO","aircraft":"B738","minutes":135},
+    {"id":"mock-ana251","ident":"ANA251","operator":"ANA","number":"251","destination":"RJFF","aircraft":"B763","minutes":150},
+    {"id":"mock-jal907","ident":"JAL907","operator":"JAL","number":"907","destination":"ROAH","aircraft":"A359","minutes":165}
+  ],
+  "airports": {
+    "RJTT":{"code_icao":"RJTT","code_iata":"HND","name":"Tokyo Haneda","latitude":35.5494,"longitude":139.7798,"elevation":21},
+    "RJCC":{"code_icao":"RJCC","code_iata":"CTS","name":"New Chitose","latitude":42.7752,"longitude":141.6923,"elevation":82},
+    "RJOO":{"code_icao":"RJOO","code_iata":"ITM","name":"Osaka Itami","latitude":34.7855,"longitude":135.4382,"elevation":50},
+    "RJFF":{"code_icao":"RJFF","code_iata":"FUK","name":"Fukuoka","latitude":33.5859,"longitude":130.451,"elevation":32},
+    "ROAH":{"code_icao":"ROAH","code_iata":"OKA","name":"Naha","latitude":26.1958,"longitude":127.6459,"elevation":12}
+  }
+}

@@ -1,0 +1,41 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg
+      - VITE_GOOGLE_MAPS_API_KEY
+      - -t
+      - asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/skyroute:$BUILD_ID
+      - .
+    secretEnv: [VITE_GOOGLE_MAPS_API_KEY]
+  - name: gcr.io/cloud-builders/docker
+    args: [push, 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/skyroute:$BUILD_ID']
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - skyroute
+      - --project=$PROJECT_ID
+      - --region=asia-northeast1
+      - --image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/skyroute:$BUILD_ID
+      - --service-account=skyroute-runtime@$PROJECT_ID.iam.gserviceaccount.com
+      - --set-env-vars=SKYROUTE_DATA_MODE=live,AEROAPI_MAX_CALLS_PER_MINUTE=20
+      - --set-secrets=AEROAPI_KEY=skyroute-aeroapi-key:latest
+      - --port=8080
+      - --memory=512Mi
+      - --cpu=1
+      - --min=0
+      - --max=1
+      - --max-instances=1
+      - --concurrency=40
+      - --timeout=60
+      - --quiet
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/skyroute-maps-browser-key/versions/latest
+      env: VITE_GOOGLE_MAPS_API_KEY
+options:
+  logging: CLOUD_LOGGING_ONLY
+images:
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/skyroute:$BUILD_ID

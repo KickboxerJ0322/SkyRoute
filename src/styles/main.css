@@ -1045,3 +1045,45 @@ gmp-map-3d {
   #flight-info-root { overflow-y: auto; pointer-events: auto; }
   .flight-panel { top: 54px; height: calc(100% - 54px); }
 }
+/* Phase 2 controls inherit the Phase 1 glass panels and cyan accents. */
+#panel-visibility-controls { flex-wrap: wrap; align-items: center; }
+.data-mode-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; pointer-events: auto; }
+#data-source-status { font: 11px var(--font-mono); padding: 6px 8px; background: var(--panel-bg); border-radius: 6px; color: var(--accent-cyan); }
+#left-panel-container, #map-controls-container { top: calc(24px + var(--top-controls-height, 34px)); }
+#flight-panel-root { flex: 1 1 260px; }
+#flight-info-root { max-height: 52%; overflow: auto; pointer-events: auto; }
+.live-panel { width: 100%; min-height: 0; }
+.live-filters { display: flex; gap: 8px; padding: 10px 14px; }
+.live-filters select, .live-filters input { min-width: 0; color: var(--text-main); background: #101e34; border: 1px solid var(--panel-border); border-radius: 6px; padding: 8px; }
+.live-filters input { width: 100%; }
+.live-list-message { font-size: 11px; color: var(--text-muted); padding: 0 14px 8px; }
+.live-routes { overflow-y: auto; min-height: 0; padding: 0 14px 12px; }
+.live-routes .route-card { width: 100%; text-align: left; color: var(--text-main); font: inherit; flex-shrink: 0; }
+.live-routes .destination-name { margin: 5px 0; text-align: left; }
+.live-routes .cancelled { color: #ff9a9a; background: #672c3a; }
+.live-info { padding-bottom: 12px; }
+.live-airports, .live-metadata { color: var(--text-muted); font-size: 11px; margin: 8px 0; line-height: 1.5; }
+.live-times { display: grid; grid-template-columns: 1fr auto; gap: 5px 10px; font-size: 10px; margin-top: 12px; color: var(--text-muted); }
+.live-message { color: var(--accent-cyan); font-size: 11px; margin-top: 12px; line-height: 1.5; }
+.live-flight-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.live-flight-actions button { padding: 7px; border-radius: 6px; background: #102741; border: 1px solid var(--panel-border); color: var(--accent-cyan); cursor: pointer; }
+button:disabled, input:disabled { opacity: .45; cursor: default; }
+.playback-live .playback-bar-wrapper::before { content: 'LIVE · 再生操作は Preview / Replay で利用できます'; display: block; color: var(--text-muted); font-size: 11px; margin-bottom: 5px; }
+.live-empty { font-size: 12px; padding: 16px; color: var(--text-muted); }
+#live-debug { margin-top: 10px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; color: var(--text-muted); }
+.live-info .hud-route-text { font-size: 12px; }
+#live-route-type { font-size: 11px; color: var(--accent-cyan); }
+@media (max-width: 768px) {
+  #left-panel-container { top: auto; max-height: 32vh; }
+  #flight-panel-root { flex: 0 0 auto; }
+  #flight-info-root { max-height: 32vh; }
+  .flight-panel { top: calc(24px + var(--top-controls-height, 74px)); height: calc(100% - 24px - var(--top-controls-height, 74px)); }
+  #map-controls-container .map-controls-toolbar { max-height: 25vh; overflow-y: auto; }
+  .live-info .hud-grid { grid-template-columns: repeat(2, 1fr); }
+  #panel-visibility-controls button { padding: 5px 7px; font-size: 11px; }
+  #data-source-status { font-size: 10px; }
+}
+.live-time-details { margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+.live-time-details summary { cursor: pointer; padding: 5px 0; }
+.live-flight-actions { margin-top: 10px; }
+.live-info .hud-grid { grid-template-columns: repeat(2, 1fr); }

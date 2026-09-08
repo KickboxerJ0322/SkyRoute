@@ -4,13 +4,22 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:client": "vite",
+    "dev:server": "node --watch server/index.mjs",
+    "start": "node server/index.mjs",
+    "test": "node tests/flight-regression.mjs && node --test tests/phase2.test.mjs",
+    "test:browser": "playwright test",
+    "capture:fixture": "node scripts/capture-fixture.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "typescript": "^5.7.3",
     "vite": "^6.2.0"
+  },
+  "engines": {
+    "node": ">=22.6"
   }
 }
-

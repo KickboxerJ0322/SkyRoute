@@ -125,6 +125,12 @@ export class AircraftController {
     }
   }
 
+  public setVisible(visible: boolean): void {
+    if (!this.modelElement || !this.mapElement) return;
+    if (visible && !this.modelElement.parentNode) this.mapElement.appendChild(this.modelElement);
+    if (!visible && this.modelElement.parentNode) this.mapElement.removeChild(this.modelElement);
+  }
+
   public destroy(): void {
     if (this.modelElement && this.mapElement) {
       this.mapElement.removeChild(this.modelElement);
