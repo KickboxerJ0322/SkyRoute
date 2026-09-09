@@ -10,12 +10,14 @@
     "dev:client": "vite",
     "dev:server": "node --watch server/index.mjs",
     "start": "node server/index.mjs",
-    "test": "node tests/flight-regression.mjs && node --test tests/phase2.test.mjs",
+    "test": "node tests/flight-regression.mjs && node --test tests/phase2.test.mjs tests/plateau.test.mjs",
     "test:browser": "playwright test",
-    "capture:fixture": "node scripts/capture-fixture.mjs"
+    "capture:fixture": "node scripts/capture-fixture.mjs",
+    "build:plateau": "node scripts/build-plateau-haneda.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "saxes": "^6.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.2.0"
   },

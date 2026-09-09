@@ -1,4 +1,6 @@
+import './styles/plateau.css';
 import { FlightExperience } from './flight/FlightExperience';
+import { mountPlateauInsight } from './plateau/PlateauInsight';
 /**
  * SkyRoute Application Entry Point
  * Orchestrates Google Photorealistic 3D Maps, Boeing 787-10 model, flight telemetry, and UI.
@@ -69,6 +71,7 @@ async function initSkyRoute(): Promise<void> {
 
   const actualTrackRenderer = new RouteRenderer(maps3dLib, map);
   const experience = new FlightExperience(aircraft, cameraController, routeRenderer, actualTrackRenderer, map);
+  mountPlateauInsight(maps3dLib, map);
   loading.hide();
   await experience.start();
 }

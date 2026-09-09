@@ -9,3 +9,5 @@ test-results
 playwright-report
 tests/*.png
 server/fixtures/captured.json
+
+.cache/

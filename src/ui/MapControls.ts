@@ -67,6 +67,10 @@ export class MapControls {
 
         <!-- Camera Modes -->
         <div class="toolbar-group">
+          <span class="group-label">INSIGHT</span>
+          <div class="segmented-control"><button id="plateau-toggle" class="map-layer-btn" aria-pressed="false" aria-controls="plateau-insight-panel">PLATEAU</button></div>
+        </div>
+        <div class="toolbar-group">
           <span class="group-label">CAMERA</span>
           <div class="segmented-control">
             <button class="cam-mode-btn ${this.currentCameraMode === 'CLOSE' ? 'active' : ''}" data-mode="CLOSE" title="機体のすぐ後ろ（近接追従）">

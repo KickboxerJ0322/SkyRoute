@@ -6,6 +6,13 @@ import { INITIAL_MAP_CONFIG } from '../config';
 
 // TypeScript interfaces for Maps3D custom elements and library
 export interface Maps3DLibrary {
+  Polygon3DInteractiveElement: new (options?: any) => HTMLElement & {
+    path: Array<{ lat: number; lng: number; altitude?: number }>;
+    innerPaths: Array<Array<{ lat: number; lng: number; altitude?: number }>>;
+    fillColor: string;
+    strokeColor: string;
+    strokeWidth: number;
+  };
   Map3DElement: new (options?: any) => HTMLElement & {
     center: { lat: number; lng: number; altitude: number };
     tilt: number;
@@ -151,4 +158,3 @@ export function createMap3DElement(
   container.replaceChildren(map);
   return map;
 }
-

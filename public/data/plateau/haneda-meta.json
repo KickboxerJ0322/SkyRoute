@@ -1,0 +1,183 @@
+{
+  "source": "Project PLATEAU / MLIT",
+  "datasetType": "CityGML bldg LOD0 footprints / roof edges",
+  "city": "大田区",
+  "cityCode": "13111",
+  "year": 2025,
+  "generatedAt": "2026-09-08T12:01:24.292Z",
+  "catalogUrl": "https://api.plateauview.mlit.go.jp/datacatalog/citygml/r:139.75,35.535,139.805,35.57?types=bldg",
+  "bbox": [
+    139.75,
+    35.535,
+    139.805,
+    35.57
+  ],
+  "airport": {
+    "lat": 35.5494,
+    "lng": 139.7798
+  },
+  "featureCount": 500,
+  "geojsonBytes": 583931,
+  "categoryCounts": {
+    "PUBLIC_TRANSPORT": 227,
+    "COMMERCIAL": 41,
+    "MEDICAL": 0,
+    "OTHER": 232
+  },
+  "missingAttributes": {
+    "name": 489,
+    "usage": 0,
+    "majorUsage": 500,
+    "measuredHeight": 39,
+    "storeysAboveGround": 225
+  },
+  "selection": {
+    "maximumBuildings": 500,
+    "eligibleBuildings": 1681,
+    "omittedByLimit": 1181,
+    "order": "Known display categories first, then distance to Haneda",
+    "boundaryRule": "Entire geometry inside bbox"
+  },
+  "stats": {
+    "parsed": 2399,
+    "outsideBounds": 718,
+    "missingLod0": 0,
+    "invalidGeometry": 0,
+    "duplicateIds": 0
+  },
+  "warnings": [],
+  "sourceFiles": [
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392641_bldg_6697_op.gml",
+      "meshCode": "53392641",
+      "sha256": "84657c401d104407638e81363fc36297363d2902db156e14ab4b3af71e0059d6",
+      "bytes": 2127521
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392642_bldg_6697_op.gml",
+      "meshCode": "53392642",
+      "sha256": "2c22f4ac7ec219d8c7e41b78179449ddbc9f51ef3c49c0ce987c9de14dcb8553",
+      "bytes": 862034
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392643_bldg_6697_op.gml",
+      "meshCode": "53392643",
+      "sha256": "00f94ec53dbdc03f4f15194523ba67b7274e64a62baaa72f1ffb7bab55b1e8b6",
+      "bytes": 5721330
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392644_bldg_6697_op.gml",
+      "meshCode": "53392644",
+      "sha256": "b034f4111816de111999732ea8f6f66fa7faeaccf0c8e37ca4c04a16044897b5",
+      "bytes": 384691
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392650_bldg_6697_op.gml",
+      "meshCode": "53392650",
+      "sha256": "9489d8938b6fe8eb1cc179dfc88ebda176692512f29c2f15f281545f9a96d423",
+      "bytes": 20227878
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392651_bldg_6697_op.gml",
+      "meshCode": "53392651",
+      "sha256": "23d593c083dbf43b365353c0a9bdb0e980733afee8f644b396f60d76f7af90e9",
+      "bytes": 14518438
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392652_bldg_6697_op.gml",
+      "meshCode": "53392652",
+      "sha256": "cb35612adb7353ecfec2a427e9cb07d4139ff25e2789d61cbc12b4299406023a",
+      "bytes": 9786559
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392653_bldg_6697_op.gml",
+      "meshCode": "53392653",
+      "sha256": "9730dfade05fe7f7b6666a8cedf8da35ed7446c72b42569a23d9e2c5169d87ec",
+      "bytes": 13462943
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392654_bldg_6697_op.gml",
+      "meshCode": "53392654",
+      "sha256": "c8bd030b1d2a3273e3ad721d8ed00faee31aa5f7287361e9dea5fca13ee1948b",
+      "bytes": 46758
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392660_bldg_6697_op.gml",
+      "meshCode": "53392660",
+      "sha256": "1fc3adf991406711d0b3b5fa45697c84e41a32ba179fd0a63193157ea02a222b",
+      "bytes": 5021149
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392661_bldg_6697_op.gml",
+      "meshCode": "53392661",
+      "sha256": "feb7836fade83ce46082dc036dc1812a1aeb1b8ee0bd9e252f2dac2364000b95",
+      "bytes": 36109
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392662_bldg_6697_op.gml",
+      "meshCode": "53392662",
+      "sha256": "e65c8472b921419930f3d1bd1a1059f7485503efd2c732504abe397ddec5900f",
+      "bytes": 8671507
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392663_bldg_6697_op.gml",
+      "meshCode": "53392663",
+      "sha256": "bc9c0cdd8aca7b26bd1b47055f7d4b4f02299c2f674b06e238f74ee09e0b7535",
+      "bytes": 92084
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392670_bldg_6697_op.gml",
+      "meshCode": "53392670",
+      "sha256": "33e1caf52e8f3845933702fa41e3bd76af4e6901b63901e44a13f3710e6dd751",
+      "bytes": 3172095
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392671_bldg_6697_op.gml",
+      "meshCode": "53392671",
+      "sha256": "8e87de9a2298ca200d2de50eaf2f303f86241b4079674d31600cfa7fe9ed391b",
+      "bytes": 416473
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392672_bldg_6697_op.gml",
+      "meshCode": "53392672",
+      "sha256": "19a56c5d8de1b0c5bca83ade57e63aa4d313bd8fe60b690570672a03680f6e61",
+      "bytes": 2947305
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392673_bldg_6697_op.gml",
+      "meshCode": "53392673",
+      "sha256": "5814650aba85d2373e11cf6b33a592cb1e48bca0c82382fe58ffc155aa51c0f8",
+      "bytes": 48138
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392680_bldg_6697_op.gml",
+      "meshCode": "53392680",
+      "sha256": "e7bf6fec3afd546d1454cf887daf45ce233dac4bc6a97b604cf27cf2adc2f041",
+      "bytes": 4330443
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392681_bldg_6697_op.gml",
+      "meshCode": "53392681",
+      "sha256": "5a78cb693d8ede754ae98c4968d52307cd868e968152740d6d392e1ac5c103a0",
+      "bytes": 7580820
+    },
+    {
+      "url": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/udx/bldg/53392682_bldg_6697_op.gml",
+      "meshCode": "53392682",
+      "sha256": "4b80ad2ae751f62dfda0550c2ab52ff4dff8f4db1705ab7929dbc032163a294a",
+      "bytes": 102252
+    }
+  ],
+  "codeLists": [
+    "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op/codelists/Building_usage.xml"
+  ],
+  "coordinateSystem": "EPSG:6697 -> GeoJSON longitude,latitude (height omitted)",
+  "attributionUrl": "https://www.mlit.go.jp/plateau/",
+  "datasetUrl": "https://assets.cms.plateau.reearth.io/assets/2c/6a2f27-a1e1-466a-a8cf-4627060f7ca4/13111_ota-ku_pref_2025_citygml_1_op.zip",
+  "notes": [
+    "Display categories are SkyRoute keyword classifications, not official PLATEAU categories.",
+    "Missing, unresolved, or unknown-sentinel attributes are never inferred. Raw codes and numeric source strings are retained.",
+    "dataYear is the catalog dataset year, not the construction or individual survey year.",
+    "Conversion rounds coordinates to 7 decimals and preserves rings and holes. No LOD1+ geometry or textures are included."
+  ]
+}

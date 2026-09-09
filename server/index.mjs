@@ -30,7 +30,7 @@ export function createApp({api=createAeroApi(),dist=resolve('dist')}={}) {
       try { if(!(await stat(target)).isFile()) target=resolve(dist,'index.html'); }
       catch { if(extname(pathname)) return json(404,{error:'NOT_FOUND'}); target=resolve(dist,'index.html'); }
       const body=await readFile(target);
-      const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.glb':'model/gltf-binary','.svg':'image/svg+xml'};
+      const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.glb':'model/gltf-binary','.svg':'image/svg+xml','.geojson':'application/geo+json; charset=utf-8','.json':'application/json; charset=utf-8'};
       res.writeHead(200,{'Content-Type':types[extname(target)]||'application/octet-stream'});
       res.end(req.method==='HEAD'?undefined:body);
     } catch(error) { json(error.status||500,{error:error.code&&error instanceof ApiError?error.code:'SERVER_ERROR'}); }
