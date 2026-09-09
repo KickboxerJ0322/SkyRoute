@@ -12,7 +12,7 @@ try {
   await page.waitForTimeout(10000);
   console.log(JSON.stringify({title:await page.title(),cards:await page.locator('.live-routes .route-card').count(),source:await page.locator('#data-source-status').innerText(),mapElements:await page.locator('gmp-map-3d').count(),errors,mapErrors}));
   if(process.env.SKYROUTE_CHECK_PLATEAU==='1') {
-    await page.locator('#plateau-toggle').click();
+    if(await page.locator('#plateau-toggle').getAttribute('aria-pressed') !== 'true')throw new Error('PLATEAU should be enabled on first visit');
     await page.waitForFunction(()=>document.querySelector('.plateau-status')?.textContent?.includes('棟表示'),{},{timeout:30000});
     const polygons=page.locator('gmp-polygon-3d-interactive');
     if(!await polygons.count())throw new Error('No PLATEAU polygons rendered');

@@ -31,6 +31,9 @@ export function mountPlateauInsight(lib: Maps3DLibrary, map: HTMLElement): () =>
     }
   }
   function setEnabled(value: boolean) {
+    try { localStorage.setItem('skyroute.plateau.enabled', String(value)); } catch { /* Storage may be disabled. */ }
+    toggle.textContent = `PLATEAU ${value ? 'ON' : 'OFF'}`;
+    toggle.title = value ? 'PLATEAUの建物レイヤーを非表示' : 'PLATEAUの建物レイヤーを表示';
     enabled = value; toggle.setAttribute('aria-pressed', String(value)); toggle.classList.toggle('active', value); panel.show(value); void refresh();
   }
   toggle.onclick = () => setEnabled(!enabled);
@@ -46,6 +49,9 @@ export function mountPlateauInsight(lib: Maps3DLibrary, map: HTMLElement): () =>
   };
   const observer = new ResizeObserver(position); observer.observe(controls); observer.observe(document.getElementById('flight-info-root')!); observer.observe(document.getElementById('playback-container')!);
   window.addEventListener('resize', position); position();
+  let initiallyEnabled = true;
+  try { initiallyEnabled = localStorage.getItem('skyroute.plateau.enabled') !== 'false'; } catch { /* Use default when storage is disabled. */ }
+  setEnabled(initiallyEnabled);
   const dispose = () => { enabled = false; generation++; renderer.clear(); panel.root.remove(); observer.disconnect(); window.removeEventListener('resize', position); toggle.onclick = null; };
   window.addEventListener('pagehide', dispose, { once: true });
   return dispose;

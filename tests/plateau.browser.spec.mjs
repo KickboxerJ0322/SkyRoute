@@ -59,3 +59,15 @@ for(const mobile of [false,true])test('PLATEAU layout avoids camera, flight info
   await expect(page.getByText('Source: Project PLATEAU / MLIT')).toBeVisible();
   await page.screenshot({path:'tests/plateau-'+(mobile?'mobile':'desktop')+'.png'});
 });
+
+test('first visit shows PLATEAU automatically and remembers explicit OFF across reloads',async({page})=>{
+  await mockData(page);await setup(page,{plateauDefault:true});
+  await expect(polygons(page)).toHaveCount(4);
+  await expect(page.locator('#plateau-toggle')).toHaveText('PLATEAU ON');
+  await page.locator('#plateau-toggle').click();await expect(polygons(page)).toHaveCount(0);
+  await expect(page.locator('#plateau-toggle')).toHaveText('PLATEAU OFF');
+  await page.reload();await expect(page.locator('#plateau-toggle')).toHaveAttribute('aria-pressed','false');
+  await expect(polygons(page)).toHaveCount(0);
+  await page.locator('#plateau-toggle').click();await expect(polygons(page)).toHaveCount(4);
+  await page.reload();await expect(polygons(page)).toHaveCount(4);
+});

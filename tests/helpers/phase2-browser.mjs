@@ -5,7 +5,8 @@ const airport=code=>{const a=scenario.airports[code];return {icao:code,iata:a.co
 const flight=(id='test-ana',status='SCHEDULED')=>({id,ident:id==='test-jal'?'JAL107':'ANA53',operator:id==='test-jal'?'JAL':'ANA',callsign:null,flightNumber:'53',origin:airport('RJTT'),destination:airport(id==='test-jal'?'RJOO':'RJCC'),aircraftType:'B738',status,scheduledDeparture:new Date(Date.now()+600000).toISOString(),estimatedDeparture:null,actualDeparture:null,scheduledArrival:new Date(Date.now()+7200000).toISOString(),estimatedArrival:null,actualArrival:null});
 const point=(lat=36,time=Date.now(),heading=359)=>({latitude:lat,longitude:140,altitudeMeters:10000,groundSpeedKmh:850,heading,timestamp:new Date(time).toISOString(),altitudeEstimated:false});
 const envelope=data=>({data,source:'mock',fetchedAt:new Date().toISOString(),stale:false});
-export async function setup(page,{enroute=false,slowFirst=false}={}) {
+export async function setup(page,{enroute=false,slowFirst=false,plateauDefault=false}={}) {
+  if(!plateauDefault)await page.addInitScript(()=>localStorage.setItem('skyroute.plateau.enabled','false'));
   // Contract doubles only: do not claim these tests validate Google's 3D renderer.
   await page.addInitScript(()=>{
     class Map extends HTMLElement {constructor(options={}){super();Object.assign(this,options);}stopCameraAnimation(){}flyCameraTo({endCamera}){Object.assign(this,endCamera);}}

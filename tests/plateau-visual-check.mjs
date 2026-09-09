@@ -12,7 +12,7 @@ try {
   page.on('console',m=>{if(m.type()==='error'||m.text().includes('PLATEAU INSIGHT:'))errors.push(m.text().replace(/AIza[\w-]+/g,'[redacted]'));});
   await page.goto('http://localhost:5191/');await page.locator('#plateau-toggle').waitFor({timeout:60000});
   const close=page.getByText('閉じる',{exact:true});if(await close.count())await close.first().click();
-  await page.locator('#plateau-toggle').click();await page.waitForFunction(()=>document.querySelector('.plateau-status')?.textContent?.match(/棟表示|unavailable/),{},{timeout:45000});
+  await page.waitForFunction(()=>document.querySelector('.plateau-status')?.textContent?.match(/棟表示|unavailable/),{},{timeout:45000});
   await page.waitForTimeout(15000);
   await page.screenshot({path:'tests/plateau-real-map.png'});
   const first=page.locator('gmp-polygon-3d-interactive').first();if(await first.count())await first.dispatchEvent('gmp-click');await page.screenshot({path:'tests/plateau-real-card.png'});

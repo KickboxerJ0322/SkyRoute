@@ -68,7 +68,7 @@ export class MapControls {
         <!-- Camera Modes -->
         <div class="toolbar-group">
           <span class="group-label">INSIGHT</span>
-          <div class="segmented-control"><button id="plateau-toggle" class="map-layer-btn" aria-pressed="false" aria-controls="plateau-insight-panel">PLATEAU</button></div>
+          <div class="segmented-control"><button id="plateau-toggle" class="map-layer-btn" aria-pressed="false" aria-controls="plateau-insight-panel">PLATEAU ON</button></div>
         </div>
         <div class="toolbar-group">
           <span class="group-label">CAMERA</span>

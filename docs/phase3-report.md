@@ -4,7 +4,7 @@
 
 ## 実装
 
-- INSIGHT → PLATEAUのON/OFF。初期OFF、ON時だけGeoJSONを取得しメモリキャッシュ。
+- INSIGHT → PLATEAUのON/OFF。初回ON（2026-09-09の表示改善）。ON/OFFをボタンに明記し、手動選択を保存。ON時だけGeoJSONを取得しメモリキャッシュ。
 - Polygon3DInteractiveElement、gmp-click、path / innerPathsを使用。25%塗り、選択時35%、濃い境界線。RELATIVE_TO_MESH + 1.5 m、extruded=false。
 - 建物クリックで名称（存在する場合のみ）、カテゴリ、用途、主要用途、高さ、地上階数、gmlId、データ年度、自治体を表示。別建物・フィルター・OFFで選択解除。
 - 公共・交通＝青、商業＝黄、医療＝紫、その他＝灰。その他は初期非表示。
