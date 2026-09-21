@@ -5,8 +5,8 @@ import { createAeroApi, TTL } from '../server/aeroApi.mjs';
 import { Cache, ApiError } from '../server/cache.mjs';
 import { flight, position, track, status } from '../server/normalize.mjs';
 import { createApp } from '../server/index.mjs';
-const compiled=await build({stdin:{contents:`export {chooseRoute, formatJst} from './src/flight/AeroApiFlightProvider'; export {greatCirclePoints} from './src/flight/liveGeometry'; export {LiveFlightInterpolator} from './src/flight/LiveFlightInterpolator';`,resolveDir:process.cwd()},bundle:true,write:false,format:'esm',platform:'node'});
-const {chooseRoute,formatJst,greatCirclePoints,LiveFlightInterpolator}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+const compiled=await build({stdin:{contents:`export {chooseRoute, formatJst} from './src/flight/AeroApiFlightProvider'; export {greatCirclePoints} from './src/flight/liveGeometry'; export {LiveFlightInterpolator} from './src/flight/LiveFlightInterpolator'; export {durationForDistance} from './src/flight/FlightAnimator';`,resolveDir:process.cwd()},bundle:true,write:false,format:'esm',platform:'node'});
+const {chooseRoute,formatJst,greatCirclePoints,LiveFlightInterpolator,durationForDistance}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
 const now=Date.parse('2026-09-06T00:00:00Z');
 const rawFlight={fa_flight_id:'ANA53-123-airline-01',ident:'ANA53',operator_icao:'ANA',origin:{code_icao:'RJTT',code_iata:'HND'},destination:{code_icao:'RJCC',code_iata:'CTS'},scheduled_out:new Date(now+60000).toISOString(),scheduled_in:new Date(now+5400000).toISOString()};
 const rawPosition={latitude:35,longitude:140,altitude:340,groundspeed:450,heading:359,timestamp:new Date(now).toISOString()};
@@ -26,6 +26,11 @@ test('v4 normalization, nullable values, identifiers and JST',()=>{
   assert.equal(status({...rawFlight,actual_on:'x'}),'ARRIVED');
   assert.match(formatJst('2026-09-05T23:55:00Z'),/09\/06 08:55/);
   assert.equal(formatJst(null),'--');
+});
+test('playback 1x uses about 900 kmh regardless of route length',()=>{
+  assert.equal(durationForDistance(900000),3600);
+  assert.equal(durationForDistance(225000),900);
+  assert.equal(durationForDistance(100),1);
 });
 test('cache coalesces concurrent calls and serves stale result on failure',async()=>{
   let clock=now,calls=0;const cache=new Cache(()=>clock);
