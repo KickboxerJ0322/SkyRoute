@@ -66,7 +66,7 @@ export class MapControls {
             <span>便一覧</span>
           </button>
           <button id="mobile-map-controls-btn" class="toolbar-btn mobile-only-btn" type="button" aria-expanded="false">
-            <span>⚙</span><span>操作</span>
+            <span>📷</span><span>カメラ</span>
           </button>
         </div>
 
@@ -169,7 +169,7 @@ export class MapControls {
         const open = !toolbar.classList.contains('mobile-open');
         toolbar.classList.toggle('mobile-open', open);
         mobileControlsBtn.setAttribute('aria-expanded', String(open));
-        mobileControlsBtn.querySelector('span:last-child')!.textContent = open ? '閉じる' : '操作';
+        mobileControlsBtn.querySelector('span:last-child')!.textContent = open ? '閉じる' : 'カメラ';
       });
     }
 
