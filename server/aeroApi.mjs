@@ -2,6 +2,7 @@ import { loadRecordedFixture } from './recordedFixture.mjs';
 ﻿import { Cache, ApiError } from './cache.mjs';
 import { createMock } from './mock.mjs';
 import { HND, flight, airport, position, track, filedRoute } from './normalize.mjs';
+const SUPPORTED_AIRPORTS=new Set(['RJTT','RJAA','RJBB','RJOO','RJCC','RJFF','ROAH']);
 export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000, weather:300000 };
 export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=process.env.AEROAPI_KEY, fetcher=fetch, now=Date.now,
   maxCalls=Number(process.env.AEROAPI_MAX_CALLS_PER_MINUTE)||20, logger=console.log}={}) {
@@ -32,24 +33,30 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
   }
   const api = {
     mode,
-    scheduledDepartures:()=>cached('departures:RJTT:current-window',TTL.departures,()=>{
+    scheduledDepartures:(airportIcao=HND.icao)=>{
+      const icao=SUPPORTED_AIRPORTS.has(airportIcao)?airportIcao:HND.icao;
+      return cached(`departures:${icao}:current-window`,TTL.departures,()=>{
       const formatBound=value=>new Date(value).toISOString().replace(/\.\d{3}Z$/, 'Z');
       const query=new URLSearchParams({start:formatBound(now()),end:formatBound(now()+3*3600000),max_pages:'1'});
-      return `/airports/${HND.icao}/flights/scheduled_departures?${query}`;
+      return `/airports/${icao}/flights/scheduled_departures?${query}`;
     },raw=>{
       if(!Array.isArray(raw.scheduled_departures)) throw new ApiError(502,'INVALID_API_RESPONSE');
-      return raw.scheduled_departures.map(flight).filter(f=>f&&f.origin.icao===HND.icao&&Date.parse(f.scheduledDeparture)>=now()&&Date.parse(f.scheduledDeparture)<=now()+3*3600000&&!['DEPARTED','ENROUTE','ARRIVED'].includes(f.status))
+      return raw.scheduled_departures.map(flight).filter(f=>f&&f.origin.icao===icao&&Date.parse(f.scheduledDeparture)>=now()&&Date.parse(f.scheduledDeparture)<=now()+3*3600000&&!['DEPARTED','ENROUTE','ARRIVED'].includes(f.status))
         .sort((a,b)=>Date.parse(a.scheduledDeparture)-Date.parse(b.scheduledDeparture)).filter((f,i,all)=>all.findIndex(x=>x.id===f.id)===i).slice(0,20);
-    }),
-    airborne:()=>cached('airborne:RJTT',TTL.departures,()=>{
+    });
+    },
+    airborne:(airportIcao=HND.icao)=>{
+      const icao=SUPPORTED_AIRPORTS.has(airportIcao)?airportIcao:HND.icao;
+      return cached(`airborne:${icao}`,TTL.departures,()=>{
       const formatBound=value=>new Date(value).toISOString().replace(/\.\d{3}Z$/, 'Z');
-      return `/airports/${HND.icao}/flights/departures?${new URLSearchParams({start:formatBound(now()-24*3600000),end:formatBound(now()),max_pages:'1'})}`;
+      return `/airports/${icao}/flights/departures?${new URLSearchParams({start:formatBound(now()-24*3600000),end:formatBound(now()),max_pages:'1'})}`;
     },raw=>{
       if(!Array.isArray(raw.departures)) throw new ApiError(502,'INVALID_API_RESPONSE');
-      return raw.departures.map(flight).filter(f=>f&&f.origin.icao===HND.icao&&f.status==='ENROUTE')
+      return raw.departures.map(flight).filter(f=>f&&f.origin.icao===icao&&f.status==='ENROUTE')
         .sort((a,b)=>Date.parse(b.actualDeparture)-Date.parse(a.actualDeparture))
         .filter((f,i,all)=>all.findIndex(x=>x.id===f.id)===i).slice(0,20);
-    }),
+    });
+    },
     nearby:(latitude,longitude,radiusKm=80)=>cached(
       `nearby:${latitude.toFixed(2)}:${longitude.toFixed(2)}:${Math.round(radiusKm)}`,
       TTL.nearby,
@@ -73,8 +80,9 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
         }).filter(Boolean).slice(0,30);
       }
     ),
-    departures:async()=>{
-      const results=await Promise.allSettled([api.airborne(),api.scheduledDepartures()]);
+    departures:async(airportIcao=HND.icao)=>{
+      const icao=SUPPORTED_AIRPORTS.has(airportIcao)?airportIcao:HND.icao;
+      const results=await Promise.allSettled([api.airborne(icao),api.scheduledDepartures(icao)]);
       const available=results.filter(r=>r.status==='fulfilled').map(r=>r.value);
       if(!available.length) throw results[0].reason;
       const partial=available.length!==results.length;
@@ -93,6 +101,7 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       airport:id,
       raw:Array.isArray(raw.observations)&&raw.observations.length?raw.observations[0]:null,
     })),
+    usage:()=>cached('usage',600000,'/account/usage',raw=>raw),
   };
   return api;
 }
