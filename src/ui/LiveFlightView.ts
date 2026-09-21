@@ -35,7 +35,8 @@ export class LiveFlightView {
       <div class="live-airports">${escapeHtml(f.origin.name)} → ${escapeHtml(f.destination.name)}</div>
       <div class="live-metadata">Operated by ${escapeHtml(f.operator)} · <span id="live-flight-status">${escapeHtml(f.status)}</span><br>Actual aircraft: ${escapeHtml(f.aircraftType)} · 3D model: SkyRoute 787-10</div>
       <div class="hud-grid"><div><div class="metric-label">ALTITUDE</div><div class="metric-value luminous" id="live-altitude">--</div></div><div><div class="metric-label">GROUND SPEED</div><div class="metric-value" id="live-speed">--</div></div><div><div class="metric-label">HEADING</div><div class="metric-value" id="live-heading">--</div></div><div><div class="metric-label">ROUTE</div><div id="live-route-type">--</div></div></div>
-      <div class="live-flight-actions"><button id="live-return">LIVE</button><button id="live-preview" disabled>Preview Flight</button><button id="live-replay" disabled>Replay track</button></div>
+      <div class="live-flight-actions"><button id="live-return">LIVE</button><button id="live-preview" disabled>Preview Flight</button><button id="live-replay" disabled>Replay track</button><button id="live-ai">AI解説</button></div>
+      <div class="live-ai-commentary" id="live-ai-commentary" hidden></div>
       <details class="live-time-details"><summary>Times (JST)</summary><div class="live-times">${[['Scheduled departure',f.scheduledDeparture],['Estimated departure',f.estimatedDeparture],['Actual departure',f.actualDeparture],['Scheduled arrival',f.scheduledArrival],['Estimated arrival',f.estimatedArrival],['Actual arrival',f.actualArrival]].map(([name,time])=>`<span>${name}</span><span>${escapeHtml(formatJst(time))} ${time?'JST':''}</span>`).join('')}</div></details>
       <div class="live-message" id="live-message" role="status">Loading flight route...</div><div id="live-updated" class="live-metadata">Position not available yet.</div>
 
