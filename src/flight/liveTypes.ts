@@ -10,6 +10,13 @@ export interface SkyRouteFlight {
   aircraftType: string | null; status: FlightStatus;
   scheduledDeparture: string | null; estimatedDeparture: string | null; actualDeparture: string | null;
   scheduledArrival: string | null; estimatedArrival: string | null; actualArrival: string | null;
+  registration?: string | null; codeshares?: string[];
+  departureDelaySeconds?: number | null; arrivalDelaySeconds?: number | null;
+  progressPercent?: number | null; routeDistanceNm?: number | null;
+  filedAirspeedKnots?: number | null; filedAltitudeFeet?: number | null;
+  departureGate?: string | null; arrivalGate?: string | null;
+  departureTerminal?: string | null; arrivalTerminal?: string | null;
+  actualRunwayOff?: string | null; actualRunwayOn?: string | null;
 }
 export interface SkyRoutePosition {
   latitude: number; longitude: number; altitudeMeters: number | null;
