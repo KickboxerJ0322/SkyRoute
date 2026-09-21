@@ -5,7 +5,7 @@ steps:
       - -c
       - |
         docker build \
-          --build-arg VITE_GOOGLE_MAPS_API_KEY="$VITE_GOOGLE_MAPS_API_KEY" \
+          --build-arg VITE_GOOGLE_MAPS_API_KEY="$$VITE_GOOGLE_MAPS_API_KEY" \
           -t asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/skyroute:$BUILD_ID \
           .
     secretEnv: [VITE_GOOGLE_MAPS_API_KEY]
