@@ -2,7 +2,7 @@ import { loadRecordedFixture } from './recordedFixture.mjs';
 ﻿import { Cache, ApiError } from './cache.mjs';
 import { createMock } from './mock.mjs';
 import { HND, flight, airport, position, track, filedRoute } from './normalize.mjs';
-export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000 };
+export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000, weather:300000 };
 export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=process.env.AEROAPI_KEY, fetcher=fetch, now=Date.now,
   maxCalls=Number(process.env.AEROAPI_MAX_CALLS_PER_MINUTE)||20, logger=console.log}={}) {
   if(!['mock','live'].includes(mode)) throw new Error('SKYROUTE_DATA_MODE must be mock or live');
@@ -89,6 +89,10 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
     track:id=>cached('track:'+id,TTL.track,`/flights/${encodeURIComponent(id)}/track`,track),
     position:id=>cached('position:'+id,TTL.position,`/flights/${encodeURIComponent(id)}/position`,raw=>position(raw.last_position)),
     airport:id=>cached('airport:'+id,TTL.airport,`/airports/${encodeURIComponent(id)}`,airport),
+    weather:id=>cached('weather:'+id,TTL.weather,`/airports/${encodeURIComponent(id)}/weather/observations`,raw=>({
+      airport:id,
+      raw:Array.isArray(raw.observations)&&raw.observations.length?raw.observations[0]:null,
+    })),
   };
   return api;
 }
