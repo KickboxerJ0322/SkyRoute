@@ -8,8 +8,8 @@
   left: auto;
   transform: none;
   display: flex;
-  gap: 6px;
-  padding: 6px;
+  gap: 5px;
+  padding: 5px;
   border: 1px solid var(--panel-border);
   border-radius: 14px;
   background: rgba(7, 16, 38, 0.86);
@@ -18,8 +18,8 @@
 }
 
 .app-mode-btn {
-  min-width: 158px;
-  padding: 7px 12px;
+  min-width: 112px;
+  padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
@@ -27,10 +27,16 @@
   cursor: pointer;
   text-align: left;
 }
-.app-mode-btn strong,
-.app-mode-btn span { display: block; }
-.app-mode-btn strong { font: 700 .75rem var(--font-mono); letter-spacing: .08em; }
-.app-mode-btn span { margin-top: 2px; font-size: .66rem; }
+.app-mode-btn strong { display:block; font:700 .72rem var(--font-mono); letter-spacing:.08em; }
+.app-mode-brand {
+  display:flex;
+  align-items:center;
+  padding:0 10px;
+  color:#fff;
+  font:800 .9rem var(--font-sans);
+  letter-spacing:.04em;
+  white-space:nowrap;
+}
 .app-mode-btn.active {
   color: #fff;
   border-color: rgba(0, 212, 255, .55);
@@ -102,8 +108,8 @@
 
 @media (max-width: 767px) {
   .app-mode-switch { top:8px; right:8px; left:8px; width:auto; }
-  .app-mode-btn { min-width:0; flex:1; padding:7px 8px; }
-  .app-mode-btn span { font-size:.58rem; }
+  .app-mode-brand { padding:0 7px; font-size:.78rem; }
+  .app-mode-btn { min-width:0; flex:1; padding:8px 7px; }
   #sky-finder-root { left:8px; right:8px; top:72px; bottom:8px; width:auto; }
   .sky-finder-panel { padding:14px; }
 }
