@@ -2,7 +2,7 @@ import { loadRecordedFixture } from './recordedFixture.mjs';
 ﻿import { Cache, ApiError } from './cache.mjs';
 import { createMock } from './mock.mjs';
 import { HND, flight, airport, position, track, filedRoute } from './normalize.mjs';
-export const TTL = { departures:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000 };
+export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000 };
 export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=process.env.AEROAPI_KEY, fetcher=fetch, now=Date.now,
   maxCalls=Number(process.env.AEROAPI_MAX_CALLS_PER_MINUTE)||20, logger=console.log}={}) {
   if(!['mock','live'].includes(mode)) throw new Error('SKYROUTE_DATA_MODE must be mock or live');
@@ -50,6 +50,29 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
         .sort((a,b)=>Date.parse(b.actualDeparture)-Date.parse(a.actualDeparture))
         .filter((f,i,all)=>all.findIndex(x=>x.id===f.id)===i).slice(0,20);
     }),
+    nearby:(latitude,longitude,radiusKm=80)=>cached(
+      `nearby:${latitude.toFixed(2)}:${longitude.toFixed(2)}:${Math.round(radiusKm)}`,
+      TTL.nearby,
+      ()=>{
+        const radius=Math.max(5,Math.min(200,radiusKm));
+        const latDelta=radius/111.32;
+        const cos=Math.max(0.1,Math.cos(latitude*Math.PI/180));
+        const lngDelta=radius/(111.32*cos);
+        const south=Math.max(-89.9,latitude-latDelta);
+        const north=Math.min(89.9,latitude+latDelta);
+        const west=Math.max(-179.9,longitude-lngDelta);
+        const east=Math.min(179.9,longitude+lngDelta);
+        const query=`-latlong "${south.toFixed(5)} ${west.toFixed(5)} ${north.toFixed(5)} ${east.toFixed(5)}" -filter airline`;
+        return `/flights/search?${new URLSearchParams({query,max_pages:'1'})}`;
+      },
+      raw=>{
+        if(!Array.isArray(raw.flights)) throw new ApiError(502,'INVALID_API_RESPONSE');
+        return raw.flights.map(item=>{
+          const normalized=flight(item),last=position(item?.last_position);
+          return normalized&&last?{...normalized,position:last}:null;
+        }).filter(Boolean).slice(0,30);
+      }
+    ),
     departures:async()=>{
       const results=await Promise.allSettled([api.airborne(),api.scheduledDepartures()]);
       const available=results.filter(r=>r.status==='fulfilled').map(r=>r.value);
