@@ -48,10 +48,10 @@ export const CAMERA_PRESETS = {
   },
   FOLLOW: {
     name: 'FOLLOW',
-    range: 800,  // Standard comfortable chase distance
-    tilt: 72,
-    headingLag: 0.08,
-    positionLag: 0.12,
+    range: 360,  // Keep the aircraft clearly visible while preserving a chase-camera view
+    tilt: 74,
+    headingLag: 0.10,
+    positionLag: 0.18,
   },
   COCKPIT: {
     name: 'COCKPIT',
@@ -62,14 +62,12 @@ export const CAMERA_PRESETS = {
   },
 };
 
-// Default playback speed
+// Playback: 1x means roughly a normal jet cruise speed.
+// Route playback duration is derived from route distance at this speed,
+// so short replay tracks and long routes move at a consistent physical pace.
+export const BASE_PLAYBACK_SPEED_KMH = 900;
 export const DEFAULT_PLAYBACK_SPEED = 1;
-export const MAX_PLAYBACK_SPEED = 60;
-export const MIN_PLAYBACK_SPEED = 1;
-export const PLAYBACK_SPEED_PRESETS = [1, 5, 10, 30, 60] as const;
-
-// Nominal base flight playback duration in seconds (at 1x speed)
-// For demonstration, 180 seconds allows seeing all phases clearly,
-// and 10x/30x/60x speeds allow quick previews.
-export const BASE_ROUTE_DURATION_SECONDS = 180;
+export const MIN_PLAYBACK_SPEED = 0.2;
+export const MAX_PLAYBACK_SPEED = 3;
+export const PLAYBACK_SPEED_PRESETS = [0.2, 0.5, 1, 2, 3] as const;
 
