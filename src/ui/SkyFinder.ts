@@ -69,9 +69,10 @@ export class SkyFinder {
       this.renderResults(body.stale === true);
     } catch (error) {
       const permissionDenied =
-        typeof GeolocationPositionError !== 'undefined' &&
-        error instanceof GeolocationPositionError &&
-        error.code === error.PERMISSION_DENIED;
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        Number((error as { code?: number }).code) === 1;
       this.renderIntro(
         permissionDenied
           ? '位置情報の利用が許可されていません。ブラウザ設定を確認してください。'
