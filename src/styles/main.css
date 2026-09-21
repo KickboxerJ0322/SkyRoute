@@ -1292,3 +1292,22 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
   font: 10px var(--font-mono);
   text-align: right;
 }
+
+
+/* Compact departures panel after moving SkyRoute brand to the mode bar. */
+.live-panel { position: relative; }
+.live-mobile-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+.live-ai-model-note {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+#live-stop-speak {
+  color: var(--text-muted);
+}
