@@ -1,6 +1,6 @@
 /**
  * Playback Controls Component
- * Controls Play Forward, Reverse Playback, Restart, Continuous Speed (0.2x to 3x), and Seek slider.
+ * Controls Play Forward, Reverse Playback, Restart, Continuous Speed (0.2x to 50x), and Seek slider.
  */
 
 import {
@@ -165,7 +165,7 @@ export class PlaybackControls {
                 step="0.1"
                 aria-label="再生速度"
                 value="${this.currentSpeed}"
-                title="再生速度つまみ (0.2×〜3.0×、1×は約900km/h相当)"
+                title="再生速度つまみ (0.2×〜50×、1×は約900km/h相当)"
               />
             </div>
 
