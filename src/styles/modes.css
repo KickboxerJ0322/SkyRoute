@@ -25,17 +25,21 @@
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
 }
 .app-mode-btn strong { display:block; font:700 .72rem var(--font-mono); letter-spacing:.08em; }
 .app-mode-brand {
   display:flex;
   align-items:center;
   padding:0 10px;
-  color:#fff;
   font:800 .9rem var(--font-sans);
   letter-spacing:.04em;
   white-space:nowrap;
+  background: linear-gradient(90deg, #fff 0%, var(--accent-cyan) 58%, #7aa8ff 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  color:transparent;
 }
 .app-mode-btn.active {
   color: #fff;
