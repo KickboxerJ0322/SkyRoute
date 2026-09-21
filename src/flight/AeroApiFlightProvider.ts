@@ -12,8 +12,8 @@ export class AeroApiFlightProvider implements FlightDataProvider {
     this.source = body.source;
     return body;
   }
-  async getDepartures(signal?: AbortSignal): Promise<FlightDeparture[]> {
-    this.lastDepartures = await this.request<SkyRouteFlight[]>('flights/departures', signal);
+  async getDepartures(signal?: AbortSignal, airport='RJTT'): Promise<FlightDeparture[]> {
+    this.lastDepartures = await this.request<SkyRouteFlight[]>('flights/departures?airport='+encodeURIComponent(airport), signal);
     return this.lastDepartures.data.map(f => ({id:f.id, flightNumber:f.ident, airline:f.operator || '--', aircraftType:f.aircraftType || '--',
       destinationCode:f.destination.iata || f.destination.icao || '--', destinationName:f.destination.name || '--', destinationCity:'',
       scheduledTime:formatJst(f.scheduledDeparture), gate:'--', status:f.status}));
