@@ -14,7 +14,7 @@ export class LiveFlightView {
       <div class="live-filters"><select aria-label="Airline filter"><option>ALL</option><option>ANA</option><option>JAL</option></select><input type="search" aria-label="Destination search" placeholder="目的地を検索"></div>
       <div class="live-filters"><select aria-label="Flight status filter"><option value="ALL">すべての便</option><option value="ENROUTE">飛行中</option><option value="UPCOMING">出発予定</option></select></div>
       <div class="live-list-message">${escapeHtml(message)}</div><div class="routes-list live-routes"></div>
-      <div class="demo-route-notice">飛行中＋今後3時間 / 各最大20便・3分更新</div></div>`;
+      <div class="demo-route-notice">飛行中＋今後3時間 / 各最大20便・「更新」で再取得</div></div>`;
     const filter=this.list.querySelector('select')!;filter.value=this.airline;
     filter.onchange=()=>{this.airline=filter.value;this.renderCards();};
     const status=this.list.querySelector<HTMLSelectElement>('[aria-label="Flight status filter"]')!;status.value=this.flightStatus;
