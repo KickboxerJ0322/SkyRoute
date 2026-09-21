@@ -1268,3 +1268,19 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
   border-color: rgba(0, 230, 118, .45);
   color: var(--accent-green);
 }
+
+
+/* Live refresh + browser speech controls */
+#live-auto-refresh[aria-pressed="true"] {
+  color: var(--accent-green);
+  border-color: rgba(0, 230, 118, .65);
+  background: rgba(0, 230, 118, .12);
+  box-shadow: 0 0 8px rgba(0, 230, 118, .18);
+}
+#live-auto-refresh[aria-pressed="false"] {
+  color: var(--text-muted);
+}
+#live-speak:not(:disabled) {
+  color: var(--accent-cyan);
+  border-color: rgba(0, 212, 255, .55);
+}
