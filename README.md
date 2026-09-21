@@ -1,136 +1,377 @@
-﻿# SkyRoute Phase 3 — PLATEAU INSIGHT
+# SkyRoute
 
-Google Photorealistic 3D MapsとAeroAPIによる航空機追跡に、羽田周辺の建物属性を重ねるPLATEAU INSIGHTを追加しました。
+SkyRoute は、航空機の運航データを Google Photorealistic 3D Maps 上で可視化する個人開発のWebアプリです。
 
-## ローカル起動
+FlightAware AeroAPI から取得した便情報・現在位置・高度・速度・航跡を3D地図上に表示し、Geminiによる飛行状況の解説や音声読み上げも利用できます。
 
-Node.js 22.6以降（検証環境は24.13.1）が必要です。
+公開版:
 
-```powershell
-cd "E:\外付けHDDデスクトップ\潤平勉強\●SkyRoute"
-npm.cmd install
-npm.cmd run dev
+https://skyroute-331230486346.asia-northeast1.run.app/
+
+---
+
+## 主な機能
+
+### ROUTE
+
+主要空港の出発便を選択して追跡します。
+
+対応空港:
+
+| 空港 | IATA | ICAO |
+|---|---|---|
+| 羽田 | HND | RJTT |
+| 成田 | NRT | RJAA |
+| 関西 | KIX | RJBB |
+| 伊丹 | ITM | RJOO |
+| 新千歳 | CTS | RJCC |
+| 福岡 | FUK | RJFF |
+| 那覇 | OKA | ROAH |
+
+初期値は羽田です。
+
+一覧には、
+
+- 現在飛行中の出発便
+- 今後3時間の出発予定便
+
+を各最大20便表示します。
+
+便一覧は自動更新せず、上部の **更新** ボタンを押した時だけAeroAPIへ再取得します。
+
+便を選択すると、
+
+- 現在位置
+- 高度
+- 対地速度
+- 方位
+- 上昇・下降
+- 出発・到着予定時刻
+- 実績時刻
+- 遅延
+- Actual Track
+- Filed Route（取得できる場合）
+- 出発地・到着地の天候
+- Preview Flight
+- Replay Track
+
+などを表示します。
+
+現在位置も原則手動更新です。
+
+**現在位置更新** を押した時だけ再取得します。  
+**自動更新 OFF / ON** をONにした場合のみ1分ごとに現在位置を取得します。
+
+---
+
+## FINDER
+
+「空に見えている飛行機はどこへ行くのか」を調べる機能です。
+
+検索方法は2種類あります。
+
+- ブラウザの現在地
+- 住所・地名入力
+
+例:
+
+- 東京駅
+- 横浜市
+- 成田空港
+- さいたま市
+
+指定地点の周辺80kmを対象に、AeroAPIの airborne flight search を使って旅客機を検索します。
+
+検索結果には、
+
+- 便名
+- 出発地
+- 目的地
+- 検索地点からの距離
+- 高度
+- 速度
+- 方角
+
+を表示します。
+
+各航空機には、
+
+- **3D表示**
+- **飛行情報**
+
+のボタンがあります。
+
+「飛行情報」を押すと、ROUTEと同じ詳細表示・AI解説・位置更新・Preview/Replayを利用できます。
+
+FINDER検索はAeroAPIの比較的高価な検索APIを使用するため、自動更新は行いません。
+
+---
+
+## INFO
+
+SkyRouteの概要、使い方、AeroAPIの今月の利用状況を表示します。
+
+AeroAPIの利用状況は FlightAware の無料API:
+
+`GET /account/usage`
+
+から取得します。
+
+表示内容:
+
+- 今月の参考利用額
+- API呼出回数
+- Result pages
+- 利用額が大きいAPI
+- Personalプランの月5ドル無料枠を前提にした残額目安
+
+FlightAware側の利用統計は約10分ごとに更新されるため、リアルタイムの請求額ではありません。
+
+---
+
+## AI飛行解説
+
+飛行情報画面の **AI解説** を押した時だけGemini APIを呼びます。
+
+モデル:
+
+`gemini-3.5-flash-lite`
+
+解説では主に、
+
+- 現在どの地域上空を飛んでいるか
+- 高度
+- 速度
+- 進行方向
+- 上昇・下降
+- 目的地までの距離
+- 実際の航跡
+- 出発・到着の遅延
+- 出発地・到着地の天候
+
+を、航空の専門知識がない人にも分かる日本語で説明します。
+
+Filed Routeが取得できない場合は、欠損していることを無理に説明しません。
+
+事故・緊急事態・安全性について、AeroAPIの公開データだけから断定しないようにしています。
+
+AI解説はおおむね800文字以内です。
+
+AI解説は位置情報を更新しても保持され、作成時刻も表示します。
+
+---
+
+## 音声読み上げ
+
+AI解説は Google Cloud Text-to-Speech を使って音声再生できます。
+
+現在の音声:
+
+`ja-JP-Wavenet-A`
+
+ブラウザ標準TTSではなく、Cloud RunバックエンドからMP3を生成します。
+
+- 音声
+- 停止
+
+ボタンで操作できます。
+
+---
+
+## Google Photorealistic 3D Maps
+
+Google Maps JavaScript API の `maps3d` ライブラリを利用しています。
+
+現在は開発専用のalpha channelではなく、
+
+`weekly`
+
+チャンネルを使用しています。
+
+地図モード:
+
+- HYBRID
+- SATELLITE
+
+カメラ:
+
+- CLOSE
+- FOLLOW
+- COCKPIT
+- OVERVIEW
+- FREE
+
+方位・TILTも変更できます。
+
+---
+
+## 再生速度
+
+Preview / Replay の再生速度は実際の距離を基準にしています。
+
+`1x ≒ 900 km/h`
+
+プリセット:
+
+- 0.2x
+- 1x
+- 3x
+- 10x
+- 50x
+
+近距離便と長距離便で極端に再生速度が変わらないようにしています。
+
+---
+
+## データ構成
+
+```text
+FlightAware AeroAPI
+ ├ 主要空港の出発便
+ ├ 現在位置
+ ├ 高度・速度・方位
+ ├ Actual Track
+ ├ Filed Route
+ ├ 空港天候
+ ├ 周辺航空機検索
+ └ Account Usage
+        ↓
+Cloud Run backend
+        ↓
+Google Photorealistic 3D Maps
+        ↓
+Gemini AI 解説
+        ↓
+Google Cloud Text-to-Speech
 ```
 
-フロントエンドとバックエンドを同時起動します。ターミナルの `Local:` に表示されるURLを開いてください。通常は http://localhost:5173 、使用中なら5174等になります。バックエンドの開発ポートは8787です。終了はCtrl+Cです。
+---
 
-## 実データの設定
+## 主なバックエンドAPI
 
-既存の `.env.local` のGoogle Mapsキーを残し、次の2行を追加してください。キーはチャットへ貼り付ける必要はありません。
+| SkyRoute API | 用途 |
+|---|---|
+| `GET /api/flights/departures?airport=RJTT` | 選択空港の飛行中＋今後3時間の出発便 |
+| `GET /api/flights/nearby` | FINDER周辺航空機検索 |
+| `GET /api/flights/:id` | 便詳細 |
+| `GET /api/flights/:id/position` | 現在位置 |
+| `GET /api/flights/:id/track` | Actual Track |
+| `GET /api/flights/:id/route` | Filed Route |
+| `GET /api/airports/:id/weather` | 空港気象 |
+| `GET /api/account/usage` | AeroAPI利用状況 |
+| `POST /api/ai/flight-commentary` | Gemini AI解説 |
+| `POST /api/tts` | AI解説の音声生成 |
+| `GET /api/health` | ヘルスチェック |
+
+AeroAPIキー、Gemini APIキーはブラウザへ公開せずCloud Runバックエンドから利用します。
+
+Google MapsのブラウザキーのみViteビルド時に組み込みます。
+
+---
+
+## APIコストを抑える設計
+
+SkyRouteは個人開発のため、APIの自動ポーリングをできるだけ避けています。
+
+現在の方針:
+
+- 便一覧: 原則手動更新
+- 現在位置: 原則手動更新
+- 現在位置の自動更新: ユーザーがONにした時だけ1分間隔
+- FINDER: ユーザーが検索した時だけ
+- AI解説: AI解説ボタンを押した時だけ
+- 天候: AI解説時など必要な時だけ
+- 音声: 音声ボタンを押した時だけ
+- AeroAPI Usage: INFO表示時、10分キャッシュ
+
+AeroAPI Personalプランには月5ドル分の無料利用枠があります。
+
+特に `/flights/search` を使うFINDERは他のAPIより単価が高いため、自動更新しません。
+
+---
+
+## Google Maps / Geocoding
+
+FINDERの住所・地名検索にはGoogle Maps JavaScript APIのGeocoderを利用します。
+
+Google Cloudプロジェクトでは、
+
+- Maps JavaScript API
+- Geocoding API
+
+を有効にしてください。
+
+公開用MapsキーはWebサイト制限とAPI制限を設定することを推奨します。
+
+---
+
+## Cloud Run
+
+本番環境:
+
+- Google Cloud Run
+- region: `asia-northeast1`
+- service: `skyroute`
+- GitHub `main` push → Cloud Build → Cloud Run 自動デプロイ
+
+Cloud Build:
+
+`cloudbuild.yaml`
+
+Google Mapsキー:
+
+`skyroute-maps-browser-key`
+
+AeroAPIキー:
+
+`skyroute-aeroapi-key`
+
+Gemini APIキー:
+
+`skyroute-gemini-api-key`
+
+Secret Managerを使用します。
+
+---
+
+## ローカル開発
+
+Node.js 24系を推奨します。
+
+```powershell
+npm install
+npm run dev
+```
+
+`.env.local` の例:
 
 ```dotenv
-AEROAPI_KEY=取得したFlightAwareのAPIキー
+VITE_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
+AEROAPI_KEY=YOUR_FLIGHTAWARE_AEROAPI_KEY
 SKYROUTE_DATA_MODE=live
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-変更後はサーバーを再起動してください。`VITE_AEROAPI_KEY` は使用しません。AEROAPI_KEYはバックエンドのみが読み込み、ブラウザは同一オリジンの `/api/` にアクセスします。`.env.local` はGitとDockerビルドコンテキストから除外します。
+秘密キーをGitへコミットしないでください。
 
-開発中の初期値は `SKYROUTE_DATA_MODE=mock` です。MOCKでは付属JSONから生成する架空の12便を表示し、外部AeroAPIは一切呼びません。画面のMOCK表示は実際の運航情報ではありません。最初のANA53検証便はサーバー起動の1分後にENROUTEへ変化します。出発前に選択しておけば、次の更新で位置追跡を確認できます。
+---
 
-画面上のLIVEはバックエンドデータを選ぶタブです。実際のデータソースは隣の `MOCK` / `● LIVE` 表示で確認してください。DEMOはPhase 1の固定4ルートです。
-
-## 操作
-
-- 左一覧は羽田発の飛行中の便と今後3時間の出発予定便を表示（各最大20便）。飛行中を先頭に表示し、すべての便／飛行中／出発予定で切り替えられます。JST表示。ALL/ANA/JALと目的地検索は取得済みデータのみを絞り込みます。
-- 便を選ぶと便詳細・提出航路・実trackを取得。未出発便は空港付近に静止し、欠損情報は `--` と表示します。
-- `Times (JST)` を開くと出発・到着それぞれの予定／推定／実績時刻が表示されます。
-- `Preview Flight` は推定高度を含む予定経路の仮想飛行です。`Replay track` は記録済みtrackの簡易再生です。実位置とは明確に表示を分けています。
-- LIVE中の再生バーは無効です。Preview/ReplayまたはDEMOで再生・逆再生・シーク・速度調整を利用します。
-- 既存の便一覧／飛行情報／カメラ／再生バー表示切替を維持。モバイルではカメラバーの便一覧ボタンでドロワーを開きます。
-- 開発時は `?debug=1` で選択ID・航路種別・位置時刻等を表示します。productionビルドでは表示しません。
-
-飛行中の便は、過去24時間の出発済み便を1ページ取得し、離陸済み・未到着の便を抽出します。到着済み便と欠航便は除外します。取得ページ内の便のみが対象のため、飛行中の全便を網羅しません。出発前に選択した便は一覧から消えても追跡を継続し、ENROUTEになった時点で位置を取得します。未選択の便の位置は追跡しません。
-
-## バックエンド
-
-Node.js標準HTTPサーバーを使用しています。Expressなどの実行時依存はありません。
-
-| SkyRoute API | AeroAPI v4 | キャッシュ |
-|---|---|---|
-| GET /api/flights/departures | /airports/RJTT/flights/scheduled_departures と /airports/RJTT/flights/departures | 各180秒 |
-| GET /api/flights/:id | /flights/{fa_flight_id} | 60秒 |
-| GET /api/flights/:id/route | /flights/{fa_flight_id}/route | 30分 |
-| GET /api/flights/:id/track | /flights/{fa_flight_id}/track | 180秒 |
-| GET /api/flights/:id/position | /flights/{fa_flight_id}/position | 45秒 |
-| GET /api/airports/:id | /airports/{id} | 24時間 |
-| GET /api/health | 外部呼び出しなし | なし |
-
-認証は `x-apikey`。出発予定は現在から3時間先、飛行中の抽出元は過去24時間の出発便です。それぞれ `max_pages=1` とし、一覧更新で最大2回の外部リクエストが発生します（キャッシュヒット時は呼び出しなし）。日時は秒単位のUTC形式で送信します。ページの自動巡回はしません。FlightAwareのフィルタはscheduled_off基準で、取得後にSkyRouteの予定出発（scheduled_out優先）でも出発予定リストの過去便を除外します。
-
-一覧の自動更新は180秒。選択便詳細は45秒間隔のループ＋60秒キャッシュ。ENROUTEの選択1便だけ位置を45秒間隔で取得し、trackは初回と180秒間隔です。非同期完了後に次のタイマーを予約するためリクエストが重なりません。選択変更とPreview/DEMO切替でAbortControllerとタイマーを解除します。
-
-外部呼び出しはインスタンス全体で既定20回/分まで (`AEROAPI_MAX_CALLS_PER_MINUTE`)。同時リクエストを共有し、失敗は60秒抑制、タイムアウトは10秒。認証・429・障害のクールダウンを設けています。直近キャッシュがある場合はstaleとして返し、UIにキャッシュ表示を出します。キャッシュもない場合はエラー表示を保ち、DEMOへ切り替えられます。
-
-AeroAPIのposition/track高度は**100フィート単位**のため、`altitude * 100 * 0.3048` でメートルへ変換します。速度はknots×1.852。変換は `server/normalize.mjs` に集約しています。位置異常・重複・時刻逆転を除去し、欠損track高度のみ周辺の測定値から補間します。位置補間はAPI取得と独立した描画ループで実行します。
-
-航路はFiled→Actual track→大圏経路の順で採用します。Filedの高度と大圏経路の高度は推定として保持。Actualは水色、Filedは青、Estimatedは半透明青です。実位置以降は残りの予定経路、Filedがなければ推定経路を表示します。
-
-## 検証
+## テスト
 
 ```powershell
-npm.cmd test
-npm.cmd run build
-npm.cmd run test:browser
+npm test
+npm run build
 ```
 
-ブラウザテストはインストール済みChromeを使い、5180番に検証用Viteを起動します。AeroAPIとGoogle Mapsは契約に合わせた代替オブジェクトで検証するため、料金は発生しません。実際の3D地図描画とは別の検証です。
+Cloud BuildでもDockerイメージ作成前にテストとViteビルドを実行します。
 
-`node tests/browser-check.mjs` は実際のGoogle Mapsを読み込み、MOCKバックエンドとUIを確認する手動検証スクリプトです。こちらはGoogle Mapsへの通信が発生します。AeroAPIは呼びません。
+---
 
-## 保存済みレスポンス
+## データに関する注意
 
-`npm.cmd run capture:fixture` は出発一覧を外部APIへ1回だけ問い合わせ、許可したフィールドのみ `server/fixtures/captured.json` に保存します。`npm.cmd run capture:fixture -- fa_flight_id` は指定便の詳細・route・track・positionを取得します。実API課金対象なので、通常開発は付属MOCKを使用してください。保存ファイルはGitから除外しています。
+SkyRouteはFlightAware等から取得した公開・提供データを可視化するアプリです。
 
-`SKYROUTE_DATA_MODE=mock` と `SKYROUTE_FIXTURE_FILE=server/fixtures/captured.json` で保存データを使用できます。保存済み時刻は変更しないため、古い出発便は今後の出発一覧に表示されません。
+表示される位置・時刻・高度・速度・天候などは、更新遅延、推定値、欠損を含む可能性があります。
 
-## Production / Cloud Run
-
-```powershell
-npm.cmd run build
-npm.cmd start
-```
-
-NodeサーバーがdistとAPIを同一オリジンで配信します。Cloud Run向けDockerfileを追加済みです。ビルド時に公開用 `VITE_GOOGLE_MAPS_API_KEY`、実行時に秘密の `AEROAPI_KEY`、`SKYROUTE_DATA_MODE=live` を設定してください。`PORT` はCloud Runが提供する値を使い、任意で `AEROAPI_MAX_CALLS_PER_MINUTE` を設定します。Google Mapsキーの参照元制限に配信ドメインを追加してください。AeroAPIキーはSecret Manager等で実行時に注入します。
-
-現在のキャッシュと利用制限はインスタンス単位です。Cloud Runは最大インスタンス数1に設定します。公開・継続デプロイ設定は [deployment.md](docs/deployment.md) を参照してください。
-
-仕様確認元: [FlightAware AeroAPI v4公式OpenAPI](https://www.flightaware.com/commercial/aeroapi/resources/aeroapi-openapi.yml)
-
-## PLATEAU INSIGHT
-
-カメラ操作バーの **INSIGHT → PLATEAU** でON/OFFを切り替えます。初回はONで自動表示します。ボタンにON/OFFを明記し、選択した状態をブラウザに保存します。保存済みOFFの間はGeoJSONの取得もポリゴン追加も行いません。ONにすると建物外形を25%の透明な色で重ね、公共・交通（青）、商業（黄）、医療（紫）、その他（グレー）を個別に切り替えられます。その他は初期非表示です。
-
-建物をクリックすると用途、高さ、地上階数、PLATEAU ID、データ年度などを表示します。選択中の建物は境界線を強調します。PLATEAUをONにしても、航空機・実位置・track・航路・カメラ追従・Preview/Replayは継続します。レイヤーは羽田周辺のみです。
-
-### 実データと生成
-
-- Source: Project PLATEAU / MLIT（国土交通省）。[公式配信サービス](https://docs.plateauview.mlit.go.jp/) の [Data Catalog API](https://docs.plateauview.mlit.go.jp/api/rest/operations/datacatalogcitygmlconditions/) を使用。
-- 大田区、カタログ年度2025のCityGML建築物モデル。対象は緯度35.535〜35.57、経度139.75〜139.805。初期提示範囲から空港中心へ縮小し、隣接する川崎市は取得対象から除外しています。
-- 20メッシュから2,399棟を解析。外形全体が対象矩形内にある1,681棟のうち、分類可能な建物を優先し、羽田基準点への距離順で500棟を同梱。航空写真のテクスチャやLOD1以上の形状は含みません。
-- 出力: public/data/plateau/haneda-buildings.geojson と haneda-meta.json。現在のGeoJSONは583,931 bytes。公共・交通227、商業41、医療0、その他232棟です。医療施設が存在しないという意味ではなく、取得した属性から医療と分類できた建物がないことを示します。
-
-生成コマンド:
-
-    npm run build:plateau
-
-初回は約99 MBのCityGMLと必要なコードリストを開発環境へ取得します。ネットワークと開発依存saxesが必要です。巨大ファイルは .cache/plateau/ に保存し、Git・Docker・Cloud Buildへは含めません。同じURLはキャッシュを再利用します。配信データを取り直すときは npm run build:plateau -- --refresh を使用します（カタログも再取得）。最大30ファイル、ダウンロード200 MiBの制限があります。
-
-LOD0 FootPrintを優先し、無い場合はLOD0 RoofEdgeを使用。Polygon・MultiPolygon・内周を維持し、閉鎖点の重複と向きを正規化します。srsNameを確認してEPSG:6697の緯度・経度・高さをGeoJSONの経度・緯度へ変換し、7桁に丸めます。他の座標系は推測せずエラーにします。高さ座標は外形から除き、表示にはRELATIVE_TO_MESHと1.5 mのオフセットを使います。これは表示用オフセットで、建物の高さ属性ではありません。
-
-### 属性の扱い
-
-名称、用途、主要用途、高さ、地上階数などはCityGMLに存在する値のみ使用します。gml:nameが無ければ名称欄を省略。高さの単位がmでない場合、欠損、不明値9999はnullとし、画面には -- を表示します。元の数値文字列もGeoJSONに保持します。今回、名称は11棟、高さは461棟、地上階数は275棟で取得でき、majorUsageは全500棟で欠損しています。
-
-用途コードは対象CityGMLが参照するコードリストで解決し、元のコードと参照URLも残します。解決できないコードはコードのまま表示し、その意味を推測しません。カテゴリは名称・解決済み用途に対するSkyRouteの表示分類であり、PLATEAU公式分類ではありません。「運輸倉庫施設」は公共・交通、「文教厚生施設」だけでは医療と断定せずその他にします。データ年度はカタログ年度で、建築年や個別の測量年度とは異なります。
-
-### 実行時・Cloud Run
-
-Cloud Runでは生成済みGeoJSONをdistから application/geo+json として静的配信します。PLATEAU APIやCityGMLパーサーは実行時依存ではなく、ビルド時も自動でデータ再取得しません。取得済みGeoJSONはブラウザメモリで再利用し、OFFでポリゴンを除去します。描画は最大400棟・750ポリゴン・50,000頂点、20棟ずつ追加します。GeoJSONが無い・不正・取得できない場合は PLATEAU data unavailable を表示し、航空機機能を継続します。
-
-パネルに出典リンクを常時表示します。生成メタデータには元CityGML・コードリストURL、ファイルハッシュ、年度、生成日時、件数、欠損数を保存しています。これはProject PLATEAUデータをSkyRoute向けに抽出・加工したものです。
-
-### 追加検証
-
-npm test に分類・座標変換・コードリスト・GeoJSON・MIME検証、npm run test:browser にON/OFF・カテゴリ・クリック・障害・表示上限・デスクトップ/モバイル配置の検証を追加しています。ブラウザ自動テストはGoogle Mapsと航空便のテスト用代替を使用します。
-
-実Google Mapsでの目視確認は node tests/plateau-visual-check.mjs で行います。Google Mapsへ通信しますが、航空便はMOCKでAeroAPIへの外部呼び出しはありません。全結果と制約は [Phase 3報告](docs/phase3-report.md) を参照してください。
+SkyRouteの表示だけを、航空安全上の判断や実際の運航判断には使用しないでください。
