@@ -41,7 +41,12 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
       }
       if(req.method!=='GET'&&req.method!=='HEAD') return json(405,{error:'METHOD_NOT_ALLOWED'});
       if(url.pathname==='/api/health') return json(200,{status:'ok',source:api.mode});
-      if(url.pathname==='/api/flights/departures') return json(200,await api.departures());
+      if(url.pathname==='/api/flights/departures') {
+        const airport=(url.searchParams.get('airport')||'RJTT').toUpperCase();
+        if(!/^(RJTT|RJAA|RJBB|RJOO|RJCC|RJFF|ROAH)$/.test(airport)) throw new ApiError(400,'INVALID_AIRPORT');
+        return json(200,await api.departures(airport));
+      }
+      if(url.pathname==='/api/account/usage') return json(200,await api.usage());
       if(url.pathname==='/api/flights/nearby') {
         const latitude=Number(url.searchParams.get('lat'));
         const longitude=Number(url.searchParams.get('lng'));
