@@ -68,7 +68,8 @@ export class FlightExperience {
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
     modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><button id="refresh-flights">更新</button><span id="data-source-status" role="status">Loading HND departures...</span>';
-    toolbar.append(modes);this.statusLabel=element('data-source-status');
+    const toolbarItems=toolbar.querySelector('.panel-visibility-items') ?? toolbar;
+    toolbarItems.append(modes);this.statusLabel=element('data-source-status');
     element('data-live').onclick=()=>void this.setMode('LIVE');element('data-demo').onclick=()=>void this.setMode('DEMO');
     element('refresh-flights').onclick=()=>void this.refreshList();
     new ResizeObserver(()=>element('app').style.setProperty('--top-controls-height',toolbar.getBoundingClientRect().height+'px')).observe(toolbar);
