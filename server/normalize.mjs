@@ -4,6 +4,8 @@ export const feetToMeters = feet => finite(feet) ? feet * 0.3048 : null;
 export const validCoordinate = p => p && finite(p.latitude) && finite(p.longitude) && Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180;
 const text = value => typeof value === 'string' && value ? value : null;
 const date = value => text(value) && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
+const number = value => finite(value) ? value : null;
+const texts = value => Array.isArray(value) ? value.filter(v => typeof v === 'string' && v) : [];
 export function airport(raw = {}) {
   raw ||= {};
   return { icao: text(raw.code_icao) || text(raw.code) || text(raw.airport_code) || '', iata: text(raw.code_iata), name: text(raw.name),
@@ -25,7 +27,14 @@ export function flight(raw) {
     operator: text(raw.operator_icao) || text(raw.operator), flightNumber: text(raw.flight_number),
     origin: airport(raw.origin), destination: airport(raw.destination), aircraftType: text(raw.aircraft_type), status: status(raw),
     scheduledDeparture: date(raw.scheduled_out || raw.scheduled_off), estimatedDeparture: date(raw.estimated_out || raw.estimated_off), actualDeparture: date(raw.actual_out || raw.actual_off),
-    scheduledArrival: date(raw.scheduled_in || raw.scheduled_on), estimatedArrival: date(raw.estimated_in || raw.estimated_on), actualArrival: date(raw.actual_in || raw.actual_on) };
+    scheduledArrival: date(raw.scheduled_in || raw.scheduled_on), estimatedArrival: date(raw.estimated_in || raw.estimated_on), actualArrival: date(raw.actual_in || raw.actual_on),
+    registration: text(raw.registration), codeshares: texts(raw.codeshares),
+    departureDelaySeconds: number(raw.departure_delay), arrivalDelaySeconds: number(raw.arrival_delay),
+    progressPercent: number(raw.progress_percent), routeDistanceNm: number(raw.route_distance),
+    filedAirspeedKnots: number(raw.filed_airspeed), filedAltitudeFeet: number(raw.filed_altitude),
+    departureGate: text(raw.gate_origin), arrivalGate: text(raw.gate_destination),
+    departureTerminal: text(raw.terminal_origin), arrivalTerminal: text(raw.terminal_destination),
+    actualRunwayOff: text(raw.actual_runway_off), actualRunwayOn: text(raw.actual_runway_on) };
 }
 export function position(raw) {
   if (!validCoordinate(raw) || !date(raw.timestamp)) return null;
