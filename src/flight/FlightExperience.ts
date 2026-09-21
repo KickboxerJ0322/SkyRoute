@@ -79,7 +79,8 @@ export class FlightExperience {
     toolbarItems.append(modes);this.statusLabel=element('data-source-status');
     element('data-live').onclick=()=>void this.setMode('LIVE');element('data-demo').onclick=()=>void this.setMode('DEMO');
     element('refresh-flights').onclick=()=>void this.refreshList();
-    new ResizeObserver(()=>element('app').style.setProperty('--top-controls-height',toolbar.getBoundingClientRect().height+'px')).observe(toolbar);
+    const topBar=document.getElementById('top-app-bar')||toolbar;
+    new ResizeObserver(()=>element('app').style.setProperty('--top-controls-height',topBar.getBoundingClientRect().height+'px')).observe(topBar);
     this.demoPanel.onSelect(id=>void this.selectDemo(id));
     window.addEventListener('pagehide',()=>this.stop());
   }
@@ -129,12 +130,15 @@ export class FlightExperience {
       this.liveView.showList(flights,this.selected?.id||'',result.warning?result.warning:result.stale?'LIVE DATA TEMPORARILY UNAVAILABLE · cached data':result.source==='mock'?'MOCK · 架空の検証データ（実際の運航情報ではありません）':'FlightAware · LIVE');
       this.updateSource(result.stale?' · cached data':'');
     } catch(error) {if(!signal.aborted){this.liveView.showList([],'','LIVE DATA TEMPORARILY UNAVAILABLE · '+errorText(error)+' · DEMOを利用できます');this.statusLabel.textContent='LIVE DATA TEMPORARILY UNAVAILABLE';}}
-    finally {if(!signal.aborted){this.loadingList=false;(element('refresh-flights') as HTMLButtonElement).disabled=false;this.listTimer=window.setTimeout(()=>void this.refreshList(),180000);}}
+    finally {if(!signal.aborted){this.loadingList=false;(element('refresh-flights') as HTMLButtonElement).disabled=false;}}
   }
   private updateSource(suffix='') {this.statusLabel.textContent=`${this.dataMode==='DEMO'?'DEMO':this.provider.source==='mock'?'MOCK':'● LIVE'}${this.viewMode==='LIVE'?'':' · '+this.viewMode}${suffix}`;}
-  private async selectLive(id:string) {
+  public async inspectLiveFlight(flight:SkyRouteFlight) {
+    await this.selectLive(flight.id,flight);
+  }
+  private async selectLive(id:string,seed?:SkyRouteFlight) {
     this.cancelSelection();this.viewMode='LIVE';this.enablePlayback(false);this.updateSource();
-    this.selected=this.provider.lastDepartures?.data.find(f=>f.id===id)||null;
+    this.selected=seed||this.provider.lastDepartures?.data.find(f=>f.id===id)||null;
     if(!this.selected)return;
     this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();
     const signal=this.selectionAbort.signal;
