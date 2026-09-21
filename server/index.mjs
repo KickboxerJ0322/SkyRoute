@@ -46,7 +46,12 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
         if(!/^(RJTT|RJAA|RJBB|RJOO|RJCC|RJFF|ROAH)$/.test(airport)) throw new ApiError(400,'INVALID_AIRPORT');
         return json(200,await api.departures(airport));
       }
-      if(url.pathname==='/api/account/usage') return json(200,await api.usage());
+      if(url.pathname==='/api/account/usage') {
+        const nowDate=new Date();
+        const start=url.searchParams.get('start')||`${nowDate.getUTCFullYear()}-${String(nowDate.getUTCMonth()+1).padStart(2,'0')}-01`;
+        const end=url.searchParams.get('end')||nowDate.toISOString();
+        return json(200,await api.usage(start,end));
+      }
       if(url.pathname==='/api/flights/nearby') {
         const latitude=Number(url.searchParams.get('lat'));
         const longitude=Number(url.searchParams.get('lng'));
