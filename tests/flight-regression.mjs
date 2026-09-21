@@ -14,7 +14,8 @@ for (const route of DEMO_ROUTES) {
   animator.playForward(); advance();
   const departureStep = animator.getProgress();
   animator.seek(.5); advance();
-  assert.ok(animator.getProgress() - .5 > departureStep * 3);
+  const cruiseStep = animator.getProgress() - .5;
+  assert.ok(Math.abs(cruiseStep - departureStep) < 1e-9, '1x playback must advance at a constant physical speed');
   animator.playReverse(); const before = animator.getProgress(); advance();
   assert.ok(animator.getProgress() < before);
   animator.seek(.000001); advance();
@@ -25,8 +26,8 @@ for (const route of DEMO_ROUTES) {
   animator.setRoute(route); assert.equal(frame, undefined);
 }
 animator.setSpeed(17.5); assert.equal(animator.getSpeed(), 17.5);
-animator.setSpeed(99); assert.equal(animator.getSpeed(), 60);
-animator.setSpeed(0); assert.equal(animator.getSpeed(), 1);
+animator.setSpeed(99); assert.equal(animator.getSpeed(), 50);
+animator.setSpeed(0); assert.equal(animator.getSpeed(), 0.2);
 const map = { stopCameraAnimation() {}, appendChild(model) { this.model = model; } };
 const camera = new CameraController(map);
 const telemetry = {...latest, lat: 35, lng: 140, altitude: 1000, heading: 0, pitch: 0, roll: 0};
@@ -58,4 +59,4 @@ for (const mode of ['CLOSE', 'FOLLOW', 'COCKPIT', 'OVERVIEW', 'FREE']) {
 }
 camera.setMode('CLOSE'); camera.setTilt(-1); camera.update(telemetry);
 assert.equal(map.tilt, 78, 'AUTO restores camera preset');
-console.log('Passed: all 4 routes, forward/reverse endpoints, departure pacing, speed bounds, cockpit tracking, close camera, baseline orientation.');
+console.log('Passed: all 4 routes, forward/reverse endpoints, constant-speed pacing, speed bounds, cockpit tracking, close camera, baseline orientation.');
