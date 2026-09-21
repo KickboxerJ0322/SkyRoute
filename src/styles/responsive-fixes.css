@@ -1,0 +1,115 @@
+/* SkyRoute responsive + wordmark refinements (2026-09-22) */
+
+/* Raleway is loaded from index.html; keep the existing cyan/white gradient. */
+.app-mode-brand,
+.brand-title,
+.loading-brand {
+  font-family: "Raleway", sans-serif !important;
+}
+.app-mode-brand {
+  font-style: normal !important;
+  font-weight: 600 !important;
+  letter-spacing: .035em !important;
+}
+
+/*
+ * Narrow screens: reserve real vertical space for all three ROUTE surfaces.
+ * The departures list and flight information scroll independently, while the
+ * playback controller remains reachable at the bottom.
+ */
+@media (max-width: 768px) {
+  #left-panel-container {
+    top: 142px !important;
+    bottom: 132px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-height: none !important;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  #flight-panel-root {
+    flex: 1 1 52% !important;
+    min-height: 150px !important;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  #flight-panel-root .flight-panel,
+  #flight-panel-root .live-panel {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    transform: none !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  #flight-panel-root .live-routes,
+  #flight-panel-root .departures-section {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #flight-info-root {
+    flex: 1 1 48% !important;
+    min-height: 130px !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    pointer-events: auto;
+  }
+
+  #playback-container {
+    display: block;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 44;
+  }
+
+  #playback-container.playback-live {
+    display: block !important;
+  }
+
+  .playback-bar-wrapper {
+    max-height: 114px;
+    overflow-y: auto;
+    padding: 7px 10px 9px;
+  }
+
+  .playback-controls-row {
+    gap: 7px;
+  }
+
+  .speed-control-group {
+    gap: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  #left-panel-container {
+    top: 136px !important;
+    bottom: 124px !important;
+  }
+
+  #flight-panel-root {
+    min-height: 140px !important;
+  }
+
+  #flight-info-root {
+    min-height: 120px !important;
+  }
+
+  .playback-bar-wrapper {
+    max-height: 106px;
+  }
+}
