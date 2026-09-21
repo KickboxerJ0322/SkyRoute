@@ -1244,3 +1244,27 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
     height: calc(100% - 72px) !important;
   }
 }
+
+
+/* AI flight commentary */
+.live-ai-commentary {
+  margin-top: 10px;
+  padding: 11px 12px;
+  border: 1px solid rgba(0, 212, 255, .28);
+  border-radius: 9px;
+  background: rgba(0, 20, 38, .55);
+  color: var(--text-main);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.live-ai-title {
+  margin-bottom: 6px;
+  color: var(--accent-cyan);
+  font: 700 10px var(--font-mono);
+  letter-spacing: .04em;
+}
+.live-ai-text { white-space: normal; }
+#live-ai {
+  border-color: rgba(0, 230, 118, .45);
+  color: var(--accent-green);
+}
