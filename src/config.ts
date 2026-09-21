@@ -68,6 +68,6 @@ export const CAMERA_PRESETS = {
 export const BASE_PLAYBACK_SPEED_KMH = 900;
 export const DEFAULT_PLAYBACK_SPEED = 1;
 export const MIN_PLAYBACK_SPEED = 0.2;
-export const MAX_PLAYBACK_SPEED = 3;
-export const PLAYBACK_SPEED_PRESETS = [0.2, 0.5, 1, 2, 3] as const;
+export const MAX_PLAYBACK_SPEED = 50;
+export const PLAYBACK_SPEED_PRESETS = [0.2, 1, 3, 10, 50] as const;
 
