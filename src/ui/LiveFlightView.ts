@@ -10,9 +10,8 @@ export class LiveFlightView {
   constructor(private list:HTMLElement,private info:HTMLElement,private select:(id:string)=>void,private airportChange?:(icao:string)=>void) {}
   showList(flights:SkyRouteFlight[],selectedId:string,message='') {
     this.flights=flights;this.selectedId=selectedId;
-    this.list.innerHTML=`<div class="flight-panel live-panel"><button class="mobile-close-btn live-mobile-close" aria-label="Close Departures">×</button>
-      <div class="live-filters"><select aria-label="Airport filter"><option value="RJTT">羽田</option><option value="RJAA">成田</option><option value="RJBB">関西</option><option value="RJOO">伊丹</option><option value="RJCC">新千歳</option><option value="RJFF">福岡</option><option value="ROAH">那覇</option></select><input type="search" aria-label="Destination search" placeholder="目的地を検索"></div>
-      <div class="live-filters"><select aria-label="Flight status filter"><option value="ALL">すべての便</option><option value="ENROUTE">飛行中</option><option value="UPCOMING">出発予定</option></select></div>
+    this.list.innerHTML=`<div class="flight-panel live-panel">
+      <div class="live-filters live-filters-primary"><select aria-label="Airport filter"><option value="RJTT">羽田</option><option value="RJAA">成田</option><option value="RJBB">関西</option><option value="RJOO">伊丹</option><option value="RJCC">新千歳</option><option value="RJFF">福岡</option><option value="ROAH">那覇</option></select><input type="search" aria-label="Destination search" placeholder="目的地を検索"><select aria-label="Flight status filter"><option value="ALL">すべての便</option><option value="ENROUTE">飛行中</option><option value="UPCOMING">出発予定</option></select></div>
       <div class="live-list-message">${escapeHtml(message)}</div><div class="routes-list live-routes"></div>
       <div class="demo-route-notice">飛行中＋今後3時間 / 各最大20便・「更新」で再取得</div></div>`;
     const airport=this.list.querySelector<HTMLSelectElement>('[aria-label="Airport filter"]')!;airport.value=this.airport;
@@ -21,7 +20,6 @@ export class LiveFlightView {
     status.onchange=()=>{this.flightStatus=status.value;this.renderCards();};
     const search=this.list.querySelector('input')!;search.value=this.search;
     search.oninput=()=>{this.search=search.value;this.renderCards();};
-    this.list.querySelector('.mobile-close-btn')!.addEventListener('click',()=>this.list.querySelector('.flight-panel')!.classList.remove('open-mobile'));
     this.renderCards();
   }
   private renderCards() {
