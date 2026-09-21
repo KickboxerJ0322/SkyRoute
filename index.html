@@ -12,6 +12,21 @@
       <!-- 3D Map Viewport -->
       <div id="map-container"></div>
 
+      <!-- App Mode Switch -->
+      <div id="app-mode-switch" class="app-mode-switch" aria-label="SkyRoute mode">
+        <button id="mode-hnd" class="app-mode-btn active" type="button">
+          <strong>HND LIVE</strong>
+          <span>羽田空港の便を見る</span>
+        </button>
+        <button id="mode-finder" class="app-mode-btn" type="button">
+          <strong>SKY FINDER</strong>
+          <span>今、空を飛んでいる飛行機を探す</span>
+        </button>
+      </div>
+
+      <!-- Sky Finder -->
+      <div id="sky-finder-root" hidden></div>
+
       <!-- Left Sidebar (Departures & Flight Info) -->
       <div id="left-panel-container">
         <div id="flight-panel-root"></div>
