@@ -13,6 +13,7 @@ import { CameraController } from './map/CameraController';
 import { LoadingOverlay } from './ui/LoadingOverlay';
 import { ErrorOverlay } from './ui/ErrorOverlay';
 import { SkyFinder } from './ui/SkyFinder';
+import { InfoView } from './ui/InfoView';
 
 async function initSkyRoute(): Promise<void> {
   const loading = new LoadingOverlay();
@@ -88,40 +89,51 @@ async function initSkyRoute(): Promise<void> {
   });
 
   const homeButton = document.getElementById('app-home');
-  const hndButton = document.getElementById('mode-hnd');
+  const routeButton = document.getElementById('mode-route');
   const finderButton = document.getElementById('mode-finder');
+  const infoButton = document.getElementById('mode-info');
   const leftPanel = document.getElementById('left-panel-container');
   const playback = document.getElementById('playback-container');
+  const mapControls = document.getElementById('map-controls-container');
+  const infoRoot = document.getElementById('info-root');
+  if (!infoRoot) throw new Error('Info root not found.');
+  const infoView = new InfoView(infoRoot);
 
-  let hndCameraMode = cameraController.getMode();
-  const setMode = (mode: 'HND' | 'FINDER') => {
+  let routeCameraMode = cameraController.getMode();
+  const setMode = (mode: 'ROUTE' | 'FINDER' | 'INFO') => {
     const finder = mode === 'FINDER';
-    hndButton?.classList.toggle('active', !finder);
+    const info = mode === 'INFO';
+    routeButton?.classList.toggle('active', mode === 'ROUTE');
     finderButton?.classList.toggle('active', finder);
-    if (leftPanel) leftPanel.hidden = finder;
+    infoButton?.classList.toggle('active', info);
+
+    if (leftPanel) leftPanel.hidden = finder || info;
+    if (playback) playback.hidden = finder || info;
+    if (mapControls) mapControls.hidden = info;
+    aircraft.setVisible(mode === 'ROUTE');
+    skyFinder.setVisible(finder);
+    if (info) void infoView.show(); else infoView.hide();
+
     const flightPanel = document.getElementById('flight-panel-root');
     const flightInfo = document.getElementById('flight-info-root');
-    if (!finder) {
+    if (mode === 'ROUTE') {
       if (flightPanel) flightPanel.hidden = false;
       if (flightInfo) flightInfo.hidden = false;
-    }
-    if (playback) playback.hidden = finder;
-    aircraft.setVisible(!finder);
-    skyFinder.setVisible(finder);
-
-    if (finder) {
-      hndCameraMode = cameraController.getMode() === 'FREE' ? hndCameraMode : cameraController.getMode();
+      finderAircraft.setVisible(false);
+      cameraController.setMode(routeCameraMode);
+    } else if (finder) {
+      routeCameraMode = cameraController.getMode() === 'FREE' ? routeCameraMode : cameraController.getMode();
       cameraController.setMode('FREE');
     } else {
       finderAircraft.setVisible(false);
-      cameraController.setMode(hndCameraMode);
     }
   };
 
-  homeButton?.addEventListener('click', () => { window.location.href = '/'; });
-  hndButton?.addEventListener('click', () => setMode('HND'));
+  homeButton?.addEventListener('click', () => setMode('ROUTE'));
+  routeButton?.addEventListener('click', () => setMode('ROUTE'));
   finderButton?.addEventListener('click', () => setMode('FINDER'));
-  setMode('HND');
+  infoButton?.addEventListener('click', () => setMode('INFO'));
+  setMode('ROUTE');
 
   loading.hide();
   await experience.start();
