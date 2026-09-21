@@ -136,3 +136,42 @@
   #sky-finder-root { left:8px; right:8px; top:72px; bottom:8px; width:auto; }
   .sky-finder-panel { padding:14px; }
 }
+
+
+.sky-finder-place-search {
+  display:flex;
+  gap:7px;
+  margin:9px 0 4px;
+}
+.sky-finder-place-search input {
+  min-width:0;
+  flex:1;
+  padding:9px 10px;
+  border:1px solid var(--panel-border);
+  border-radius:8px;
+  background:#101e34;
+  color:var(--text-main);
+}
+.sky-finder-place-search button,
+.sky-finder-card-actions button {
+  border:1px solid rgba(0,212,255,.35);
+  border-radius:8px;
+  background:rgba(0,212,255,.09);
+  color:var(--accent-cyan);
+  cursor:pointer;
+  padding:8px 10px;
+}
+.sky-finder-card { cursor:default; }
+.sky-finder-card-actions {
+  display:flex;
+  gap:7px;
+  margin-top:9px;
+}
+.sky-finder-card-actions button { flex:1; font-size:.7rem; }
+.sky-finder-info { color:var(--accent-green) !important; border-color:rgba(0,230,118,.35) !important; }
+
+@media (max-width: 520px) {
+  .sky-finder-place-search { flex-wrap:wrap; }
+  .sky-finder-place-search input,
+  .sky-finder-place-search button { width:100%; }
+}
