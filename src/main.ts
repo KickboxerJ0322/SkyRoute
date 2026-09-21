@@ -75,8 +75,18 @@ async function initSkyRoute(): Promise<void> {
   const experience = new FlightExperience(aircraft, cameraController, routeRenderer, actualTrackRenderer, map);
   const skyFinderRoot = document.getElementById('sky-finder-root');
   if (!skyFinderRoot) throw new Error('Sky Finder root not found.');
-  const skyFinder = new SkyFinder(skyFinderRoot, map, finderAircraft);
+  const skyFinder = new SkyFinder(skyFinderRoot, map, finderAircraft, flight => {
+    finderAircraft.setVisible(false);
+    const leftPanel = document.getElementById('left-panel-container');
+    const flightPanel = document.getElementById('flight-panel-root');
+    const flightInfo = document.getElementById('flight-info-root');
+    if (leftPanel) leftPanel.hidden = false;
+    if (flightPanel) flightPanel.hidden = true;
+    if (flightInfo) flightInfo.hidden = false;
+    void experience.inspectLiveFlight(flight);
+  });
 
+  const homeButton = document.getElementById('app-home');
   const hndButton = document.getElementById('mode-hnd');
   const finderButton = document.getElementById('mode-finder');
   const leftPanel = document.getElementById('left-panel-container');
@@ -88,6 +98,12 @@ async function initSkyRoute(): Promise<void> {
     hndButton?.classList.toggle('active', !finder);
     finderButton?.classList.toggle('active', finder);
     if (leftPanel) leftPanel.hidden = finder;
+    const flightPanel = document.getElementById('flight-panel-root');
+    const flightInfo = document.getElementById('flight-info-root');
+    if (!finder) {
+      if (flightPanel) flightPanel.hidden = false;
+      if (flightInfo) flightInfo.hidden = false;
+    }
     if (playback) playback.hidden = finder;
     aircraft.setVisible(!finder);
     skyFinder.setVisible(finder);
@@ -101,6 +117,7 @@ async function initSkyRoute(): Promise<void> {
     }
   };
 
+  homeButton?.addEventListener('click', () => { window.location.href = '/'; });
   hndButton?.addEventListener('click', () => setMode('HND'));
   finderButton?.addEventListener('click', () => setMode('FINDER'));
   setMode('HND');
