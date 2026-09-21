@@ -34,7 +34,8 @@ export function flight(raw) {
     filedAirspeedKnots: number(raw.filed_airspeed), filedAltitudeFeet: number(raw.filed_altitude),
     departureGate: text(raw.gate_origin), arrivalGate: text(raw.gate_destination),
     departureTerminal: text(raw.terminal_origin), arrivalTerminal: text(raw.terminal_destination),
-    actualRunwayOff: text(raw.actual_runway_off), actualRunwayOn: text(raw.actual_runway_on) };
+    actualRunwayOff: text(raw.actual_runway_off), actualRunwayOn: text(raw.actual_runway_on),
+    filedRouteText: text(raw.route) };
 }
 export function position(raw) {
   if (!validCoordinate(raw) || !date(raw.timestamp)) return null;
@@ -45,7 +46,8 @@ export function position(raw) {
   return { latitude: raw.latitude, longitude: raw.longitude, altitudeMeters,
     groundSpeedKmh: finite(raw.groundspeed) ? raw.groundspeed * 1.852 : null,
     heading: finite(raw.heading) ? (raw.heading % 360 + 360) % 360 : null,
-    timestamp: date(raw.timestamp), altitudeEstimated: false };
+    timestamp: date(raw.timestamp), altitudeEstimated: false,
+    altitudeChange: text(raw.altitude_change), updateType: text(raw.update_type) };
 }
 export function distance(a, b) {
   const rad = Math.PI / 180;
