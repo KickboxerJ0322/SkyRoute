@@ -57,19 +57,21 @@ export class MapControls {
   private render(): void {
     this.container.innerHTML = `
       <div class="map-controls-toolbar">
-        <!-- Mobile Departures Button -->
-        <button id="mobile-departures-btn" class="toolbar-btn mobile-only-btn" title="Open Departures">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-          <span>便一覧</span>
-        </button>
-
-        <!-- Camera Modes -->
-        <div class="toolbar-group">
-          <span class="group-label">INSIGHT</span>
-          <div class="segmented-control"><button id="plateau-toggle" class="map-layer-btn" aria-pressed="false" aria-controls="plateau-insight-panel">PLATEAU ON</button></div>
+        <!-- Mobile quick actions -->
+        <div class="mobile-control-row">
+          <button id="mobile-departures-btn" class="toolbar-btn mobile-only-btn" title="便一覧を開く">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+            <span>便一覧</span>
+          </button>
+          <button id="mobile-map-controls-btn" class="toolbar-btn mobile-only-btn" type="button" aria-expanded="false">
+            <span>⚙</span><span>操作</span>
+          </button>
         </div>
+
+        <div class="map-controls-body">
+        <!-- Camera Modes -->
         <div class="toolbar-group">
           <span class="group-label">CAMERA</span>
           <div class="segmented-control">
@@ -124,6 +126,7 @@ export class MapControls {
             <button class="tilt-btn" data-tilt="90">90°</button>
           </div>
         </div>
+        </div>
       </div>
     `;
 
@@ -156,6 +159,17 @@ export class MapControls {
       satelliteBtn.addEventListener('click', () => {
         this.setMapMode('SATELLITE');
         this.handlers.onMapModeChange('SATELLITE');
+      });
+    }
+
+    const mobileControlsBtn = this.container.querySelector<HTMLButtonElement>('#mobile-map-controls-btn');
+    const toolbar = this.container.querySelector('.map-controls-toolbar');
+    if (mobileControlsBtn && toolbar) {
+      mobileControlsBtn.addEventListener('click', () => {
+        const open = !toolbar.classList.contains('mobile-open');
+        toolbar.classList.toggle('mobile-open', open);
+        mobileControlsBtn.setAttribute('aria-expanded', String(open));
+        mobileControlsBtn.querySelector('span:last-child')!.textContent = open ? '閉じる' : '操作';
       });
     }
 
