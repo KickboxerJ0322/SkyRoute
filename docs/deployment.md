@@ -25,3 +25,15 @@ Production smoke check (uses live APIs):
 
     $env:SKYROUTE_PRODUCTION_URL="https://skyroute-331230486346.asia-northeast1.run.app"
     node tests/production-check.mjs
+
+
+## Optional Gemini flight commentary
+
+The AI commentary backend uses `gemini-3.5-flash-lite` by default. Keep `GEMINI_API_KEY` server-side only.
+
+Create a Secret Manager secret named `skyroute-gemini-api-key`, grant
+`skyroute-runtime@jumpeicloud.iam.gserviceaccount.com` Secret Manager Secret Accessor,
+then attach it to Cloud Run as the environment variable `GEMINI_API_KEY`.
+
+The Cloud Build deploy uses `--update-env-vars` and `--update-secrets`, so manually
+attached Gemini configuration is preserved by future GitHub-triggered deployments.
