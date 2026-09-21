@@ -3,9 +3,10 @@
 .app-mode-switch {
   position: absolute;
   z-index: 35;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 12px;
+  right: 18px;
+  left: auto;
+  transform: none;
   display: flex;
   gap: 6px;
   padding: 6px;
@@ -100,7 +101,7 @@
 .sky-finder-empty { padding:16px 4px; color:var(--text-muted); font-size:.8rem; line-height:1.6; }
 
 @media (max-width: 767px) {
-  .app-mode-switch { top:8px; width:calc(100% - 16px); }
+  .app-mode-switch { top:8px; right:8px; left:8px; width:auto; }
   .app-mode-btn { min-width:0; flex:1; padding:7px 8px; }
   .app-mode-btn span { font-size:.58rem; }
   #sky-finder-root { left:8px; right:8px; top:72px; bottom:8px; width:auto; }
