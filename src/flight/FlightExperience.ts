@@ -27,7 +27,8 @@ export class FlightExperience {
   private demo=new DemoFlightProvider();
   private demoPanel=new FlightPanel(element('flight-panel-root'));
   private demoInfo=new FlightInfo(element('flight-info-root'));
-  private liveView=new LiveFlightView(element('flight-panel-root'),element('flight-info-root'),id=>void this.selectLive(id));
+  private selectedAirport='RJTT';
+  private liveView=new LiveFlightView(element('flight-panel-root'),element('flight-info-root'),id=>void this.selectLive(id),icao=>void this.changeAirport(icao));
   private interpolator=new LiveFlightInterpolator();
   private selected:SkyRouteFlight|null=null;
   private route:SkyRouteRoute|null=null;
@@ -74,7 +75,7 @@ export class FlightExperience {
     new PanelVisibility();
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
-    modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><button id="refresh-flights">更新</button><span id="data-source-status" role="status">Loading HND departures...</span>';
+    modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><button id="refresh-flights">更新</button><span id="data-source-status" role="status">Loading route departures...</span>';
     const toolbarItems=toolbar.querySelector('.panel-visibility-items') ?? toolbar;
     toolbarItems.append(modes);this.statusLabel=element('data-source-status');
     element('data-live').onclick=()=>void this.setMode('LIVE');element('data-demo').onclick=()=>void this.setMode('DEMO');
@@ -110,8 +111,18 @@ export class FlightExperience {
       this.demoPanel.setDepartures(departures,departures[0].id);await this.selectDemo(departures[0].id);
     } else {
       element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
-      this.liveView.showList([],'','Loading HND departures...');await this.refreshList();
+      this.liveView.setAirport(this.selectedAirport);this.liveView.showList([],'','Loading route departures...');await this.refreshList();
     }
+  }
+  private async changeAirport(icao:string) {
+    if(this.dataMode!=='LIVE'||icao===this.selectedAirport)return;
+    this.selectedAirport=icao;
+    this.cancelSelection();
+    this.selected=null;
+    this.liveView.setAirport(icao);
+    element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
+    this.listAbort.abort();this.listAbort=new AbortController();
+    await this.refreshList();
   }
   private async selectDemo(id:string) {
     this.cancelSelection();const signal=this.selectionAbort.signal;
@@ -124,7 +135,7 @@ export class FlightExperience {
     clearTimeout(this.listTimer);this.loadingList=true;const signal=this.listAbort.signal;
     (element('refresh-flights') as HTMLButtonElement).disabled=true;
     try {
-      await this.provider.getDepartures(signal);if(signal.aborted)return;
+      await this.provider.getDepartures(signal,this.selectedAirport);if(signal.aborted)return;
       const result=this.provider.lastDepartures!;
       const flights=result.data.filter(f=>f.status==='ENROUTE'||Date.parse(f.scheduledDeparture||'')>=Date.now());
       this.liveView.showList(flights,this.selected?.id||'',result.warning?result.warning:result.stale?'LIVE DATA TEMPORARILY UNAVAILABLE · cached data':result.source==='mock'?'MOCK · 架空の検証データ（実際の運航情報ではありません）':'FlightAware · LIVE');
