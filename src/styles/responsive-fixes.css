@@ -116,3 +116,50 @@
     max-height: 106px;
   }
 }
+
+
+/* Departures filter row: airport, destination and status share one compact line. */
+.live-filters-primary {
+  display: grid !important;
+  grid-template-columns: minmax(68px, .8fr) minmax(120px, 2fr) minmax(92px, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.live-filters-primary select,
+.live-filters-primary input {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.live-mobile-close { display: none !important; }
+
+@media (max-width: 768px) {
+  /* Keep the departures surface fixed in its allocated slot; only its content scrolls. */
+  #flight-panel-root {
+    position: relative;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+  #flight-panel-root .live-panel {
+    margin: 0 !important;
+  }
+  .live-filters-primary {
+    grid-template-columns: 72px minmax(100px, 1fr) 104px;
+    gap: 6px;
+    padding: 9px 10px;
+  }
+  .live-filters-primary select,
+  .live-filters-primary input {
+    padding: 7px 6px;
+    font-size: 12px;
+  }
+
+  /* hidden must win over the mobile playback visibility override. */
+  #playback-container[hidden],
+  #flight-panel-root[hidden],
+  #flight-info-root[hidden],
+  #map-controls-container[hidden],
+  #mobile-departures-btn[hidden],
+  #mobile-map-controls-btn[hidden] {
+    display: none !important;
+  }
+}
