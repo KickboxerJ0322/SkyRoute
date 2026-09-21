@@ -1459,3 +1459,154 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
     bottom: 8px;
   }
 }
+
+
+/* Narrow-screen top controls: keep the map visible and collapse secondary actions. */
+@media (max-width: 900px) {
+  #top-app-bar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .app-mode-switch {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .app-home-btn {
+    flex: 0 0 auto;
+    padding-right: 4px;
+  }
+
+  .app-mode-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .app-mode-brand {
+    font-size: .82rem !important;
+  }
+
+  .app-mode-btn {
+    min-width: 0 !important;
+    flex: 1 1 0;
+    padding: 7px 5px !important;
+  }
+
+  #top-app-bar #panel-visibility-controls {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    display: block !important;
+    pointer-events: auto !important;
+  }
+
+  #top-app-bar .panel-visibility-menu-toggle {
+    display: block !important;
+    min-width: 58px;
+    min-height: 38px;
+    padding: 7px 10px;
+    border: 1px solid var(--panel-border-bright);
+    border-radius: 10px;
+    background: rgba(7,16,38,.92);
+    color: #fff;
+    box-shadow: var(--shadow-hud);
+  }
+
+  #top-app-bar .panel-visibility-items {
+    display: none !important;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: min(240px, calc(100vw - 16px));
+    padding: 8px;
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    background: rgba(7,16,38,.96);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-hud);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    z-index: 60;
+    pointer-events: auto;
+  }
+
+  #top-app-bar #panel-visibility-controls.mobile-menu-open .panel-visibility-items {
+    display: flex !important;
+  }
+
+  #top-app-bar .panel-visibility-items > button,
+  #top-app-bar .panel-visibility-items .data-mode-controls > button {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+  }
+
+  #top-app-bar .panel-visibility-items .data-mode-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  #top-app-bar .panel-visibility-items .data-mode-controls #data-source-status {
+    grid-column: 1 / -1;
+    padding: 3px 2px 0;
+  }
+}
+
+@media (max-width: 560px) {
+  #top-app-bar {
+    gap: 4px;
+  }
+
+  .app-mode-switch {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .app-home-btn {
+    gap: 4px;
+    padding-left: 2px;
+  }
+
+  .app-mode-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .app-mode-brand {
+    font-size: .72rem !important;
+    letter-spacing: .025em !important;
+  }
+
+  .app-mode-btn strong {
+    font-size: .62rem;
+    letter-spacing: .04em;
+  }
+
+  .app-mode-btn {
+    padding: 7px 3px !important;
+  }
+
+  #top-app-bar .panel-visibility-menu-toggle {
+    min-width: 48px;
+    padding: 7px 6px;
+    font-size: 11px;
+  }
+
+  #sky-finder-root,
+  #info-root {
+    top: calc(14px + var(--top-controls-height, 48px));
+  }
+
+  #map-controls-container {
+    top: calc(16px + var(--top-controls-height, 48px)) !important;
+  }
+}
