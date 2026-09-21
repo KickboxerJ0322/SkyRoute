@@ -1,0 +1,108 @@
+[hidden] { display: none !important; }
+
+.app-mode-switch {
+  position: absolute;
+  z-index: 35;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: rgba(7, 16, 38, 0.86);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-hud);
+}
+
+.app-mode-btn {
+  min-width: 158px;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+}
+.app-mode-btn strong,
+.app-mode-btn span { display: block; }
+.app-mode-btn strong { font: 700 .75rem var(--font-mono); letter-spacing: .08em; }
+.app-mode-btn span { margin-top: 2px; font-size: .66rem; }
+.app-mode-btn.active {
+  color: #fff;
+  border-color: rgba(0, 212, 255, .55);
+  background: linear-gradient(135deg, rgba(29,99,255,.5), rgba(0,212,255,.25));
+  box-shadow: 0 0 12px var(--accent-cyan-glow);
+}
+
+#sky-finder-root {
+  position: absolute;
+  z-index: 24;
+  left: 18px;
+  top: 96px;
+  bottom: 18px;
+  width: 360px;
+  pointer-events: none;
+}
+.sky-finder-panel {
+  height: 100%;
+  overflow: auto;
+  pointer-events: auto;
+  padding: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-hud);
+}
+.sky-finder-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.sky-finder-kicker { color:var(--accent-cyan); font:700 .68rem var(--font-mono); letter-spacing:.12em; }
+.sky-finder-header h2 { margin-top:4px; font-size:1.2rem; }
+.sky-finder-live {
+  padding:3px 7px; border-radius:10px; color:var(--accent-green);
+  border:1px solid rgba(0,230,118,.4); background:rgba(0,230,118,.12);
+  font:700 .62rem var(--font-mono);
+}
+.sky-finder-copy { margin:14px 0; color:var(--text-muted); font-size:.83rem; line-height:1.6; }
+.sky-finder-primary {
+  width:100%; padding:11px 14px; border:0; border-radius:9px; cursor:pointer;
+  color:#fff; font-weight:700; background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));
+  box-shadow:0 0 14px var(--accent-cyan-glow);
+}
+.sky-finder-primary:disabled { opacity:.6; cursor:wait; }
+.sky-finder-note { margin:9px 2px 14px; color:var(--text-dim); font-size:.65rem; line-height:1.5; }
+.sky-finder-summary {
+  display:flex; align-items:center; gap:8px; margin:8px 0 10px;
+  color:var(--text-muted); font:600 .7rem var(--font-mono);
+}
+.sky-finder-summary strong { color:var(--accent-cyan); font-size:.85rem; }
+.sky-finder-summary em { margin-left:auto; color:var(--accent-amber); font-style:normal; font-size:.6rem; }
+.sky-finder-list { display:flex; flex-direction:column; gap:8px; }
+.sky-finder-card {
+  width:100%; padding:11px 12px; text-align:left; cursor:pointer;
+  color:var(--text-main); border:1px solid rgba(255,255,255,.08); border-radius:9px;
+  background:rgba(15,23,42,.66);
+}
+.sky-finder-card:hover { border-color:var(--panel-border-bright); }
+.sky-finder-card.active { border-color:var(--accent-cyan); background:rgba(0,212,255,.12); }
+.sky-finder-card-top { display:flex; justify-content:space-between; gap:10px; font-family:var(--font-mono); }
+.sky-finder-card-top span { color:var(--accent-cyan); font-size:.72rem; }
+.sky-finder-route { margin:5px 0; font:700 .95rem var(--font-mono); }
+.sky-finder-meta { display:flex; flex-wrap:wrap; gap:8px 12px; color:var(--text-muted); font-size:.68rem; }
+.sky-finder-detail {
+  display:flex; flex-direction:column; gap:3px; margin-top:12px; padding:10px 12px;
+  border-radius:9px; border:1px solid rgba(0,212,255,.15); background:rgba(0,0,0,.28);
+  color:var(--text-muted); font-size:.72rem;
+}
+.sky-finder-detail strong { color:#fff; font:700 .9rem var(--font-mono); }
+.sky-finder-empty { padding:16px 4px; color:var(--text-muted); font-size:.8rem; line-height:1.6; }
+
+@media (max-width: 767px) {
+  .app-mode-switch { top:8px; width:calc(100% - 16px); }
+  .app-mode-btn { min-width:0; flex:1; padding:7px 8px; }
+  .app-mode-btn span { font-size:.58rem; }
+  #sky-finder-root { left:8px; right:8px; top:72px; bottom:8px; width:auto; }
+  .sky-finder-panel { padding:14px; }
+}
