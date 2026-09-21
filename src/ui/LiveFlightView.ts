@@ -10,7 +10,7 @@ export class LiveFlightView {
   constructor(private list:HTMLElement,private info:HTMLElement,private select:(id:string)=>void) {}
   showList(flights:SkyRouteFlight[],selectedId:string,message='') {
     this.flights=flights;this.selectedId=selectedId;
-    this.list.innerHTML=`<div class="flight-panel live-panel"><div class="panel-header"><button class="mobile-close-btn" aria-label="Close Departures">×</button></div>
+    this.list.innerHTML=`<div class="flight-panel live-panel"><button class="mobile-close-btn live-mobile-close" aria-label="Close Departures">×</button>
       <div class="live-filters"><select aria-label="Airline filter"><option>ALL</option><option>ANA</option><option>JAL</option></select><input type="search" aria-label="Destination search" placeholder="目的地を検索"></div>
       <div class="live-filters"><select aria-label="Flight status filter"><option value="ALL">すべての便</option><option value="ENROUTE">飛行中</option><option value="UPCOMING">出発予定</option></select></div>
       <div class="live-list-message">${escapeHtml(message)}</div><div class="routes-list live-routes"></div>
@@ -35,7 +35,7 @@ export class LiveFlightView {
       <div class="live-airports">${escapeHtml(f.origin.name)} → ${escapeHtml(f.destination.name)}</div>
       <div class="live-metadata">Operated by ${escapeHtml(f.operator)} · <span id="live-flight-status">${escapeHtml(f.status)}</span><br>Actual aircraft: ${escapeHtml(f.aircraftType)} · 3D model: SkyRoute 787-10</div>
       <div class="hud-grid"><div><div class="metric-label">ALTITUDE</div><div class="metric-value luminous" id="live-altitude">--</div></div><div><div class="metric-label">GROUND SPEED</div><div class="metric-value" id="live-speed">--</div></div><div><div class="metric-label">HEADING</div><div class="metric-value" id="live-heading">--</div></div><div><div class="metric-label">ROUTE</div><div id="live-route-type">--</div></div></div>
-      <div class="live-flight-actions"><button id="live-return">LIVE</button><button id="live-refresh-position">現在位置更新</button><button id="live-auto-refresh" aria-pressed="false">自動更新 OFF</button><button id="live-preview" disabled>Preview Flight</button><button id="live-replay" disabled>Replay track</button><button id="live-ai">AI解説</button><button id="live-speak">🔊 音声</button></div>
+      <div class="live-flight-actions"><button id="live-return">LIVE</button><button id="live-refresh-position">現在位置更新</button><button id="live-auto-refresh" aria-pressed="false">自動更新 OFF</button><button id="live-preview" disabled>Preview Flight</button><button id="live-replay" disabled>Replay track</button><button id="live-ai">AI解説</button><button id="live-speak">🔊 音声</button><button id="live-stop-speak">■ 停止</button></div>
       <div class="live-ai-commentary" id="live-ai-commentary" hidden></div>
       <div class="live-ai-model-note" id="live-ai-model-note" hidden></div>
       <details class="live-time-details"><summary>Times (JST)</summary><div class="live-times">${[['Scheduled departure',f.scheduledDeparture],['Estimated departure',f.estimatedDeparture],['Actual departure',f.actualDeparture],['Scheduled arrival',f.scheduledArrival],['Estimated arrival',f.estimatedArrival],['Actual arrival',f.actualArrival]].map(([name,time])=>`<span>${name}</span><span>${escapeHtml(formatJst(time))} ${time?'JST':''}</span>`).join('')}</div></details>
