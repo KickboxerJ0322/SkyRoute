@@ -20,8 +20,8 @@ steps:
       - --region=asia-northeast1
       - --image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/skyroute:$BUILD_ID
       - --service-account=skyroute-runtime@$PROJECT_ID.iam.gserviceaccount.com
-      - --set-env-vars=SKYROUTE_DATA_MODE=live,AEROAPI_MAX_CALLS_PER_MINUTE=20
-      - --set-secrets=AEROAPI_KEY=skyroute-aeroapi-key:latest
+      - --update-env-vars=SKYROUTE_DATA_MODE=live,AEROAPI_MAX_CALLS_PER_MINUTE=20,GEMINI_MODEL=gemini-3.5-flash-lite
+      - --update-secrets=AEROAPI_KEY=skyroute-aeroapi-key:latest
       - --port=8080
       - --memory=512Mi
       - --cpu=1
