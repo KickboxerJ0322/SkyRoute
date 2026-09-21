@@ -5,6 +5,23 @@ export class PanelVisibility {
     const toolbar = document.createElement('nav');
     toolbar.id = 'panel-visibility-controls';
     toolbar.setAttribute('aria-label', '表示パネルの切替');
+    const mobileToggle = document.createElement('button');
+    mobileToggle.type = 'button';
+    mobileToggle.id = 'panel-visibility-menu-toggle';
+    mobileToggle.className = 'panel-visibility-menu-toggle';
+    mobileToggle.textContent = '表示';
+    mobileToggle.setAttribute('aria-expanded', 'false');
+    mobileToggle.addEventListener('click', () => {
+      const open = toolbar.classList.toggle('mobile-menu-open');
+      mobileToggle.setAttribute('aria-expanded', String(open));
+      mobileToggle.textContent = open ? '閉じる' : '表示';
+    });
+    toolbar.append(mobileToggle);
+
+    const panelButtons = document.createElement('div');
+    panelButtons.className = 'panel-visibility-items';
+    toolbar.append(panelButtons);
+
     const panels = [
       ['flight-panel-root', '便一覧'],
       ['flight-info-root', '飛行情報'],
@@ -26,7 +43,7 @@ export class PanelVisibility {
           ([panelId]) => document.getElementById(panelId)!.hidden
         ));
       });
-      toolbar.append(button);
+      panelButtons.append(button);
     });
     app.append(toolbar);
     const playback = document.getElementById('playback-container')!;
