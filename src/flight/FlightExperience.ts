@@ -19,6 +19,7 @@ import { distanceBetween, bearingBetween } from '../utils/geo';
 
 const element=(id:string)=>document.getElementById(id)!;
 const errorText=(error:unknown)=>error instanceof Error?error.message:'API_UNAVAILABLE';
+const escapeForAi=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export class FlightExperience {
   private dataMode:'LIVE'|'DEMO'='LIVE';
   private viewMode:'LIVE'|'PREVIEW'|'REPLAY'='LIVE';
@@ -151,6 +152,42 @@ export class FlightExperience {
     root.querySelector('#live-return')!.addEventListener('click',()=>void this.returnLive());
     root.querySelector('#live-preview')!.addEventListener('click',()=>this.startPreview(false));
     root.querySelector('#live-replay')!.addEventListener('click',()=>this.startPreview(true));
+    root.querySelector('#live-ai')?.addEventListener('click',()=>void this.requestAiCommentary());
+  }
+  private async requestAiCommentary() {
+    if(!this.selected)return;
+    const root=element('flight-info-root');
+    const button=root.querySelector<HTMLButtonElement>('#live-ai');
+    const panel=root.querySelector<HTMLElement>('#live-ai-commentary');
+    if(!button||!panel)return;
+    button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;panel.textContent='AeroAPIの運航データをGeminiで解析しています…';
+    const sample=<T>(items:T[],max=28)=>items.length<=max?items:Array.from({length:max},(_,i)=>items[Math.round(i*(items.length-1)/(max-1))]);
+    const payload={
+      observedAt:new Date().toISOString(),
+      flight:this.selected,
+      currentPosition:this.lastPosition,
+      route:{
+        selectedType:this.route?.type??null,
+        filedRouteAvailable:!!this.filed?.waypoints.length,
+        actualTrackPointCount:this.track.length,
+        filedWaypoints:this.filed?sample(this.filed.waypoints):[],
+        actualTrack:sample(this.track),
+      },
+    };
+    try {
+      const response=await fetch('/api/ai/flight-commentary',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),
+      });
+      const body=await response.json();
+      if(!response.ok)throw new Error(body.error||'AI_UNAVAILABLE');
+      panel.innerHTML=`<div class="live-ai-title">AI FLIGHT COMMENTARY · ${escapeForAi(body.model)}</div><div class="live-ai-text">${escapeForAi(body.text).replace(/\n/g,'<br>')}</div>`;
+    } catch(error) {
+      const code=error instanceof Error?error.message:'AI_UNAVAILABLE';
+      panel.textContent=code==='AI_NOT_CONFIGURED'
+        ?'Gemini APIキーがまだ設定されていません。設定後、このボタンから解説できます。'
+        :code==='AI_RATE_LIMIT'?'Gemini APIの利用上限に達しています。時間をおいて再試行してください。'
+        :'AI解説を取得できませんでした。';
+    } finally {button.disabled=false;button.textContent='AI解説';}
   }
   private rebuildRoutes() {
     if(!this.selected)return;
