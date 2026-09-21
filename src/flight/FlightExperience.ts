@@ -153,9 +153,37 @@ export class FlightExperience {
     const root=element('flight-info-root');
     root.querySelector('#live-return')!.addEventListener('click',()=>void this.returnLive());
     root.querySelector('#live-refresh-position')?.addEventListener('click',()=>void this.refreshSelectedNow());
+    root.querySelector('#live-auto-refresh')?.addEventListener('click',()=>this.toggleAutoRefresh());
     root.querySelector('#live-preview')!.addEventListener('click',()=>this.startPreview(false));
     root.querySelector('#live-replay')!.addEventListener('click',()=>this.startPreview(true));
     root.querySelector('#live-ai')?.addEventListener('click',()=>void this.requestAiCommentary());
+    root.querySelector('#live-speak')?.addEventListener('click',()=>this.speakAiCommentary());
+    this.syncAutoRefreshButton();
+  }
+  private syncAutoRefreshButton() {
+    const button=element('flight-info-root').querySelector<HTMLButtonElement>('#live-auto-refresh');
+    if(!button)return;
+    button.setAttribute('aria-pressed',String(this.autoPositionRefresh));
+    button.textContent=this.autoPositionRefresh?'自動更新 ON':'自動更新 OFF';
+  }
+  private toggleAutoRefresh() {
+    if(!this.selected||this.viewMode!=='LIVE')return;
+    this.autoPositionRefresh=!this.autoPositionRefresh;
+    clearTimeout(this.selectionTimer);
+    this.syncAutoRefreshButton();
+    if(this.autoPositionRefresh) {
+      this.liveView.setMessage('自動更新 ON · 現在位置を1分ごとに取得');
+      this.scheduleSelection();
+    } else this.liveView.setMessage('自動更新 OFF · 「現在位置更新」で手動取得');
+  }
+  private speakAiCommentary() {
+    if(!this.lastAiCommentary||!('speechSynthesis' in window))return;
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(this.lastAiCommentary.replace(/[\\*#_]/g,'').replace(/\\s+/g,' ').trim());
+    utterance.lang='ja-JP';utterance.rate=1;
+    const voice=window.speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith('ja'));
+    if(voice)utterance.voice=voice;
+    window.speechSynthesis.speak(utterance);
   }
   private async refreshSelectedNow() {
     if(!this.selected||this.viewMode!=='LIVE')return;
