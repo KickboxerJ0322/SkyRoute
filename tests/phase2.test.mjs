@@ -5,6 +5,7 @@ import { createAeroApi, TTL } from '../server/aeroApi.mjs';
 import { Cache, ApiError } from '../server/cache.mjs';
 import { flight, position, track, status } from '../server/normalize.mjs';
 import { createApp } from '../server/index.mjs';
+import { createFlightCommentator, DEFAULT_GEMINI_MODEL } from '../server/gemini.mjs';
 const compiled=await build({stdin:{contents:`export {chooseRoute, formatJst} from './src/flight/AeroApiFlightProvider'; export {greatCirclePoints} from './src/flight/liveGeometry'; export {LiveFlightInterpolator} from './src/flight/LiveFlightInterpolator'; export {durationForDistance} from './src/flight/FlightAnimator';`,resolveDir:process.cwd()},bundle:true,write:false,format:'esm',platform:'node'});
 const {chooseRoute,formatJst,greatCirclePoints,LiveFlightInterpolator,durationForDistance}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
 const now=Date.parse('2026-09-06T00:00:00Z');
@@ -31,6 +32,20 @@ test('playback 1x uses about 900 kmh regardless of route length',()=>{
   assert.equal(durationForDistance(900000),3600);
   assert.equal(durationForDistance(225000),900);
   assert.equal(durationForDistance(100),1);
+});
+test('gemini commentary uses the low-cost model and keeps key server-side',async()=>{
+  let seenUrl='',seenBody=null;
+  const ai=createFlightCommentator({key:'secret-key',fetcher:async(url,options)=>{
+    seenUrl=String(url);seenBody=JSON.parse(options.body);
+    return Response.json({candidates:[{content:{parts:[{text:'現在の状況: テスト解説'}]}}]});
+  }});
+  const result=await ai({flight:{ident:'ANA53'},currentPosition:{altitudeMeters:10000}});
+  assert.equal(result.model,DEFAULT_GEMINI_MODEL);
+  assert.match(result.text,/テスト解説/);
+  assert.ok(seenUrl.includes(encodeURIComponent(DEFAULT_GEMINI_MODEL)));
+  assert.ok(seenUrl.includes('secret-key'));
+  assert.equal(JSON.stringify(seenBody).includes('secret-key'),false);
+  await assert.rejects(createFlightCommentator({key:'',fetcher:async()=>{throw new Error('must not call');}})({}),/AI_NOT_CONFIGURED/);
 });
 test('cache coalesces concurrent calls and serves stale result on failure',async()=>{
   let clock=now,calls=0;const cache=new Cache(()=>clock);
@@ -109,11 +124,13 @@ test('mock scheduled flight transitions into airborne position without external 
   assert.equal(TTL.route,1800000);assert.equal(TTL.airport,86400000);
 });
 test('HTTP API and static server reject unknown and traversal paths; no secret leaks',async()=>{
-  const app=createApp({api:createAeroApi({mode:'mock',logger:silent})});await new Promise(r=>app.listen(0,'127.0.0.1',r));
+  const app=createApp({api:createAeroApi({mode:'mock',logger:silent}),ai:async()=>({text:'AI OK',model:'test-model'})});await new Promise(r=>app.listen(0,'127.0.0.1',r));
   try {const base=`http://127.0.0.1:${app.address().port}`;
     const result=await (await fetch(base+'/api/flights/departures')).json();assert.equal(result.source,'mock');assert.equal(result.data.length,12);
     assert.equal((await fetch(base+'/api/flights/nearby?lat=35.68&lng=139.76&radius=80')).status,200);
     assert.equal((await fetch(base+'/api/flights/nearby?lat=x&lng=139.76')).status,400);
+    const aiResponse=await fetch(base+'/api/ai/flight-commentary',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({flight:{ident:'TEST'}})});
+    assert.equal(aiResponse.status,200);assert.equal((await aiResponse.json()).text,'AI OK');
     for(const suffix of ['route','track','position'])assert.equal((await fetch(base+'/api/flights/mock-ana53/'+suffix)).status,200);
     assert.equal((await fetch(base+'/api/flights/invalid%2Fid')).status,400);
     assert.equal((await fetch(base+'/.env.local')).status,404);
