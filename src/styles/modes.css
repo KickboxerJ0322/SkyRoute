@@ -175,3 +175,22 @@
   .sky-finder-place-search input,
   .sky-finder-place-search button { width:100%; }
 }
+
+
+@media (max-width: 900px) {
+  #top-app-bar {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+  #top-app-bar .app-mode-switch {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  #top-app-bar .app-mode-brand {
+    padding: 0;
+  }
+}
