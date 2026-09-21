@@ -14,6 +14,14 @@ export function createApp({api=createAeroApi(),dist=resolve('dist')}={}) {
       if(req.method!=='GET'&&req.method!=='HEAD') return json(405,{error:'METHOD_NOT_ALLOWED'});
       if(url.pathname==='/api/health') return json(200,{status:'ok',source:api.mode});
       if(url.pathname==='/api/flights/departures') return json(200,await api.departures());
+      if(url.pathname==='/api/flights/nearby') {
+        const latitude=Number(url.searchParams.get('lat'));
+        const longitude=Number(url.searchParams.get('lng'));
+        const radius=Number(url.searchParams.get('radius')||80);
+        if(!Number.isFinite(latitude)||latitude<-90||latitude>90||!Number.isFinite(longitude)||longitude<-180||longitude>180||
+          !Number.isFinite(radius)||radius<5||radius>200) throw new ApiError(400,'INVALID_SEARCH_AREA');
+        return json(200,await api.nearby(latitude,longitude,radius));
+      }
       const match=url.pathname.match(/^\/api\/flights\/([^/]+)(?:\/(route|track|position))?$/);
       if(match) {
         const id=decodeURIComponent(match[1]);
