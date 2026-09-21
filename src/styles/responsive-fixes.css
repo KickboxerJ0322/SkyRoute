@@ -36,7 +36,9 @@
     flex: 1 1 52% !important;
     min-height: 150px !important;
     max-height: none;
-    overflow: hidden;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   #flight-panel-root .flight-panel,
@@ -44,17 +46,18 @@
     position: relative !important;
     inset: auto !important;
     width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
     transform: none !important;
     border-radius: var(--radius-lg) !important;
   }
 
+  /* Scroll the whole departures panel (filters/title/list/footer) as one surface. */
   #flight-panel-root .live-routes,
   #flight-panel-root .departures-section {
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+    min-height: auto !important;
+    overflow: visible !important;
   }
 
   #flight-info-root {
