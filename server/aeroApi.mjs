@@ -101,7 +101,7 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       airport:id,
       raw:Array.isArray(raw.observations)&&raw.observations.length?raw.observations[0]:null,
     })),
-    usage:()=>cached('usage',600000,'/account/usage',raw=>raw),
+    usage:()=>mode==='mock'?Promise.resolve({data:{estimated_cost_usd:0},source:'mock',fetchedAt:new Date(now()).toISOString(),stale:false}):cached('usage',600000,'/account/usage',raw=>raw),
   };
   return api;
 }
