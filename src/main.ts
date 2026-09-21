@@ -86,6 +86,7 @@ async function initSkyRoute(): Promise<void> {
   const leftPanel = document.getElementById('left-panel-container');
   const playback = document.getElementById('playback-container');
 
+  let hndCameraMode = cameraController.getMode();
   const setMode = (mode: 'HND' | 'FINDER') => {
     const finder = mode === 'FINDER';
     hndButton?.classList.toggle('active', !finder);
@@ -94,7 +95,14 @@ async function initSkyRoute(): Promise<void> {
     if (playback) playback.hidden = finder;
     aircraft.setVisible(!finder);
     skyFinder.setVisible(finder);
-    if (!finder) finderAircraft.setVisible(false);
+
+    if (finder) {
+      hndCameraMode = cameraController.getMode() === 'FREE' ? hndCameraMode : cameraController.getMode();
+      cameraController.setMode('FREE');
+    } else {
+      finderAircraft.setVisible(false);
+      cameraController.setMode(hndCameraMode);
+    }
   };
 
   hndButton?.addEventListener('click', () => setMode('HND'));
