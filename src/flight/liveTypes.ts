@@ -17,11 +17,16 @@ export interface SkyRouteFlight {
   departureGate?: string | null; arrivalGate?: string | null;
   departureTerminal?: string | null; arrivalTerminal?: string | null;
   actualRunwayOff?: string | null; actualRunwayOn?: string | null;
+  filedRouteText?: string | null;
+}
+export interface SkyRouteWeatherObservation {
+  airport: string;
+  raw: Record<string, unknown> | null;
 }
 export interface SkyRoutePosition {
   latitude: number; longitude: number; altitudeMeters: number | null;
   groundSpeedKmh: number | null; heading: number | null; timestamp: string;
-  altitudeEstimated: boolean;
+  altitudeEstimated: boolean; altitudeChange?: string | null; updateType?: string | null;
 }
 export type SkyRouteTrackPoint = SkyRoutePosition;
 export interface SkyRouteWaypoint { latitude: number; longitude: number; altitudeMeters: number; altitudeEstimated: boolean; }
