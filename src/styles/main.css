@@ -1284,3 +1284,11 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
   color: var(--accent-cyan);
   border-color: rgba(0, 212, 255, .55);
 }
+
+
+.live-ai-model-note {
+  margin-top: 5px;
+  color: var(--text-dim);
+  font: 10px var(--font-mono);
+  text-align: right;
+}
