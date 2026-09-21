@@ -44,6 +44,10 @@ export class FlightExperience {
   private currentTelemetry:TelemetryData|null=null;
   private autoPositionRefresh=false;
   private lastAiCommentary='';
+  private lastAiModel='';
+  private lastAiCreatedAt='';
+  private ttsAudio:HTMLAudioElement|null=null;
+  private ttsObjectUrl='';
   private loadingList=false;
   private animator:FlightAnimator;
   private playback:PlaybackControls;
@@ -89,7 +93,7 @@ export class FlightExperience {
     root.setAttribute('aria-label',enabled?'Flight playback':'LIVE mode: choose Preview or Replay to use playback');
   }
   private cancelSelection() {
-    this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';cancelAnimationFrame(this.raf);this.raf=0;
+    this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';this.lastAiModel='';this.lastAiCreatedAt='';this.stopAiSpeech();cancelAnimationFrame(this.raf);this.raf=0;
     this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.currentTelemetry=null;
     this.route=null;this.filed=null;this.track=[];this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
   }
@@ -157,8 +161,10 @@ export class FlightExperience {
     root.querySelector('#live-preview')!.addEventListener('click',()=>this.startPreview(false));
     root.querySelector('#live-replay')!.addEventListener('click',()=>this.startPreview(true));
     root.querySelector('#live-ai')?.addEventListener('click',()=>void this.requestAiCommentary());
-    root.querySelector('#live-speak')?.addEventListener('click',()=>this.speakAiCommentary());
+    root.querySelector('#live-speak')?.addEventListener('click',()=>void this.speakAiCommentary());
+    root.querySelector('#live-stop-speak')?.addEventListener('click',()=>this.stopAiSpeech());
     this.syncAutoRefreshButton();
+    this.restoreAiCommentary();
   }
   private syncAutoRefreshButton() {
     const button=element('flight-info-root').querySelector<HTMLButtonElement>('#live-auto-refresh');
@@ -176,14 +182,50 @@ export class FlightExperience {
       this.scheduleSelection();
     } else this.liveView.setMessage('自動更新 OFF · 「現在位置更新」で手動取得');
   }
-  private speakAiCommentary() {
-    if(!this.lastAiCommentary||!('speechSynthesis' in window))return;
-    window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(this.lastAiCommentary.replace(/[\\*#_]/g,'').replace(/\s+/g,' ').trim());
-    utterance.lang='ja-JP';utterance.rate=1;
-    const voice=window.speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith('ja'));
-    if(voice)utterance.voice=voice;
-    window.speechSynthesis.speak(utterance);
+  private restoreAiCommentary() {
+    if(!this.lastAiCommentary)return;
+    const root=element('flight-info-root');
+    const panel=root.querySelector<HTMLElement>('#live-ai-commentary');
+    const modelNote=root.querySelector<HTMLElement>('#live-ai-model-note');
+    if(panel){
+      panel.hidden=false;
+      const plain=this.lastAiCommentary.replace(/\*\*/g,'');
+      panel.innerHTML=`<div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`;
+    }
+    if(modelNote){
+      const created=this.lastAiCreatedAt?new Intl.DateTimeFormat('ja-JP',{hour:'2-digit',minute:'2-digit'}).format(new Date(this.lastAiCreatedAt)):'';
+      modelNote.hidden=false;
+      modelNote.textContent=`AIモデル: ${this.lastAiModel}${created?' · 作成 '+created:''}`;
+    }
+  }
+  private async speakAiCommentary() {
+    if(!this.lastAiCommentary)return;
+    this.stopAiSpeech();
+    const button=element('flight-info-root').querySelector<HTMLButtonElement>('#live-speak');
+    if(button){button.disabled=true;button.textContent='音声生成中…';}
+    try {
+      const response=await fetch('/api/tts',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:this.lastAiCommentary.replace(/\*\*/g,'')}),
+      });
+      if(!response.ok)throw new Error('TTS_UNAVAILABLE');
+      const blob=await response.blob();
+      this.ttsObjectUrl=URL.createObjectURL(blob);
+      this.ttsAudio=new Audio(this.ttsObjectUrl);
+      this.ttsAudio.onended=()=>this.stopAiSpeech(false);
+      await this.ttsAudio.play();
+    } catch {
+      this.liveView.setMessage('音声を生成できませんでした。Cloud Text-to-Speech の設定を確認してください。');
+    } finally {
+      const current=element('flight-info-root').querySelector<HTMLButtonElement>('#live-speak');
+      if(current){current.disabled=false;current.textContent='🔊 音声';}
+    }
+  }
+  private stopAiSpeech(resetMessage=true) {
+    if(this.ttsAudio){this.ttsAudio.pause();this.ttsAudio.currentTime=0;this.ttsAudio=null;}
+    if(this.ttsObjectUrl){URL.revokeObjectURL(this.ttsObjectUrl);this.ttsObjectUrl='';}
+    if(resetMessage&&this.lastAiCommentary)this.liveView.setMessage('音声を停止しました。');
   }
   private async refreshSelectedNow() {
     if(!this.selected||this.viewMode!=='LIVE')return;
@@ -238,13 +280,10 @@ export class FlightExperience {
       const body=await response.json();
       if(!response.ok)throw new Error(body.error||'AI_UNAVAILABLE');
       this.lastAiCommentary=String(body.text||'');
-      const plain=this.lastAiCommentary.replace(/\*\*/g,'');
-      panel.innerHTML=`<div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`;
-      const modelNote=root.querySelector<HTMLElement>('#live-ai-model-note');
-      if(modelNote){modelNote.hidden=false;modelNote.textContent=`AIモデル: ${String(body.model||'')}`;}
+      this.lastAiModel=String(body.model||'');
+      this.lastAiCreatedAt=new Date().toISOString();
+      this.restoreAiCommentary();
     } catch(error) {
-      this.lastAiCommentary='';
-      const modelNote=root.querySelector<HTMLElement>('#live-ai-model-note');if(modelNote)modelNote.hidden=true;
       const code=error instanceof Error?error.message:'AI_UNAVAILABLE';
       panel.textContent=code==='AI_NOT_CONFIGURED'
         ?'Gemini APIキーがまだ設定されていません。設定後、このボタンから解説できます。'
