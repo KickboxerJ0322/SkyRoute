@@ -1087,3 +1087,160 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
 .live-time-details summary { cursor: pointer; padding: 5px 0; }
 .live-flight-actions { margin-top: 10px; }
 .live-info .hud-grid { grid-template-columns: repeat(2, 1fr); }
+
+
+/* ==========================================================================
+   Mobile control layout refresh
+   ========================================================================== */
+.panel-visibility-menu-toggle { display: none; }
+.panel-visibility-items { display: contents; }
+.mobile-control-row { display: contents; }
+.map-controls-body { display: contents; }
+
+@media (max-width: 768px) {
+  /* Keep the mode selector as the only persistent top control. */
+  #map-controls-container {
+    top: 78px !important;
+    left: 12px !important;
+    right: 12px !important;
+    pointer-events: none;
+  }
+
+  #map-controls-container .map-controls-toolbar {
+    width: auto;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    display: block;
+    pointer-events: none;
+  }
+
+  .mobile-control-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .mobile-control-row .mobile-only-btn {
+    pointer-events: auto;
+    min-height: 42px;
+    padding: 9px 13px;
+    border-radius: 12px;
+    background: rgba(7, 16, 38, .9);
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-hud);
+  }
+
+  .map-controls-body {
+    display: none;
+    pointer-events: auto;
+    margin-top: 8px;
+    padding: 12px;
+    max-height: min(52vh, 440px);
+    overflow-y: auto;
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    background: rgba(7, 16, 38, .94);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-hud);
+  }
+
+  .map-controls-toolbar.mobile-open .map-controls-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .map-controls-body .toolbar-group {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .map-controls-body .segmented-control {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .map-controls-body .segmented-control::-webkit-scrollbar { display: none; }
+  .map-controls-body .segmented-control button { flex: 0 0 auto; }
+
+  /* Visibility controls become a compact bottom-right drawer. */
+  #panel-visibility-controls {
+    top: auto !important;
+    left: auto !important;
+    right: 12px !important;
+    bottom: 14px;
+    width: auto;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    z-index: 45;
+  }
+
+  .panel-visibility-menu-toggle {
+    display: block !important;
+    min-width: 62px;
+    min-height: 42px;
+    color: #fff !important;
+    border-color: var(--accent-cyan) !important;
+    background: rgba(7, 16, 38, .94) !important;
+    box-shadow: var(--shadow-hud);
+  }
+
+  .panel-visibility-items {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    background: rgba(7, 16, 38, .94);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow-hud);
+    pointer-events: auto;
+  }
+
+  #panel-visibility-controls.mobile-menu-open .panel-visibility-items {
+    display: flex;
+  }
+
+  .panel-visibility-items button {
+    min-width: 92px;
+    text-align: left;
+  }
+
+  /* LIVE tracking does not need playback controls; show them only for Preview/Replay. */
+  #playback-container.playback-live {
+    display: none !important;
+  }
+
+  #playback-container {
+    left: 12px !important;
+    right: 84px !important;
+    bottom: 12px;
+    width: auto !important;
+    max-width: none;
+  }
+
+  /* Flight info floats above the bottom controls without covering the map toolbar. */
+  #left-panel-container {
+    top: auto !important;
+    left: 12px;
+    right: 12px;
+    bottom: 70px !important;
+    max-height: 30vh !important;
+  }
+
+  .flight-panel {
+    top: 72px !important;
+    height: calc(100% - 72px) !important;
+  }
+}
