@@ -179,7 +179,7 @@ export class FlightExperience {
   private speakAiCommentary() {
     if(!this.lastAiCommentary||!('speechSynthesis' in window))return;
     window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(this.lastAiCommentary.replace(/[\\*#_]/g,'').replace(/\\s+/g,' ').trim());
+    const utterance=new SpeechSynthesisUtterance(this.lastAiCommentary.replace(/[\\*#_]/g,'').replace(/\s+/g,' ').trim());
     utterance.lang='ja-JP';utterance.rate=1;
     const voice=window.speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith('ja'));
     if(voice)utterance.voice=voice;
@@ -237,8 +237,14 @@ export class FlightExperience {
       });
       const body=await response.json();
       if(!response.ok)throw new Error(body.error||'AI_UNAVAILABLE');
-      panel.innerHTML=`<div class="live-ai-title">AI FLIGHT COMMENTARY · ${escapeForAi(body.model)}</div><div class="live-ai-text">${escapeForAi(body.text).replace(/\n/g,'<br>')}</div>`;
+      this.lastAiCommentary=String(body.text||'');
+      const plain=this.lastAiCommentary.replace(/\*\*/g,'');
+      panel.innerHTML=`<div class="live-ai-title">AI FLIGHT COMMENTARY · ${escapeForAi(body.model)}</div><div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`;
+      const speak=root.querySelector<HTMLButtonElement>('#live-speak');
+      if(speak)speak.disabled=!this.lastAiCommentary||!('speechSynthesis' in window);
     } catch(error) {
+      this.lastAiCommentary='';
+      const speak=root.querySelector<HTMLButtonElement>('#live-speak');if(speak)speak.disabled=true;
       const code=error instanceof Error?error.message:'AI_UNAVAILABLE';
       panel.textContent=code==='AI_NOT_CONFIGURED'
         ?'Gemini APIキーがまだ設定されていません。設定後、このボタンから解説できます。'
@@ -298,7 +304,7 @@ export class FlightExperience {
       }
       if(this.interpolator.push(next))this.lastPosition=next;
       this.drawRemainingRoute();
-      this.liveView.setMessage(result.stale?'LIVE DATA TEMPORARILY UNAVAILABLE · showing last position':Date.now()-Date.parse(result.data.timestamp)>120000?'Position is older than 2 minutes.':'Live position · 「現在位置更新」で手動取得');
+      this.liveView.setMessage(result.stale?'LIVE DATA TEMPORARILY UNAVAILABLE · showing last position':Date.now()-Date.parse(result.data.timestamp)>120000?'Position is older than 2 minutes.':this.autoPositionRefresh?'Live position · 自動更新 ON（1分ごと）':'Live position · 自動更新 OFF（手動取得）');
       this.updateSource(result.stale?' · cached position':'');
       if(!this.raf)this.animateLive();this.debug();
     } catch(error) {if(!signal.aborted)this.liveView.setMessage('LIVE DATA TEMPORARILY UNAVAILABLE · '+errorText(error));}
@@ -318,7 +324,8 @@ export class FlightExperience {
   }
   private scheduleSelection() {
     clearTimeout(this.selectionTimer);
-    // Cost control: selected flight updates are manual. Use the "現在位置更新" button.
+    if(this.autoPositionRefresh&&this.selected&&!['ARRIVED','CANCELLED'].includes(this.selected.status)&&this.viewMode==='LIVE')
+      this.selectionTimer=window.setTimeout(()=>void this.pollSelection(),60000);
   }
   private async pollSelection() {
     if(!this.selected||this.viewMode!=='LIVE')return;
