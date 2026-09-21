@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SkyRoute - Google Photorealistic 3D Flight Experience</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300D4FF'><path d='M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z'/></svg>" />
+    <link rel="icon" type="image/svg+xml" href="/skyroute-icon.svg" />
     <link rel="stylesheet" href="/src/styles/main.css" />
   </head>
   <body>
@@ -12,11 +12,16 @@
       <!-- 3D Map Viewport -->
       <div id="map-container"></div>
 
-      <!-- App Mode Switch -->
-      <div id="app-mode-switch" class="app-mode-switch" aria-label="SkyRoute mode">
-        <div class="app-mode-brand">SkyRoute</div>
-        <button id="mode-hnd" class="app-mode-btn active" type="button"><strong>HND LIVE</strong></button>
-        <button id="mode-finder" class="app-mode-btn" type="button"><strong>SKY FINDER</strong></button>
+      <!-- Primary top bar -->
+      <div id="top-app-bar">
+        <div id="app-mode-switch" class="app-mode-switch" aria-label="SkyRoute mode">
+          <button id="app-home" class="app-home-btn" type="button" title="最初の画面に戻る">
+            <img src="/skyroute-icon.svg" alt="" class="app-mode-icon" />
+            <span class="app-mode-brand">SkyRoute</span>
+          </button>
+          <button id="mode-hnd" class="app-mode-btn active" type="button"><strong>HND LIVE</strong></button>
+          <button id="mode-finder" class="app-mode-btn" type="button"><strong>SKY FINDER</strong></button>
+        </div>
       </div>
 
       <!-- Sky Finder -->
