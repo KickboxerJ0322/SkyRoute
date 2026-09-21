@@ -10,12 +10,12 @@ export class PanelVisibility {
     mobileToggle.type = 'button';
     mobileToggle.id = 'panel-visibility-menu-toggle';
     mobileToggle.className = 'panel-visibility-menu-toggle';
-    mobileToggle.textContent = '表示';
+    mobileToggle.textContent = '操作';
     mobileToggle.setAttribute('aria-expanded', 'false');
     mobileToggle.addEventListener('click', () => {
       const open = toolbar.classList.toggle('mobile-menu-open');
       mobileToggle.setAttribute('aria-expanded', String(open));
-      mobileToggle.textContent = open ? '閉じる' : '表示';
+      mobileToggle.textContent = open ? '閉じる' : '操作';
     });
     toolbar.append(mobileToggle);
 
