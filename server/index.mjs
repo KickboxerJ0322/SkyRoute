@@ -43,6 +43,8 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),dist
         if(!/^[A-Za-z0-9_-]{1,180}$/.test(id)) throw new ApiError(400,'INVALID_FLIGHT_ID');
         return json(200,await api[match[2]||'detail'](id));
       }
+      const airportWeather=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})\/weather$/);
+      if(airportWeather) return json(200,await api.weather(airportWeather[1].toUpperCase()));
       const airport=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})$/);
       if(airport) return json(200,await api.airport(airport[1].toUpperCase()));
       if(url.pathname.startsWith('/api/')) return json(404,{error:'NOT_FOUND'});
