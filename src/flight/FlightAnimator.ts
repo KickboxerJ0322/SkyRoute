@@ -14,7 +14,12 @@ import {
   angleDifference,
 } from '../utils/geo';
 import { clamp, lerp, lerpAngle } from '../utils/interpolation';
-import { DEFAULT_PLAYBACK_SPEED } from '../config';
+import {
+  BASE_PLAYBACK_SPEED_KMH,
+  DEFAULT_PLAYBACK_SPEED,
+  MAX_PLAYBACK_SPEED,
+  MIN_PLAYBACK_SPEED,
+} from '../config';
 
 export type TelemetryCallback = (telemetry: TelemetryData) => void;
 
@@ -179,7 +184,7 @@ export class FlightAnimator {
   }
 
   public setSpeed(speed: number): void {
-    this.playbackSpeed = clamp(speed, 1, 60);
+    this.playbackSpeed = clamp(speed, MIN_PLAYBACK_SPEED, MAX_PLAYBACK_SPEED);
   }
 
   public getSpeed(): number {
@@ -202,25 +207,6 @@ export class FlightAnimator {
     this.onTickCallback = cb;
   }
 
-  /**
-   * Pacing Factor for Takeoff & Landing:
-   * Starts with a slower simulation rate during departure and landing phases,
-   * making the liftoff and touchdown cinematic and clearly visible.
-   */
-  private getPacingFactor(progress: number): number {
-    // Departure & initial climb phase (0% - 8%)
-    if (progress < 0.08) {
-      const ratio = progress / 0.08;
-      return lerp(0.28, 1.0, ratio * ratio * (3 - 2 * ratio)); // Quad ease-in
-    }
-    // Final approach & landing phase (92% - 100%)
-    if (progress > 0.92) {
-      const ratio = (1.0 - progress) / 0.08;
-      return lerp(0.28, 1.0, ratio * ratio * (3 - 2 * ratio)); // Quad ease-out
-    }
-    return 1.0;
-  }
-
   private onAnimationFrame = (timestamp: number): void => {
     if (!this.isPlaying) return;
 
@@ -228,10 +214,9 @@ export class FlightAnimator {
     this.lastRafTimestamp = timestamp;
 
     if (this.route && this.totalDistanceMeters > 0) {
-      const nominalDuration = this.route.durationSeconds || 180;
-      const pacing = this.getPacingFactor(this.progress);
+      const nominalDuration = durationForDistance(this.totalDistanceMeters);
       const progressIncrement =
-        (deltaSec * this.playbackSpeed * pacing * this.playbackDirection) / nominalDuration;
+        (deltaSec * this.playbackSpeed * this.playbackDirection) / nominalDuration;
 
       this.progress += progressIncrement;
 
@@ -404,3 +389,8 @@ export class FlightAnimator {
   }
 }
 
+
+export function durationForDistance(distanceMeters: number): number {
+  const metersPerSecond = BASE_PLAYBACK_SPEED_KMH / 3.6;
+  return Math.max(1, distanceMeters / metersPerSecond);
+}
