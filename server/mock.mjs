@@ -23,6 +23,13 @@ export function createMock(now = Date.now) {
   return async path => {
     if (path.startsWith('/airports/RJTT/flights/scheduled_departures')) return {scheduled_departures:fixture.flights.map(rawFlight)};
     if (path.startsWith('/airports/RJTT/flights/departures')) return {departures:fixture.flights.map(rawFlight).filter(f=>f.actual_off)};
+    if (path.startsWith('/flights/search')) {
+      const elapsed=(now()-epoch)/60000;
+      return {flights:fixture.flights.map(s=>{
+        const raw=rawFlight(s);
+        return raw.actual_off&&!raw.actual_on?{...raw,last_position:point(s,elapsed)}:null;
+      }).filter(Boolean)};
+    }
     const airport=path.match(/^\/airports\/([^/?]+)$/);
     if (airport) {if(!fixture.airports[airport[1]]) throw new ApiError(404,'DATA_UNAVAILABLE'); return fixture.airports[airport[1]];}
     const match=path.match(/^\/flights\/([^/?]+)(?:\/(route|track|position))?/);
