@@ -1,9 +1,14 @@
 /**
  * Playback Controls Component
- * Controls Play Forward, Reverse Playback, Restart, Continuous Speed (1x to 60x), and Seek slider.
+ * Controls Play Forward, Reverse Playback, Restart, Continuous Speed (0.2x to 3x), and Seek slider.
  */
 
-import { PLAYBACK_SPEED_PRESETS, DEFAULT_PLAYBACK_SPEED } from '../config';
+import {
+  PLAYBACK_SPEED_PRESETS,
+  DEFAULT_PLAYBACK_SPEED,
+  MIN_PLAYBACK_SPEED,
+  MAX_PLAYBACK_SPEED,
+} from '../config';
 
 export interface PlaybackHandlers {
   onTogglePlay: () => void;
@@ -61,7 +66,7 @@ export class PlaybackControls {
   }
 
   public setSpeed(speed: number): void {
-    this.currentSpeed = Math.round(Math.min(60, Math.max(1, speed)) * 10) / 10;
+    this.currentSpeed = Math.round(Math.min(MAX_PLAYBACK_SPEED, Math.max(MIN_PLAYBACK_SPEED, speed)) * 10) / 10;
 
     // Update speed slider
     const speedSlider = this.container.querySelector<HTMLInputElement>('#speed-slider');
@@ -155,11 +160,12 @@ export class PlaybackControls {
                 type="range"
                 id="speed-slider"
                 class="speed-slider"
-                min="1"
-                max="60"
-                step="0.1" aria-label="????"
+                min="${MIN_PLAYBACK_SPEED}"
+                max="${MAX_PLAYBACK_SPEED}"
+                step="0.1"
+                aria-label="再生速度"
                 value="${this.currentSpeed}"
-                title="再生速度つまみ (1×〜60×)"
+                title="再生速度つまみ (0.2×〜3.0×、1×は約900km/h相当)"
               />
             </div>
 
