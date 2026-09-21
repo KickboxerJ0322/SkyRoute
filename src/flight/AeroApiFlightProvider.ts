@@ -1,6 +1,6 @@
 ﻿import type { FlightDataProvider } from './FlightDataProvider';
 import type { FlightDeparture, FlightRoute, Airport } from './types';
-import type { ApiResult, SkyRouteFlight, SkyRouteRoute, SkyRouteTrackPoint, SkyRoutePosition, SkyRouteAirport } from './liveTypes';
+import type { ApiResult, SkyRouteFlight, SkyRouteRoute, SkyRouteTrackPoint, SkyRoutePosition, SkyRouteAirport, SkyRouteWeatherObservation } from './liveTypes';
 import { greatCirclePoints } from './liveGeometry';
 export class AeroApiFlightProvider implements FlightDataProvider {
   source: 'live' | 'mock' = 'mock';
@@ -22,6 +22,7 @@ export class AeroApiFlightProvider implements FlightDataProvider {
   getFiledRoute(id:string,signal?:AbortSignal) { return this.request<SkyRouteRoute>('flights/'+encodeURIComponent(id)+'/route',signal); }
   getTrack(id:string,signal?:AbortSignal) { return this.request<SkyRouteTrackPoint[]>('flights/'+encodeURIComponent(id)+'/track',signal); }
   getPosition(id:string,signal?:AbortSignal) { return this.request<SkyRoutePosition|null>('flights/'+encodeURIComponent(id)+'/position',signal); }
+  getWeather(id:string,signal?:AbortSignal) { return this.request<SkyRouteWeatherObservation>('airports/'+encodeURIComponent(id)+'/weather',signal); }
   async resolveAirport(airport:SkyRouteAirport,signal?:AbortSignal):Promise<SkyRouteAirport> {
     if(airport.latitude!==null && airport.longitude!==null || !airport.icao) return airport;
     try { return (await this.request<SkyRouteAirport>('airports/'+encodeURIComponent(airport.icao),signal)).data; }
