@@ -4,13 +4,28 @@ import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAeroApi } from './aeroApi.mjs';
 import { ApiError } from './cache.mjs';
+import { createFlightCommentator } from './gemini.mjs';
 try { process.loadEnvFile('.env.local'); } catch(error) { if(error.code!=='ENOENT') throw error; }
-export function createApp({api=createAeroApi(),dist=resolve('dist')}={}) {
+async function readJson(req, maxBytes=65536) {
+  let size=0, body='';
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > maxBytes) throw new ApiError(413,'PAYLOAD_TOO_LARGE');
+    body += chunk;
+  }
+  try { return JSON.parse(body || '{}'); } catch { throw new ApiError(400,'INVALID_JSON'); }
+}
+export function createApp({api=createAeroApi(),ai=createFlightCommentator(),dist=resolve('dist')}={}) {
   return createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
     try {
       const url=new URL(req.url,'http://localhost');
+      if(url.pathname==='/api/ai/flight-commentary') {
+        if(req.method!=='POST') return json(405,{error:'METHOD_NOT_ALLOWED'});
+        const payload=await readJson(req);
+        return json(200,await ai(payload));
+      }
       if(req.method!=='GET'&&req.method!=='HEAD') return json(405,{error:'METHOD_NOT_ALLOWED'});
       if(url.pathname==='/api/health') return json(200,{status:'ok',source:api.mode});
       if(url.pathname==='/api/flights/departures') return json(200,await api.departures());
