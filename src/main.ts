@@ -1,4 +1,5 @@
 import './styles/plateau.css';
+import './styles/modes.css';
 import { FlightExperience } from './flight/FlightExperience';
 import { mountPlateauInsight } from './plateau/PlateauInsight';
 /**
@@ -13,6 +14,7 @@ import { RouteRenderer } from './map/RouteRenderer';
 import { CameraController } from './map/CameraController';
 import { LoadingOverlay } from './ui/LoadingOverlay';
 import { ErrorOverlay } from './ui/ErrorOverlay';
+import { SkyFinder } from './ui/SkyFinder';
 
 async function initSkyRoute(): Promise<void> {
   const loading = new LoadingOverlay();
@@ -66,12 +68,39 @@ async function initSkyRoute(): Promise<void> {
   // 5. Initialize Map Subsystems
   loading.updateStatus('Initializing Aircraft Model & Flight Path...');
   const aircraft = new AircraftController(maps3dLib, map);
+  const finderAircraft = new AircraftController(maps3dLib, map);
+  finderAircraft.setVisible(false);
   const routeRenderer = new RouteRenderer(maps3dLib, map);
   const cameraController = new CameraController(map);
 
   const actualTrackRenderer = new RouteRenderer(maps3dLib, map);
   const experience = new FlightExperience(aircraft, cameraController, routeRenderer, actualTrackRenderer, map);
   mountPlateauInsight(maps3dLib, map);
+
+  const skyFinderRoot = document.getElementById('sky-finder-root');
+  if (!skyFinderRoot) throw new Error('Sky Finder root not found.');
+  const skyFinder = new SkyFinder(skyFinderRoot, map, finderAircraft);
+
+  const hndButton = document.getElementById('mode-hnd');
+  const finderButton = document.getElementById('mode-finder');
+  const leftPanel = document.getElementById('left-panel-container');
+  const playback = document.getElementById('playback-container');
+
+  const setMode = (mode: 'HND' | 'FINDER') => {
+    const finder = mode === 'FINDER';
+    hndButton?.classList.toggle('active', !finder);
+    finderButton?.classList.toggle('active', finder);
+    if (leftPanel) leftPanel.hidden = finder;
+    if (playback) playback.hidden = finder;
+    aircraft.setVisible(!finder);
+    skyFinder.setVisible(finder);
+    if (!finder) finderAircraft.setVisible(false);
+  };
+
+  hndButton?.addEventListener('click', () => setMode('HND'));
+  finderButton?.addEventListener('click', () => setMode('FINDER'));
+  setMode('HND');
+
   loading.hide();
   await experience.start();
 }
