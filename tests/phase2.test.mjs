@@ -45,6 +45,21 @@ test('scheduled departures uses one page, exact v4 auth, 3h UTC window, filters 
   }});
   const result=await api.scheduledDepartures();await api.scheduledDepartures();assert.equal(calls,1);assert.equal(result.data.length,2);assert.equal(result.data[1].status,'CANCELLED');assert.equal(JSON.stringify(result).includes('test-secret'),false);
 });
+test('nearby search uses a bounded airline query, returns positions and caches it',async()=>{
+  let calls=0,requestUrl;
+  const api=createAeroApi({mode:'live',key:'test-secret',now:()=>now,logger:silent,fetcher:async url=>{
+    calls++;requestUrl=new URL(url);
+    return Response.json({flights:[{...rawFlight,actual_off:new Date(now-3600000).toISOString(),last_position:rawPosition}]});
+  }});
+  const result=await api.nearby(35.68,139.76,80);
+  assert.equal(requestUrl.pathname,'/aeroapi/flights/search');
+  assert.equal(requestUrl.searchParams.get('max_pages'),'1');
+  assert.match(requestUrl.searchParams.get('query'),/-latlong ".+" -filter airline/);
+  assert.equal(result.data.length,1);
+  assert.equal(result.data[0].position.latitude,rawPosition.latitude);
+  await api.nearby(35.68,139.76,80);assert.equal(calls,1);
+  assert.equal(TTL.nearby,180000);
+});
 test('missing key, auth, 404, 429, server and network errors are sanitized',async()=>{
   await assert.rejects(createAeroApi({mode:'live',key:'',logger:silent}).departures(),/API_KEY_MISSING/);
   for(const [code,message] of [[401,'API_KEY_OR_PLAN_ERROR'],[403,'API_KEY_OR_PLAN_ERROR'],[404,'DATA_UNAVAILABLE'],[429,'RATE_LIMIT'],[500,'API_UNAVAILABLE']]) {
@@ -92,6 +107,8 @@ test('HTTP API and static server reject unknown and traversal paths; no secret l
   const app=createApp({api:createAeroApi({mode:'mock',logger:silent})});await new Promise(r=>app.listen(0,'127.0.0.1',r));
   try {const base=`http://127.0.0.1:${app.address().port}`;
     const result=await (await fetch(base+'/api/flights/departures')).json();assert.equal(result.source,'mock');assert.equal(result.data.length,12);
+    assert.equal((await fetch(base+'/api/flights/nearby?lat=35.68&lng=139.76&radius=80')).status,200);
+    assert.equal((await fetch(base+'/api/flights/nearby?lat=x&lng=139.76')).status,400);
     for(const suffix of ['route','track','position'])assert.equal((await fetch(base+'/api/flights/mock-ana53/'+suffix)).status,200);
     assert.equal((await fetch(base+'/api/flights/invalid%2Fid')).status,400);
     assert.equal((await fetch(base+'/.env.local')).status,404);
