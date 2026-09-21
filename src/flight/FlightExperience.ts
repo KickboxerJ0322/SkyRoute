@@ -239,12 +239,12 @@ export class FlightExperience {
       if(!response.ok)throw new Error(body.error||'AI_UNAVAILABLE');
       this.lastAiCommentary=String(body.text||'');
       const plain=this.lastAiCommentary.replace(/\*\*/g,'');
-      panel.innerHTML=`<div class="live-ai-title">AI FLIGHT COMMENTARY · ${escapeForAi(body.model)}</div><div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`;
-      const speak=root.querySelector<HTMLButtonElement>('#live-speak');
-      if(speak)speak.disabled=!this.lastAiCommentary||!('speechSynthesis' in window);
+      panel.innerHTML=`<div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`;
+      const modelNote=root.querySelector<HTMLElement>('#live-ai-model-note');
+      if(modelNote){modelNote.hidden=false;modelNote.textContent=`AIモデル: ${String(body.model||'')}`;}
     } catch(error) {
       this.lastAiCommentary='';
-      const speak=root.querySelector<HTMLButtonElement>('#live-speak');if(speak)speak.disabled=true;
+      const modelNote=root.querySelector<HTMLElement>('#live-ai-model-note');if(modelNote)modelNote.hidden=true;
       const code=error instanceof Error?error.message:'AI_UNAVAILABLE';
       panel.textContent=code==='AI_NOT_CONFIGURED'
         ?'Gemini APIキーがまだ設定されていません。設定後、このボタンから解説できます。'
