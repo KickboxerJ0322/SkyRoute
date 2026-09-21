@@ -40,6 +40,20 @@ export class PanelVisibility {
       button.addEventListener('click', () => {
         panel.hidden = !panel.hidden;
         button.setAttribute('aria-pressed', String(!panel.hidden));
+        // Keep the matching mobile quick-action visibility in sync.
+        if (id === 'flight-panel-root') {
+          const quick = document.getElementById('mobile-departures-btn');
+          if (quick) quick.hidden = panel.hidden;
+        }
+        if (id === 'map-controls-container') {
+          // The camera quick button lives inside this panel; do not alter departures.
+          const quick = document.getElementById('mobile-map-controls-btn');
+          if (quick) quick.hidden = panel.hidden;
+        }
+        if (id === 'playback-container') {
+          panel.style.setProperty('display', panel.hidden ? 'none' : '', panel.hidden ? 'important' : '');
+          if (!panel.hidden) panel.style.removeProperty('display');
+        }
         app.classList.toggle('sidebar-hidden', panels.slice(0, 2).every(
           ([panelId]) => document.getElementById(panelId)!.hidden
         ));
