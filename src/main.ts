@@ -85,6 +85,9 @@ async function initSkyRoute(): Promise<void> {
     if (leftPanel) leftPanel.hidden = false;
     if (flightPanel) flightPanel.hidden = true;
     if (flightInfo) flightInfo.hidden = false;
+    const playback = document.getElementById('playback-container');
+    if (playback) playback.hidden = false;
+    aircraft.setVisible(true);
     void experience.inspectLiveFlight(flight);
   });
 
