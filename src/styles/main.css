@@ -1311,3 +1311,60 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
 #live-stop-speak {
   color: var(--text-muted);
 }
+
+
+/* Unified top bar + stable desktop panel geometry */
+#top-app-bar #panel-visibility-controls {
+  position: static !important;
+  inset: auto !important;
+  flex: 1 1 520px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+#top-app-bar .panel-visibility-items {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+#top-app-bar .panel-visibility-menu-toggle {
+  display: none !important;
+}
+#map-controls-container {
+  left: 376px !important;
+  right: 18px;
+}
+#playback-container {
+  left: 376px !important;
+  right: 76px !important;
+}
+#app.sidebar-hidden { --content-left: 376px; }
+
+@media (max-width: 768px) {
+  #top-app-bar #panel-visibility-controls {
+    flex: 1 1 100%;
+    width: 100%;
+    position: static !important;
+    flex-direction: row;
+    align-items: center;
+  }
+  #top-app-bar .panel-visibility-items {
+    width: 100%;
+    display: flex !important;
+    flex-wrap: wrap;
+  }
+  #top-app-bar .panel-visibility-items button {
+    min-width: 0;
+    text-align: center;
+  }
+  #map-controls-container {
+    left: 12px !important;
+    right: 12px !important;
+  }
+  #playback-container {
+    left: 12px !important;
+    right: 60px !important;
+  }
+}
