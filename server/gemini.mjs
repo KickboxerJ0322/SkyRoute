@@ -66,6 +66,11 @@ export function createFlightCommentator({
       .trim();
 
     if (!text) throw new ApiError(502, 'AI_INVALID_RESPONSE');
-    return { text, model };
+    const compact = text.length <= 800 ? text : (() => {
+      const slice = text.slice(0, 800);
+      const end = Math.max(slice.lastIndexOf('。'), slice.lastIndexOf('！'), slice.lastIndexOf('？'));
+      return end >= 520 ? slice.slice(0, end + 1) : slice;
+    })();
+    return { text: compact, model };
   };
 }
