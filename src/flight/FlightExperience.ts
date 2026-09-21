@@ -42,6 +42,8 @@ export class FlightExperience {
   private lastTrackFetch=0;
   private lastPosition:SkyRoutePosition|null=null;
   private currentTelemetry:TelemetryData|null=null;
+  private autoPositionRefresh=false;
+  private lastAiCommentary='';
   private loadingList=false;
   private animator:FlightAnimator;
   private playback:PlaybackControls;
@@ -87,7 +89,7 @@ export class FlightExperience {
     root.setAttribute('aria-label',enabled?'Flight playback':'LIVE mode: choose Preview or Replay to use playback');
   }
   private cancelSelection() {
-    this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);cancelAnimationFrame(this.raf);this.raf=0;
+    this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';cancelAnimationFrame(this.raf);this.raf=0;
     this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.currentTelemetry=null;
     this.route=null;this.filed=null;this.track=[];this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
   }
