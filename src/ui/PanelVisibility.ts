@@ -2,6 +2,7 @@
 export class PanelVisibility {
   constructor() {
     const app = document.getElementById('app')!;
+    const topBar = document.getElementById('top-app-bar') ?? app;
     const toolbar = document.createElement('nav');
     toolbar.id = 'panel-visibility-controls';
     toolbar.setAttribute('aria-label', '表示パネルの切替');
@@ -45,7 +46,7 @@ export class PanelVisibility {
       });
       panelButtons.append(button);
     });
-    app.append(toolbar);
+    topBar.append(toolbar);
     const playback = document.getElementById('playback-container')!;
     new ResizeObserver(() => {
       app.style.setProperty('--playback-height', `${playback.getBoundingClientRect().height}px`);
