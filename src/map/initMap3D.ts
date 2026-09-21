@@ -102,7 +102,7 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
     try {
       loader({
         key: apiKey,
-        v: 'alpha',
+        v: 'weekly',
       });
       resolve();
     } catch (err) {
