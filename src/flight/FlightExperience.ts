@@ -150,9 +150,17 @@ export class FlightExperience {
   private bindFlightActions() {
     const root=element('flight-info-root');
     root.querySelector('#live-return')!.addEventListener('click',()=>void this.returnLive());
+    root.querySelector('#live-refresh-position')?.addEventListener('click',()=>void this.refreshSelectedNow());
     root.querySelector('#live-preview')!.addEventListener('click',()=>this.startPreview(false));
     root.querySelector('#live-replay')!.addEventListener('click',()=>this.startPreview(true));
     root.querySelector('#live-ai')?.addEventListener('click',()=>void this.requestAiCommentary());
+  }
+  private async refreshSelectedNow() {
+    if(!this.selected||this.viewMode!=='LIVE')return;
+    const button=element('flight-info-root').querySelector<HTMLButtonElement>('#live-refresh-position');
+    if(button){button.disabled=true;button.textContent='更新中…';}
+    try {await this.pollSelection();}
+    finally {const current=element('flight-info-root').querySelector<HTMLButtonElement>('#live-refresh-position');if(current){current.disabled=false;current.textContent='現在位置更新';}}
   }
   private async requestAiCommentary() {
     if(!this.selected)return;
@@ -162,17 +170,36 @@ export class FlightExperience {
     if(!button||!panel)return;
     button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;panel.textContent='AeroAPIの運航データをGeminiで解析しています…';
     const sample=<T>(items:T[],max=28)=>items.length<=max?items:Array.from({length:max},(_,i)=>items[Math.round(i*(items.length-1)/(max-1))]);
+    let weather:{origin:unknown;destination:unknown}={origin:null,destination:null};
+    try {
+      const originCode=this.selected.origin.icao;
+      const destinationCode=this.selected.destination.icao;
+      const [originWeather,destinationWeather]=await Promise.allSettled([
+        originCode?this.provider.getWeather(originCode):Promise.resolve(null),
+        destinationCode?this.provider.getWeather(destinationCode):Promise.resolve(null),
+      ]);
+      weather={
+        origin:originWeather.status==='fulfilled'&&originWeather.value?originWeather.value.data:null,
+        destination:destinationWeather.status==='fulfilled'&&destinationWeather.value?destinationWeather.value.data:null,
+      };
+    } catch {}
     const payload={
       observedAt:new Date().toISOString(),
       flight:this.selected,
       currentPosition:this.lastPosition,
+      currentDerived:this.currentTelemetry?{
+        distanceRemainingKm:this.currentTelemetry.distanceRemainingKm,
+        flightPhase:this.currentTelemetry.flightPhase,
+      }:null,
       route:{
         selectedType:this.route?.type??null,
         filedRouteAvailable:!!this.filed?.waypoints.length,
+        textualRoute:this.selected.filedRouteText??null,
         actualTrackPointCount:this.track.length,
         filedWaypoints:this.filed?sample(this.filed.waypoints):[],
         actualTrack:sample(this.track),
       },
+      weather,
     };
     try {
       const response=await fetch('/api/ai/flight-commentary',{
@@ -241,7 +268,7 @@ export class FlightExperience {
       }
       if(this.interpolator.push(next))this.lastPosition=next;
       this.drawRemainingRoute();
-      this.liveView.setMessage(result.stale?'LIVE DATA TEMPORARILY UNAVAILABLE · showing last position':Date.now()-Date.parse(result.data.timestamp)>120000?'Position is older than 2 minutes.':'Live position · 45秒ごとに取得');
+      this.liveView.setMessage(result.stale?'LIVE DATA TEMPORARILY UNAVAILABLE · showing last position':Date.now()-Date.parse(result.data.timestamp)>120000?'Position is older than 2 minutes.':'Live position · 「現在位置更新」で手動取得');
       this.updateSource(result.stale?' · cached position':'');
       if(!this.raf)this.animateLive();this.debug();
     } catch(error) {if(!signal.aborted)this.liveView.setMessage('LIVE DATA TEMPORARILY UNAVAILABLE · '+errorText(error));}
@@ -261,7 +288,7 @@ export class FlightExperience {
   }
   private scheduleSelection() {
     clearTimeout(this.selectionTimer);
-    if(this.selected&&!['ARRIVED','CANCELLED'].includes(this.selected.status)&&this.viewMode==='LIVE')this.selectionTimer=window.setTimeout(()=>void this.pollSelection(),45000);
+    // Cost control: selected flight updates are manual. Use the "現在位置更新" button.
   }
   private async pollSelection() {
     if(!this.selected||this.viewMode!=='LIVE')return;
