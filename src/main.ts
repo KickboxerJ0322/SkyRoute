@@ -76,6 +76,7 @@ async function initSkyRoute(): Promise<void> {
   const skyFinderRoot = document.getElementById('sky-finder-root');
   if (!skyFinderRoot) throw new Error('Sky Finder root not found.');
   const skyFinder = new SkyFinder(skyFinderRoot, map, finderAircraft, flight => {
+    skyFinder.setVisible(false);
     finderAircraft.setVisible(false);
     const leftPanel = document.getElementById('left-panel-container');
     const flightPanel = document.getElementById('flight-panel-root');
