@@ -76,7 +76,7 @@ export class FlightExperience {
     new PanelVisibility();
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
-    modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><button id="refresh-flights">更新</button><span id="data-source-status" role="status">Loading route departures...</span>';
+    modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><button id="refresh-flights">更新</button><span id="data-source-status" role="status">「更新」を押すと便一覧を取得します</span>';
     const toolbarItems=toolbar.querySelector('.panel-visibility-items') ?? toolbar;
     toolbarItems.append(modes);this.statusLabel=element('data-source-status');
     element('data-live').onclick=()=>void this.setMode('LIVE');element('data-demo').onclick=()=>void this.setMode('DEMO');
@@ -113,7 +113,7 @@ export class FlightExperience {
       this.demoPanel.setDepartures(departures,departures[0].id);await this.selectDemo(departures[0].id);
     } else {
       element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
-      this.liveView.setAirport(this.selectedAirport);this.liveView.showList([],'','Loading route departures...');await this.refreshList();
+      this.liveView.setAirport(this.selectedAirport);this.liveView.showList([],'','空港を選択して「更新」を押すと便一覧を取得します。');this.statusLabel.textContent='「更新」を押すと便一覧を取得します';
     }
   }
   private async changeAirport(icao:string) {
@@ -124,7 +124,8 @@ export class FlightExperience {
     this.liveView.setAirport(icao);
     element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
     this.listAbort.abort();this.listAbort=new AbortController();
-    await this.refreshList();
+    this.liveView.showList([],'','空港を選択して「更新」を押すと便一覧を取得します。');
+    this.statusLabel.textContent='「更新」を押すと便一覧を取得します';
   }
   private async selectDemo(id:string) {
     this.cancelSelection();const signal=this.selectionAbort.signal;
@@ -166,7 +167,7 @@ export class FlightExperience {
       if(signal.aborted)return;
       this.filed=filed.status==='fulfilled'?filed.value.data:null;this.track=track.status==='fulfilled'?track.value.data:[];this.lastTrackFetch=Date.now();
       this.rebuildRoutes();this.placeStationary();
-      if(this.selected.status==='ENROUTE')await this.fetchPosition(signal);
+      if(this.selected.status==='ENROUTE')this.liveView.setMessage('「現在位置更新」を押すと現在位置を取得します。');
       else this.liveView.setMessage((this.route!.waypoints.length<2?'Route unavailable. ':'')+(this.selected.status==='CANCELLED'?'Cancelled · 飛行アニメーションは停止しています。':this.selected.status==='ARRIVED'?'Arrived':'Scheduled · Position not available yet.'));
       if(!signal.aborted)this.scheduleSelection();
     } catch(error) {if(!signal.aborted){this.liveView.setMessage(errorText(error)+' · DEMOを利用できます');this.scheduleSelection();}}
@@ -175,7 +176,7 @@ export class FlightExperience {
     const root=element('flight-info-root');
     root.querySelector('#live-return')!.addEventListener('click',()=>void this.returnLive());
     root.querySelector('#live-refresh-position')?.addEventListener('click',()=>void this.refreshSelectedNow());
-    root.querySelector('#live-auto-refresh')?.addEventListener('click',()=>this.toggleAutoRefresh());
+    const autoButton=root.querySelector<HTMLButtonElement>('#live-auto-refresh');if(autoButton){autoButton.disabled=true;autoButton.title='AeroAPI節約のため自動更新は無効です';}
     root.querySelector('#live-preview')!.addEventListener('click',()=>this.startPreview(false));
     root.querySelector('#live-replay')!.addEventListener('click',()=>this.startPreview(true));
     root.querySelector('#live-ai')?.addEventListener('click',()=>void this.requestAiCommentary());
