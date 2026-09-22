@@ -338,3 +338,69 @@
     min-width: 48px;
   }
 }
+
+
+/* High-transparency single-layer glass HUD */
+@media (max-width: 768px), (max-height: 720px) {
+  :root {
+    --glass-mobile: rgba(8, 22, 42, .20);
+    --glass-mobile-strong: rgba(8, 22, 42, .26);
+  }
+
+  /* Top SkyRoute bar and 操作 button: glass only. */
+  .app-mode-switch,
+  #panel-visibility-menu-toggle,
+  #top-app-bar .panel-visibility-items {
+    background: var(--glass-mobile) !important;
+    background-color: var(--glass-mobile) !important;
+    backdrop-filter: blur(5px) saturate(125%) !important;
+    -webkit-backdrop-filter: blur(5px) saturate(125%) !important;
+    box-shadow: 0 5px 18px rgba(0,0,0,.10) !important;
+  }
+
+  /* Exactly one glass layer per floating panel. */
+  #flight-panel-root,
+  #flight-info-root .flight-info-hud,
+  #map-controls-container .map-controls-toolbar,
+  #playback-container .playback-bar-wrapper,
+  .info-panel,
+  .sky-finder-panel {
+    background: var(--glass-mobile) !important;
+    background-color: var(--glass-mobile) !important;
+    backdrop-filter: blur(5px) saturate(125%) !important;
+    -webkit-backdrop-filter: blur(5px) saturate(125%) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,.10) !important;
+  }
+
+  /* Remove nested slabs that caused the double-background appearance. */
+  #flight-panel-root .flight-panel,
+  #flight-panel-root .live-panel,
+  #flight-panel-root .live-routes,
+  #flight-panel-root .departures-section,
+  #flight-panel-root .route-card,
+  #flight-panel-root .route-card.active,
+  #flight-panel-root .demo-route-notice,
+  #map-controls-container .map-controls-body,
+  #map-controls-container .toolbar-group {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  #flight-panel-root .route-card {
+    box-shadow: none !important;
+    border-color: rgba(255,255,255,.18) !important;
+  }
+  #flight-panel-root .route-card.active {
+    border-color: rgba(0,212,255,.72) !important;
+    box-shadow: inset 0 0 0 1px rgba(0,212,255,.08) !important;
+  }
+
+  /* Inputs stay legible while still showing the map beneath. */
+  .live-filters-primary select,
+  .live-filters-primary input,
+  #map-controls-container .segmented-control {
+    background-color: rgba(5,14,30,.24) !important;
+  }
+}
