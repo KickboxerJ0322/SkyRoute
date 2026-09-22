@@ -404,3 +404,43 @@
     background-color: rgba(5,14,30,.24) !important;
   }
 }
+
+
+/* 90%-transparent black glass: keep the map clearly visible below every HUD. */
+@media (max-width: 768px), (max-height: 720px) {
+  :root {
+    --glass-mobile: rgba(0, 0, 0, .10);
+    --glass-mobile-strong: rgba(0, 0, 0, .14);
+  }
+
+  .app-mode-switch,
+  #panel-visibility-menu-toggle,
+  #top-app-bar .panel-visibility-items,
+  #flight-panel-root,
+  #flight-info-root .flight-info-hud,
+  #map-controls-container .map-controls-toolbar,
+  #playback-container .playback-bar-wrapper,
+  .info-panel,
+  .sky-finder-panel {
+    background: rgba(0, 0, 0, .10) !important;
+    background-color: rgba(0, 0, 0, .10) !important;
+    backdrop-filter: blur(4px) saturate(115%) !important;
+    -webkit-backdrop-filter: blur(4px) saturate(115%) !important;
+    box-shadow: 0 5px 16px rgba(0,0,0,.08) !important;
+  }
+
+  #flight-panel-root .flight-panel,
+  #flight-panel-root .live-panel,
+  #flight-panel-root .live-routes,
+  #flight-panel-root .departures-section,
+  #flight-panel-root .route-card,
+  #flight-panel-root .route-card.active,
+  #flight-panel-root .demo-route-notice,
+  #map-controls-container .map-controls-body,
+  #map-controls-container .toolbar-group {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
