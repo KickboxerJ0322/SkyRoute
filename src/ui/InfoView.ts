@@ -51,7 +51,7 @@ export class InfoView {
       const response = await fetch('/api/account/usage');
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || 'USAGE_UNAVAILABLE');
-      const usage = (body.data || {}) as UsagePayload;
+      const usage = ((body.data && typeof body.data === 'object') ? body.data : body) as UsagePayload;
       const cost = Number(usage.total_cost || 0);
       const discounted = Number(usage.total_discount_cost || cost);
       const calls = Number(usage.total_calls || 0);
