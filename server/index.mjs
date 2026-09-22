@@ -47,10 +47,7 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
         return json(200,await api.departures(airport));
       }
       if(url.pathname==='/api/account/usage') {
-        const nowDate=new Date();
-        const start=url.searchParams.get('start')||`${nowDate.getUTCFullYear()}-${String(nowDate.getUTCMonth()+1).padStart(2,'0')}-01`;
-        const end=url.searchParams.get('end')||nowDate.toISOString();
-        return json(200,await api.usage(start,end));
+        return json(200,await api.usage());
       }
       if(url.pathname==='/api/flights/nearby') {
         const latitude=Number(url.searchParams.get('lat'));
