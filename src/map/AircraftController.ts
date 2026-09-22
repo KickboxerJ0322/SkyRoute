@@ -119,6 +119,15 @@ export class AircraftController {
     }
   }
 
+  /**
+   * Switches the GLB while preserving the current position, orientation and scale.
+   */
+  public setModel(modelUrl: string): void {
+    const nextUrl = modelUrl || AIRCRAFT_MODEL_URL;
+    if (!this.modelElement || this.modelElement.src === nextUrl) return;
+    this.modelElement.src = nextUrl;
+  }
+
   public setPosition(lat: number, lng: number, altitude: number): void {
     if (this.modelElement) {
       this.modelElement.position = { lat, lng, altitude };

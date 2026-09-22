@@ -7,6 +7,7 @@ import { AeroApiFlightProvider, chooseRoute, toAnimationRoute } from './AeroApiF
 import { LiveFlightInterpolator } from './LiveFlightInterpolator';
 import { FlightAnimator } from './FlightAnimator';
 import type { SkyRouteFlight, SkyRoutePosition, SkyRouteRoute, SkyRouteTrackPoint } from './liveTypes';
+import { aircraftModelUrlForFlight } from './aircraftModel';
 import type { TelemetryData } from './types';
 import { FlightPanel } from '../ui/FlightPanel';
 import { FlightInfo } from '../ui/FlightInfo';
@@ -102,6 +103,7 @@ export class FlightExperience {
   private stop() {this.cancelSelection();this.listAbort.abort();clearTimeout(this.listTimer);}
   async setMode(mode:'LIVE'|'DEMO') {
     this.stop();this.dataMode=mode;this.viewMode='LIVE';this.selected=null;this.listAbort=new AbortController();this.loadingList=false;
+    this.aircraft.setModel(aircraftModelUrlForFlight(null));
     element('data-live').setAttribute('aria-pressed',String(mode==='LIVE'));element('data-demo').setAttribute('aria-pressed',String(mode==='DEMO'));
     (element('refresh-flights') as HTMLButtonElement).disabled=mode==='DEMO';
     this.enablePlayback(mode==='DEMO');
@@ -151,10 +153,11 @@ export class FlightExperience {
     this.cancelSelection();this.viewMode='LIVE';this.enablePlayback(false);this.updateSource();
     this.selected=seed||this.provider.lastDepartures?.data.find(f=>f.id===id)||null;
     if(!this.selected)return;
+    this.aircraft.setModel(aircraftModelUrlForFlight(this.selected));
     this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();
     const signal=this.selectionAbort.signal;
     try {
-      try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;}
+      try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;this.aircraft.setModel(aircraftModelUrlForFlight(this.selected));}
       catch(error) {if(signal.aborted)return;this.liveView.setMessage(errorText(error));}
       const [origin,destination]=await Promise.all([this.provider.resolveAirport(this.selected.origin,signal),this.provider.resolveAirport(this.selected.destination,signal)]);
       if(signal.aborted)return;this.selected={...this.selected,origin,destination};
@@ -387,6 +390,7 @@ export class FlightExperience {
     try {
       const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;
       this.selected={...detail.data,origin:this.selected.origin,destination:this.selected.destination};
+      this.aircraft.setModel(aircraftModelUrlForFlight(this.selected));
       if(this.selected.status!=='ENROUTE') {cancelAnimationFrame(this.raf);this.raf=0;this.interpolator.reset();this.lastPosition=null;}
       {this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();this.rebuildRoutes();this.placeStationary();}
       if(this.selected.status!=='ENROUTE')this.liveView.setMessage(this.selected.status==='CANCELLED'?'Cancelled':this.selected.status==='ARRIVED'?'Arrived':'Scheduled / Position not available yet.');
