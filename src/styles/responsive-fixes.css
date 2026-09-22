@@ -163,3 +163,65 @@
     display: none !important;
   }
 }
+
+
+/* Mobile / short viewport polish */
+@media (max-width: 768px), (max-height: 720px) {
+  /* Panel visibility is controlled only from the top-right 操作 menu. */
+  #mobile-departures-btn,
+  #mobile-map-controls-btn,
+  .mobile-control-row {
+    display: none !important;
+  }
+
+  /* Make the map readable through all HUD surfaces. */
+  :root {
+    --panel-bg: rgba(7, 16, 38, .58);
+    --panel-bg-hover: rgba(12, 24, 52, .68);
+  }
+  .flight-panel,
+  .flight-info-hud,
+  .playback-bar-wrapper,
+  .map-controls-toolbar,
+  .app-mode-switch,
+  #top-app-bar .panel-visibility-items,
+  .info-panel,
+  .sky-finder-panel {
+    background-color: rgba(7, 16, 38, .58) !important;
+  }
+  .route-card { background: rgba(15, 23, 42, .48) !important; }
+  .demo-route-notice { background: rgba(0, 0, 0, .16) !important; }
+
+  /* The scroll viewport owns scrolling; the panel paints its background for
+     the full scrollable content so the glass surface never disappears. */
+  #flight-panel-root {
+    background: rgba(7, 16, 38, .58) !important;
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  #flight-panel-root .flight-panel,
+  #flight-panel-root .live-panel {
+    min-height: 100% !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* [hidden] is the single source of truth for 操作 menu visibility. */
+  #playback-container[hidden],
+  #flight-panel-root[hidden],
+  #flight-info-root[hidden],
+  #map-controls-container[hidden] {
+    display: none !important;
+  }
+}
+
+/* Phone layout no longer reserves a row for the removed quick buttons. */
+@media (max-width: 768px) {
+  #left-panel-container { top: 76px !important; }
+}
+@media (max-width: 480px) {
+  #left-panel-container { top: 72px !important; }
+}
