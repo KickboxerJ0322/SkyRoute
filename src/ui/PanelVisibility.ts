@@ -35,7 +35,8 @@ export class PanelVisibility {
       button.type = 'button';
       button.textContent = label;
       button.setAttribute('aria-controls', id);
-      button.setAttribute('aria-pressed', 'true');
+      panel.hidden = true;
+      button.setAttribute('aria-pressed', 'false');
       button.title = `${label}の表示・非表示`;
       button.addEventListener('click', () => {
         panel.hidden = !panel.hidden;
@@ -46,6 +47,7 @@ export class PanelVisibility {
       });
       panelButtons.append(button);
     });
+    app.classList.add('sidebar-hidden');
     topBar.append(toolbar);
     const playback = document.getElementById('playback-container')!;
     new ResizeObserver(() => {
