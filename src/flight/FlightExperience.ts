@@ -69,7 +69,7 @@ export class FlightExperience {
     });
     const controls=new MapControls(element('map-controls-container'),{
       onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},
-      onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},
+      onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:()=>this.camera.rotateOnce(5000),
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
     });
     this.camera.onModeChange(mode=>{controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW:AIRCRAFT_SCALE_NORMAL);});
