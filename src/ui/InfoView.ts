@@ -27,7 +27,6 @@ export class InfoView {
         <h3>使い方</h3>
         <div class="info-grid">
           <div><strong>ROUTE</strong><span>主要空港を選び、飛行中便と今後3時間の出発予定便を確認します。</span></div>
-          <div><strong>FINDER</strong><span>現在地・住所・地名の周辺を飛ぶ航空機を探します。</span></div>
           <div><strong>飛行情報</strong><span>便を選ぶと現在位置、航跡、AI解説、音声読み上げを利用できます。</span></div>
           <div><strong>更新</strong><span>AeroAPIの利用料を抑えるため、便一覧と位置情報は原則として手動更新です。</span></div>
         </div>
