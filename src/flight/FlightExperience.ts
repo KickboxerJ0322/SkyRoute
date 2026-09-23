@@ -94,7 +94,7 @@ export class FlightExperience {
     this.aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
     this.aircraft.setModel(randomStartupAircraftModel());
     this.aircraft.setVisible(true);
-    this.aircraft.update({lat:35.54895,lng:139.78555,altitude:13,speedKmh:0,heading:315,pitch:0,roll:0});
+    this.aircraft.update({lat:35.54895,lng:139.78555,altitude:13,speedKmh:0,heading:315,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'});
     this.camera.resetToHaneda();
   }
   private syncPlayback() {this.playback.setPlayingState(this.animator.getIsPlaying(),this.animator.getDirection());}
