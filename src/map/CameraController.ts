@@ -78,6 +78,25 @@ export class CameraController {
     this.isInitialized = false;
   }
 
+  public rotateOnce(durationMillis = 5000): void {
+    if (!this.map) return;
+    this.map.stopCameraAnimation?.();
+    const startHeading = Number(this.map.heading ?? this.smoothHeading ?? 0);
+    const start = performance.now();
+    const originalMode = this.mode;
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / durationMillis);
+      const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      this.map.heading = startHeading + 360 * eased;
+      if (progress < 1) requestAnimationFrame(tick);
+      else {
+        this.map.heading = ((startHeading % 360) + 360) % 360;
+        if (originalMode !== 'FREE' && originalMode !== 'OVERVIEW') this.isInitialized = false;
+      }
+    };
+    requestAnimationFrame(tick);
+  }
+
   public getMode(): CameraMode {
     return this.mode;
   }
