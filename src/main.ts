@@ -66,6 +66,10 @@ async function initSkyRoute(): Promise<void> {
   // 5. Initialize Map Subsystems
   loading.updateStatus('Initializing Aircraft Model & Flight Path...');
   const aircraft = new AircraftController(maps3dLib, map);
+  const plannedRoute = new RouteRenderer(maps3dLib, map);
+  const actualRoute = new RouteRenderer(maps3dLib, map);
+  const cameraController = new CameraController(map);
+  const experience = new FlightExperience(aircraft, cameraController, plannedRoute, actualRoute, map);
   const homeButton = document.getElementById('app-home');
   const routeButton = document.getElementById('mode-route');
   const infoButton = document.getElementById('mode-info');
@@ -82,7 +86,7 @@ async function initSkyRoute(): Promise<void> {
     infoButton?.classList.toggle('active', info);
 
     if (leftPanel) leftPanel.hidden = info;
-    if (playback) playback.hidden = finder || info;
+    if (playback) playback.hidden = info;
     if (mapControls) mapControls.hidden = info;
     aircraft.setVisible(mode === 'ROUTE');
     if (info) void infoView.show(); else infoView.hide();
