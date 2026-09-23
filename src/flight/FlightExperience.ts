@@ -97,6 +97,9 @@ export class FlightExperience {
     this.aircraft.setVisible(true);
     this.aircraft.update(parked);
     this.camera.setMode('FOLLOW');
+    // Keep the aircraft facing east, but start the map north-up.
+    // FOLLOW normally aligns the camera with the aircraft, so offset it by -90 degrees.
+    this.camera.setHeadingOffset(-90);
     this.camera.update(parked);
   }
   private syncPlayback() {this.playback.setPlayingState(this.animator.getIsPlaying(),this.animator.getDirection());}
