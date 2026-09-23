@@ -191,16 +191,6 @@ export class FlightExperience {
     button.setAttribute('aria-pressed',String(this.autoPositionRefresh));
     button.textContent=this.autoPositionRefresh?'自動更新 ON':'自動更新 OFF';
   }
-  private toggleAutoRefresh() {
-    if(!this.selected||this.viewMode!=='LIVE')return;
-    this.autoPositionRefresh=!this.autoPositionRefresh;
-    clearTimeout(this.selectionTimer);
-    this.syncAutoRefreshButton();
-    if(this.autoPositionRefresh) {
-      this.liveView.setMessage('自動更新 ON · 現在位置を1分ごとに取得');
-      this.scheduleSelection();
-    } else this.liveView.setMessage('自動更新 OFF · 「現在位置更新」で手動取得');
-  }
   private restoreAiCommentary() {
     if(!this.lastAiCommentary)return;
     const root=element('flight-info-root');
