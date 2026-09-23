@@ -31,9 +31,10 @@ export const INITIAL_MAP_CONFIG = {
     lng: 139.7798,
     altitude: 10,
   },
-  tilt: 65,
-  range: 7500,
-  heading: 340,
+  // Low, close establishing shot of Haneda with the parked 787 visible on the apron.
+  tilt: 72,
+  range: 2600,
+  heading: 330,
   mode: 'HYBRID' as 'HYBRID' | 'SATELLITE',
 };
 
