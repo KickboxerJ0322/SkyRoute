@@ -54,6 +54,7 @@ export class FlightExperience {
   private animator:FlightAnimator;
   private playback:PlaybackControls;
   private controls:MapControls;
+  private aircraftModelManuallySelected=false;
   private statusLabel:HTMLElement;
 
   constructor(private aircraft:AircraftController,private camera:CameraController,private planned:RouteRenderer,private actual:RouteRenderer, map:any) {
@@ -69,7 +70,7 @@ export class FlightExperience {
       onRestart:()=>{this.animator.restart();this.syncPlayback();},onSpeedChange:speed=>this.animator.setSpeed(speed),onSeek:progress=>this.animator.seek(progress),
     });
     this.controls=new MapControls(element('map-controls-container'),{
-      onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},onAircraftModelChange:modelUrl=>this.setAircraftModel(modelUrl),
+      onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},onAircraftModelChange:modelUrl=>this.setAircraftModel(modelUrl,true),
       onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:degrees=>this.camera.rotateOnce(degrees),
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
     });
@@ -88,7 +89,8 @@ export class FlightExperience {
     window.addEventListener('pagehide',()=>this.stop());
   }
   async start() {await this.setMode('LIVE');this.showInitialHanedaScene();}
-  private setAircraftModel(modelUrl:string) {this.aircraft.setModel(modelUrl);this.controls.setAircraftModel(modelUrl);}
+  private setAircraftModel(modelUrl:string,manual=false) {this.aircraft.setModel(modelUrl);this.controls.setAircraftModel(modelUrl);if(manual)this.aircraftModelManuallySelected=true;}
+  private setAutomaticAircraftModel(modelUrl:string) {if(!this.aircraftModelManuallySelected)this.setAircraftModel(modelUrl);}
   private showInitialHanedaScene() {
     // Startup is deliberately API-free. Pick a bundled aircraft and park it on Haneda's apron.
     // Do not call camera.update() here: CLOSE mode would zoom to chase-camera distance.
@@ -170,11 +172,11 @@ export class FlightExperience {
     this.cancelSelection();this.viewMode='LIVE';this.enablePlayback(false);this.updateSource();
     this.selected=seed||this.provider.lastDepartures?.data.find(f=>f.id===id)||null;
     if(!this.selected)return;
-    this.setAircraftModel(aircraftModelUrlForFlight(this.selected));
+    this.setAutomaticAircraftModel(aircraftModelUrlForFlight(this.selected));
     this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();
     const signal=this.selectionAbort.signal;
     try {
-      try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;this.setAircraftModel(aircraftModelUrlForFlight(this.selected));}
+      try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;this.setAutomaticAircraftModel(aircraftModelUrlForFlight(this.selected));}
       catch(error) {if(signal.aborted)return;this.liveView.setMessage(errorText(error));}
       const [origin,destination]=await Promise.all([this.provider.resolveAirport(this.selected.origin,signal),this.provider.resolveAirport(this.selected.destination,signal)]);
       if(signal.aborted)return;this.selected={...this.selected,origin,destination};
@@ -397,7 +399,7 @@ export class FlightExperience {
     try {
       const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;
       this.selected={...detail.data,origin:this.selected.origin,destination:this.selected.destination};
-      this.setAircraftModel(aircraftModelUrlForFlight(this.selected));
+      this.setAutomaticAircraftModel(aircraftModelUrlForFlight(this.selected));
       if(this.selected.status!=='ENROUTE') {cancelAnimationFrame(this.raf);this.raf=0;this.interpolator.reset();this.lastPosition=null;}
       {this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();this.rebuildRoutes();this.placeStationary();}
       if(this.selected.status!=='ENROUTE')this.liveView.setMessage(this.selected.status==='CANCELLED'?'Cancelled':this.selected.status==='ARRIVED'?'Arrived':'Scheduled / Position not available yet.');
