@@ -403,7 +403,8 @@ export class FlightExperience {
     let route=replay?chooseRoute(this.selected,null,this.track):this.route;
     if(!replay&&this.selected.status==='ENROUTE'&&this.lastPosition&&this.selected.destination.latitude!==null&&this.selected.destination.longitude!==null) {
       const origin={...this.selected.origin,latitude:this.lastPosition.latitude,longitude:this.lastPosition.longitude,altitudeMeters:this.lastPosition.altitudeMeters};
-      route={type:'ESTIMATED',waypoints:greatCirclePoints(origin,this.selected.destination)};
+      const waypoints=greatCirclePoints(origin,this.selected.destination);
+      route={type:'ESTIMATED',waypoints,altitudeEstimated:waypoints.some(p=>p.altitudeEstimated)};
     }
     if(route.waypoints.length<2)return;
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);cancelAnimationFrame(this.raf);this.raf=0;
