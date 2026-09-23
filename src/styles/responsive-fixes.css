@@ -788,3 +788,67 @@
     max-width: 100% !important;
   }
 }
+
+
+/* 2026-09-23 ROOT FIX: desktop camera HUD is a separate bottom-right panel.
+   Previous rules moved the outer container but allowed the toolbar to span the whole
+   available lane. Give the actual CAMERA/MAP/HEADING/ROTATE/TILT frame its own
+   fixed desktop geometry: right of departures and above playback. */
+@media (min-width: 769px) and (min-height: 721px) {
+  #app #map-controls-container:not([hidden]) {
+    position: absolute !important;
+    top: auto !important;
+    left: 380px !important;
+    right: 24px !important;
+    bottom: 126px !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    pointer-events: none !important;
+  }
+
+  #app #map-controls-container > .map-controls-toolbar {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 8px 10px !important;
+    pointer-events: auto !important;
+    overflow: visible !important;
+  }
+
+  #app #map-controls-container .map-controls-body {
+    display: flex !important;
+    flex-flow: row wrap !important;
+    align-items: center !important;
+    align-content: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 6px 14px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #app #map-controls-container .toolbar-group {
+    display: flex !important;
+    flex: 0 1 auto !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+  }
+
+  #app #map-controls-container .segmented-control {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    width: auto !important;
+    max-width: 100% !important;
+  }
+
+  #app #playback-container:not([hidden]) {
+    bottom: 18px !important;
+  }
+}
