@@ -12,7 +12,7 @@ export interface MapControlsHandlers {
   onOpenMobileDepartures: () => void;
   onOffsetChange?: (offsetDeg: number) => void;
   onTiltChange?: (tiltDeg: number) => void;
-  onRotateView?: () => void;
+  onRotateView?: (degrees: number) => void;
 }
 
 export class MapControls {
@@ -121,7 +121,10 @@ export class MapControls {
         <div class="toolbar-group">
           <span class="group-label">ROTATE</span>
           <div class="segmented-control">
-            <button id="rotate-view-btn" class="rotate-view-btn" title="現在の視点を約5秒で一回転">360°</button>
+            <button class="rotate-view-btn" data-rotate="90" title="現在の視点を90°回転">90°</button>
+            <button class="rotate-view-btn" data-rotate="180" title="現在の視点を180°回転">180°</button>
+            <button class="rotate-view-btn" data-rotate="270" title="現在の視点を270°回転">270°</button>
+            <button class="rotate-view-btn" data-rotate="360" title="現在の視点を約5秒で一回転">360°</button>
           </div>
         </div>
 
@@ -200,12 +203,13 @@ export class MapControls {
       });
     });
 
-    const rotateBtn = this.container.querySelector<HTMLButtonElement>('#rotate-view-btn');
-    if (rotateBtn) {
-      rotateBtn.addEventListener('click', () => {
-        if (this.handlers.onRotateView) this.handlers.onRotateView();
+    const rotateButtons = this.container.querySelectorAll<HTMLButtonElement>('.rotate-view-btn');
+    rotateButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const degrees = Number(btn.dataset.rotate || 360);
+        if (this.handlers.onRotateView) this.handlers.onRotateView(degrees);
       });
-    }
+    });
 
     const tiltButtons = this.container.querySelectorAll('.tilt-btn');
     tiltButtons.forEach((btn) => {
