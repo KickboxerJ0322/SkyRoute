@@ -564,3 +564,51 @@
   background: var(--accent-cyan) !important;
   color: #fff !important;
 }
+
+
+/* 2026-09-23: final HUD layout requested after startup scene review. */
+/* Top SkyRoute/mode bar only: 90% transparent glass. */
+.app-mode-switch {
+  background: rgba(0, 0, 0, .10) !important;
+  background-color: rgba(0, 0, 0, .10) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  box-shadow: 0 6px 22px rgba(0,0,0,.12) !important;
+}
+/* Visibility/data controls beside the brand: no black panel behind the buttons/status. */
+#panel-visibility-menu-toggle,
+#top-app-bar .panel-visibility-items,
+#panel-visibility-controls,
+#panel-visibility-controls .data-mode-controls {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+/* Desktop camera bar lives immediately above the centered playback bar. */
+@media (min-width: 769px) {
+  #map-controls-container:not([hidden]) {
+    top: auto !important;
+    bottom: calc(18px + var(--playback-height, 96px) + 8px) !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(980px, calc(100% - 390px)) !important;
+    transform: translateX(-50%) !important;
+  }
+  #map-controls-container .map-controls-toolbar {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+}
+/* Phone/short viewport: keep the camera bar above playback too, with edge padding. */
+@media (max-width: 768px), (max-height: 720px) {
+  #map-controls-container:not([hidden]) {
+    top: auto !important;
+    bottom: calc(12px + var(--playback-height, 96px) + 8px) !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    transform: none !important;
+  }
+}
