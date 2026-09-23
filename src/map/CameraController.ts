@@ -14,7 +14,7 @@ export class CameraController {
   private map: any = null;
 
   // Smoothed camera state
-  private smoothCenter = { lat: 35.5494, lng: 139.7798, altitude: 1000 };
+  private smoothCenter = { lat: 35.5422398, lng: 139.7841925, altitude: 1000 };
   private smoothHeading = 340;
   private smoothTilt = 78;
   private smoothRange = 220;

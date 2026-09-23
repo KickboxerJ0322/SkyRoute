@@ -27,8 +27,8 @@ export const HANEDA_AIRPORT = {
 // Initial Map & Camera Settings
 export const INITIAL_MAP_CONFIG = {
   center: {
-    lat: 35.5494,
-    lng: 139.7798,
+    lat: 35.5422398,
+    lng: 139.7841925,
     altitude: 10,
   },
   // Low, close establishing shot of Haneda with the parked 787 visible on the apron.

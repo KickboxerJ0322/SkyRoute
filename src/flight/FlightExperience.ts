@@ -94,16 +94,15 @@ export class FlightExperience {
   private showInitialHanedaScene() {
     // Startup is deliberately API-free. Pick a bundled aircraft and park it on Haneda's apron.
     // Do not call camera.update() here: CLOSE mode would zoom to chase-camera distance.
-    const parked:TelemetryData={lat:35.55231194044206,lng:139.791049187656,altitude:8,speedKmh:0,heading:90,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
+    const parked:TelemetryData={lat:35.5422398,lng:139.7841925,altitude:10,speedKmh:0,heading:0,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
     this.currentTelemetry=parked;
     this.aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
     this.setAircraftModel(randomStartupAircraftModel());
     this.aircraft.setVisible(true);
     this.aircraft.update(parked);
     this.camera.setMode('FOLLOW');
-    // Keep the aircraft facing east, but start the map north-up.
-    // FOLLOW normally aligns the camera with the aircraft, so offset it by -90 degrees.
-    this.camera.setHeadingOffset(-90);
+    // North-facing aircraft with its FOLLOW camera directly behind.
+    this.camera.setHeadingOffset(0);
     this.camera.update(parked);
   }
   private syncPlayback() {this.playback.setPlayingState(this.animator.getIsPlaying(),this.animator.getDirection());}
@@ -148,7 +147,7 @@ export class FlightExperience {
   private async selectDemo(id:string) {
     this.cancelSelection();const signal=this.selectionAbort.signal;
     const route=await this.demo.getRoute(id);if(signal.aborted||this.dataMode!=='DEMO')return;
-    this.demoInfo.setRoute(route);this.planned.setRoute(route.waypoints);this.camera.setRoute(route);
+    this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.planned.setRoute(route.waypoints);this.camera.setRoute(route);
     this.animator.setRoute(route);this.animator.play();this.syncPlayback();this.enablePlayback(true);
   }
   private async refreshList() {

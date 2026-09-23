@@ -84,7 +84,7 @@ export class FlightPanel {
                     ${dep.scheduledTime}
                   </span>
                   <span class="meta-item">Gate ${dep.gate}</span>
-                  <span class="meta-aircraft">B787-10</span>
+                  <span class="meta-aircraft">${dep.aircraftType}</span>
                 </div>
               </div>
             `

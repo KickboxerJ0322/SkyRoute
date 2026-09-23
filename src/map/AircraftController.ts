@@ -34,7 +34,7 @@ export class AircraftController {
 
     this.modelElement = new Model3DElement({
       src: AIRCRAFT_MODEL_URL,
-      position: { lat: 35.5494, lng: 139.7798, altitude: 1000 },
+      position: { lat: 35.5422398, lng: 139.7841925, altitude: 1000 },
       orientation: {
         heading: normalizeHeading(MODEL_HEADING_OFFSET_DEG),
         tilt: MODEL_TILT_OFFSET_DEG,
