@@ -309,7 +309,7 @@ export class FlightExperience {
     this.liveView.setRoute(waypoints.length>=2?this.route.type:null,this.track.length>=2);
     this.drawRemainingRoute();
     const cancelled=this.selected.status==='CANCELLED';
-    (element('live-preview') as HTMLButtonElement).disabled=cancelled||waypoints.length<2||this.route.type==='ACTUAL';
+    (element('live-preview') as HTMLButtonElement).disabled=cancelled||waypoints.length<2;
     (element('live-replay') as HTMLButtonElement).disabled=cancelled||this.track.filter(p=>p.altitudeMeters!==null).length<2;
     if(waypoints.length<2)this.liveView.setMessage('Route unavailable. Position tracking can continue.');
     this.debug();
@@ -400,7 +400,11 @@ export class FlightExperience {
   }
   private startPreview(replay:boolean) {
     if(!this.selected||this.selected.status==='CANCELLED'||!this.route)return;
-    const route=replay?chooseRoute(this.selected,null,this.track):this.route;
+    let route=replay?chooseRoute(this.selected,null,this.track):this.route;
+    if(!replay&&this.selected.status==='ENROUTE'&&this.lastPosition&&this.selected.destination.latitude!==null&&this.selected.destination.longitude!==null) {
+      const origin={...this.selected.origin,latitude:this.lastPosition.latitude,longitude:this.lastPosition.longitude,altitudeMeters:this.lastPosition.altitudeMeters};
+      route={type:'ESTIMATED',waypoints:greatCirclePoints(origin,this.selected.destination)};
+    }
     if(route.waypoints.length<2)return;
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);cancelAnimationFrame(this.raf);this.raf=0;
     this.viewMode=replay?'REPLAY':'PREVIEW';this.updateSource();element('live-view-mode').textContent=this.viewMode;
