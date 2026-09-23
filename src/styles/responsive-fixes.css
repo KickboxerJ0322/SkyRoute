@@ -660,3 +660,38 @@
     transform: none !important;
   }
 }
+
+
+/* 2026-09-23: desktop camera toolbar must never overlap the departures column. */
+@media (min-width: 769px) and (min-height: 721px) {
+  #map-controls-container:not([hidden]) {
+    top: auto !important;
+    bottom: 124px !important;
+    left: 376px !important;
+    right: 18px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+  #map-controls-container .map-controls-toolbar,
+  #map-controls-container .map-controls-body {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #map-controls-container .map-controls-body {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 5px 10px !important;
+  }
+  #map-controls-container .toolbar-group {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+  }
+  #map-controls-container .segmented-control {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    max-width: 100% !important;
+  }
+}
