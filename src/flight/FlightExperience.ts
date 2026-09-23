@@ -86,7 +86,14 @@ export class FlightExperience {
     this.demoPanel.onSelect(id=>void this.selectDemo(id));
     window.addEventListener('pagehide',()=>this.stop());
   }
-  async start() {await this.setMode('LIVE');}
+  async start() {await this.setMode('LIVE');this.showInitialHanedaScene();}
+  private showInitialHanedaScene() {
+    // Startup is deliberately API-free: show the default 787 parked at Haneda until the user presses 更新.
+    this.aircraft.setModel(aircraftModelUrlForFlight(null));
+    this.aircraft.setVisible(true);
+    this.aircraft.update({lat:35.54865,lng:139.78465,altitude:16,speedKmh:0,heading:315,pitch:0,roll:0});
+    this.camera.resetToHaneda();
+  }
   private syncPlayback() {this.playback.setPlayingState(this.animator.getIsPlaying(),this.animator.getDirection());}
   private refreshCamera() {if(this.currentTelemetry)this.camera.update(this.currentTelemetry);}
   private applyTelemetry(t:TelemetryData) {this.currentTelemetry=t;this.aircraft.setVisible(true);this.aircraft.update(t);this.camera.update(t);}
