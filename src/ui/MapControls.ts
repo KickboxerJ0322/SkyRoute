@@ -12,6 +12,7 @@ export interface MapControlsHandlers {
   onOpenMobileDepartures: () => void;
   onOffsetChange?: (offsetDeg: number) => void;
   onTiltChange?: (tiltDeg: number) => void;
+  onRotateView?: () => void;
 }
 
 export class MapControls {
@@ -118,6 +119,13 @@ export class MapControls {
         </div>
 
         <div class="toolbar-group">
+          <span class="group-label">ROTATE</span>
+          <div class="segmented-control">
+            <button id="rotate-view-btn" class="rotate-view-btn" title="現在の視点を約5秒で一回転">360°</button>
+          </div>
+        </div>
+
+        <div class="toolbar-group">
           <span class="group-label" title="カメラの傾き（0°が真上、90°が水平）">TILT</span>
           <div class="segmented-control">
             <button class="tilt-btn active" data-tilt="-1">AUTO</button>
@@ -191,6 +199,13 @@ export class MapControls {
         }
       });
     });
+
+    const rotateBtn = this.container.querySelector<HTMLButtonElement>('#rotate-view-btn');
+    if (rotateBtn) {
+      rotateBtn.addEventListener('click', () => {
+        if (this.handlers.onRotateView) this.handlers.onRotateView();
+      });
+    }
 
     const tiltButtons = this.container.querySelectorAll('.tilt-btn');
     tiltButtons.forEach((btn) => {
