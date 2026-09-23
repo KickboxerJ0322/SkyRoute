@@ -69,7 +69,7 @@ export class FlightExperience {
     });
     const controls=new MapControls(element('map-controls-container'),{
       onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},
-      onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:()=>this.camera.rotateOnce(5000),
+      onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:degrees=>this.camera.rotateOnce(degrees),
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
     });
     this.camera.onModeChange(mode=>{controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW:AIRCRAFT_SCALE_NORMAL);});
@@ -90,7 +90,7 @@ export class FlightExperience {
   private showInitialHanedaScene() {
     // Startup is deliberately API-free. Pick a bundled aircraft and park it on Haneda's apron.
     // Do not call camera.update() here: CLOSE mode would zoom to chase-camera distance.
-    const parked:TelemetryData={lat:35.54895,lng:139.78555,altitude:13,speedKmh:0,heading:315,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
+    const parked:TelemetryData={lat:35.55231194044206,lng:139.791049187656,altitude:18,speedKmh:0,heading:0,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
     this.currentTelemetry=parked;
     this.aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
     this.aircraft.setModel(randomStartupAircraftModel());
