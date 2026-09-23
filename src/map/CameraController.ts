@@ -78,7 +78,7 @@ export class CameraController {
     this.isInitialized = false;
   }
 
-  public rotateOnce(durationMillis = 5000): void {
+  public rotateOnce(degrees = 360, durationMillis = Math.max(900, 5000 * Math.abs(degrees) / 360)): void {
     if (!this.map) return;
     this.map.stopCameraAnimation?.();
     const startHeading = Number(this.map.heading ?? this.smoothHeading ?? 0);
@@ -87,7 +87,7 @@ export class CameraController {
     const tick = (now: number) => {
       const progress = Math.min(1, (now - start) / durationMillis);
       const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-      this.map.heading = startHeading + 360 * eased;
+      this.map.heading = startHeading + degrees * eased;
       if (progress < 1) requestAnimationFrame(tick);
       else {
         this.map.heading = ((startHeading % 360) + 360) % 360;
