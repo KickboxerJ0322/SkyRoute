@@ -695,3 +695,52 @@
     max-width: 100% !important;
   }
 }
+
+
+/* 2026-09-23: definitive desktop HUD geometry.
+   Reserve the left departures column and a full playback-height lane below camera controls. */
+@media (min-width: 769px) and (min-height: 721px) {
+  #map-controls-container:not([hidden]) {
+    top: auto !important;
+    left: 380px !important;
+    right: 24px !important;
+    bottom: calc(var(--playback-height, 96px) + 32px) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+  #map-controls-container .map-controls-toolbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 7px 10px !important;
+  }
+  #map-controls-container .map-controls-body {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    align-items: start !important;
+  }
+  #map-controls-container .toolbar-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+  #map-controls-container .segmented-control {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 2px !important;
+    max-width: 100% !important;
+  }
+  #playback-container:not([hidden]) {
+    z-index: 37 !important;
+  }
+  #map-controls-container:not([hidden]) {
+    z-index: 38 !important;
+  }
+}
