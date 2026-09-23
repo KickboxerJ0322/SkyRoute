@@ -444,3 +444,61 @@
     -webkit-backdrop-filter: none !important;
   }
 }
+
+
+/* 2026-09-23: simple black HUDs, 90% transparent. No glass blur. */
+:root {
+  --panel-bg: rgba(0, 0, 0, .10);
+  --panel-bg-hover: rgba(0, 0, 0, .16);
+}
+.app-mode-switch,
+#panel-visibility-menu-toggle,
+#top-app-bar .panel-visibility-items,
+#flight-panel-root,
+#flight-info-root .flight-info-hud,
+#map-controls-container .map-controls-toolbar,
+#playback-container .playback-bar-wrapper,
+.info-panel {
+  background: rgba(0, 0, 0, .10) !important;
+  background-color: rgba(0, 0, 0, .10) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+#flight-panel-root .flight-panel,
+#flight-panel-root .live-panel,
+#flight-panel-root .live-routes,
+#flight-panel-root .departures-section,
+#flight-panel-root .route-card,
+#flight-panel-root .route-card.active,
+#flight-panel-root .demo-route-notice,
+#map-controls-container .map-controls-body,
+#map-controls-container .toolbar-group {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Desktop: camera toolbar starts to the right of the 340px flight column. */
+@media (min-width: 769px) and (min-height: 721px) {
+  #map-controls-container:not([hidden]) {
+    top: 64px !important;
+    left: 370px !important;
+    right: 18px !important;
+    width: auto !important;
+  }
+  #map-controls-container .map-controls-toolbar {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+}
+
+/* Mobile/short screens: keep camera directly below the top controls. */
+@media (max-width: 768px), (max-height: 720px) {
+  #map-controls-container:not([hidden]) {
+    top: 64px !important;
+    left: 8px !important;
+    right: 8px !important;
+  }
+}
