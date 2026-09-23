@@ -7,7 +7,7 @@ import { AeroApiFlightProvider, chooseRoute, toAnimationRoute } from './AeroApiF
 import { LiveFlightInterpolator } from './LiveFlightInterpolator';
 import { FlightAnimator } from './FlightAnimator';
 import type { SkyRouteFlight, SkyRoutePosition, SkyRouteRoute, SkyRouteTrackPoint } from './liveTypes';
-import { aircraftModelUrlForFlight } from './aircraftModel';
+import { aircraftModelUrlForFlight, randomStartupAircraftModel } from './aircraftModel';
 import type { TelemetryData } from './types';
 import { FlightPanel } from '../ui/FlightPanel';
 import { FlightInfo } from '../ui/FlightInfo';
@@ -88,10 +88,13 @@ export class FlightExperience {
   }
   async start() {await this.setMode('LIVE');this.showInitialHanedaScene();}
   private showInitialHanedaScene() {
-    // Startup is deliberately API-free: show the default 787 parked at Haneda until the user presses 更新.
-    this.aircraft.setModel(aircraftModelUrlForFlight(null));
+    // Startup is deliberately API-free. Pick a bundled aircraft and park it on Haneda's apron.
+    // Do not call camera.update() here: CLOSE mode would zoom to chase-camera distance.
+    this.currentTelemetry=null;
+    this.aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
+    this.aircraft.setModel(randomStartupAircraftModel());
     this.aircraft.setVisible(true);
-    this.aircraft.update({lat:35.54865,lng:139.78465,altitude:16,speedKmh:0,heading:315,pitch:0,roll:0});
+    this.aircraft.update({lat:35.54895,lng:139.78555,altitude:13,speedKmh:0,heading:315,pitch:0,roll:0});
     this.camera.resetToHaneda();
   }
   private syncPlayback() {this.playback.setPlayingState(this.animator.getIsPlaying(),this.animator.getDirection());}
