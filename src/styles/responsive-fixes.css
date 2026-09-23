@@ -612,3 +612,51 @@
     transform: none !important;
   }
 }
+
+
+/* 2026-09-23 final placement/background corrections. */
+#top-app-bar .app-mode-switch {
+  background: rgba(7, 16, 38, .10) !important;
+  background-color: rgba(7, 16, 38, .10) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.10) !important;
+}
+#top-app-bar #panel-visibility-controls,
+#top-app-bar #panel-visibility-controls .panel-visibility-items,
+#top-app-bar #panel-visibility-controls .data-mode-controls {
+  background: none !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+/* Camera toolbar is anchored just above playback, not in the middle of the map. */
+#map-controls-container:not([hidden]) {
+  top: auto !important;
+  bottom: 124px !important;
+  left: 50% !important;
+  right: auto !important;
+  width: min(980px, calc(100vw - 390px)) !important;
+  max-width: 980px !important;
+  transform: translateX(-50%) !important;
+}
+#map-controls-container .map-controls-toolbar {
+  width: 100% !important;
+}
+#map-controls-container .rotate-view-btn {
+  min-width: 34px !important;
+}
+@media (max-width: 768px), (max-height: 720px) {
+  #map-controls-container:not([hidden]) {
+    top: auto !important;
+    bottom: 116px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+}
