@@ -10,7 +10,7 @@ import type { SkyRouteFlight, SkyRoutePosition, SkyRouteRoute, SkyRouteTrackPoin
 import { aircraftModelUrlForFlight, randomStartupAircraftModel } from './aircraftModel';
 import type { TelemetryData } from './types';
 import { FlightPanel } from '../ui/FlightPanel';
-import { FlightInfo } from '../ui/FlightInfo';
+import { FlightInfo, demoCommentary } from '../ui/FlightInfo';
 import { PlaybackControls } from '../ui/PlaybackControls';
 import { MapControls } from '../ui/MapControls';
 import { PanelVisibility } from '../ui/PanelVisibility';
@@ -49,6 +49,7 @@ export class FlightExperience {
   private lastAiModel='';
   private lastAiCreatedAt='';
   private ttsAudio:HTMLAudioElement|null=null;
+  private speechUtterance:SpeechSynthesisUtterance|null=null;
   private ttsObjectUrl='';
   private loadingList=false;
   private animator:FlightAnimator;
@@ -147,8 +148,35 @@ export class FlightExperience {
   private async selectDemo(id:string) {
     this.cancelSelection();const signal=this.selectionAbort.signal;
     const route=await this.demo.getRoute(id);if(signal.aborted||this.dataMode!=='DEMO')return;
+    const demoModels:Record<string,string>={
+      'hnd-cts':'/models/b787_9_ana.glb',
+      'hnd-itm':'/models/b737_800_jal.glb',
+      'hnd-fuk':'/models/a350_900_jal.glb',
+      'hnd-oka':'/models/a320_peach.glb',
+    };
+    this.setAircraftModel(demoModels[id] ?? '/models/skyroute_787_10.glb');
+    this.aircraftModelManuallySelected=false;
     this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.planned.setRoute(route.waypoints);this.camera.setRoute(route);
+    this.lastAiCommentary=demoCommentary[id]??'';
+    this.bindDemoActions();
     this.animator.setRoute(route);this.animator.play();this.syncPlayback();this.enablePlayback(true);
+  }
+  private bindDemoActions() {
+    const root=element('flight-info-root');
+    root.querySelector('#demo-live')?.addEventListener('click',()=>void this.setMode('LIVE'));
+    root.querySelector('#demo-position')?.addEventListener('click',()=>{
+      if(this.currentTelemetry)this.demoInfo.updateTelemetry(this.currentTelemetry);
+      root.querySelector('#live-message')!.textContent='DEMO · 現在位置はシミュレーション上の位置です。';
+    });
+    const replay=()=>{this.animator.restart();this.animator.play();this.syncPlayback();};
+    root.querySelector('#demo-preview')?.addEventListener('click',replay);
+    root.querySelector('#demo-replay')?.addEventListener('click',replay);
+    root.querySelector('#demo-ai')?.addEventListener('click',()=>{
+      const panel=root.querySelector<HTMLElement>('#live-ai-commentary');
+      if(panel)panel.hidden=!panel.hidden;
+    });
+    root.querySelector('#live-speak')?.addEventListener('click',()=>void this.speakAiCommentary());
+    root.querySelector('#live-stop-speak')?.addEventListener('click',()=>this.stopAiSpeech());
   }
   private async refreshList() {
     if(this.dataMode!=='LIVE'||this.loadingList)return;
@@ -242,7 +270,12 @@ export class FlightExperience {
       this.ttsAudio.onended=()=>this.stopAiSpeech(false);
       await this.ttsAudio.play();
     } catch {
-      this.liveView.setMessage('音声を生成できませんでした。Cloud Text-to-Speech の設定を確認してください。');
+      if('speechSynthesis' in window){
+        this.speechUtterance=new SpeechSynthesisUtterance(this.lastAiCommentary);
+        this.speechUtterance.lang='ja-JP';
+        window.speechSynthesis.speak(this.speechUtterance);
+        this.liveView.setMessage('端末の音声読み上げで再生しています。');
+      } else this.liveView.setMessage('音声を再生できませんでした。');
     } finally {
       const current=element('flight-info-root').querySelector<HTMLButtonElement>('#live-speak');
       if(current){current.disabled=false;current.textContent='🔊 音声';}
@@ -250,6 +283,7 @@ export class FlightExperience {
   }
   private stopAiSpeech(resetMessage=true) {
     if(this.ttsAudio){this.ttsAudio.pause();this.ttsAudio.currentTime=0;this.ttsAudio=null;}
+    if(this.speechUtterance){window.speechSynthesis.cancel();this.speechUtterance=null;}
     if(this.ttsObjectUrl){URL.revokeObjectURL(this.ttsObjectUrl);this.ttsObjectUrl='';}
     if(resetMessage&&this.lastAiCommentary)this.liveView.setMessage('音声を停止しました。');
   }
