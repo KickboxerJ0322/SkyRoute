@@ -744,3 +744,47 @@
     z-index: 38 !important;
   }
 }
+
+
+/* 2026-09-23: camera panel must stay completely outside the departures column.
+   The departures panel is 340px wide and starts at x=22px, so reserve through x=362px.
+   Camera begins at x=380px and its own translucent frame cannot enter that lane. */
+@media (min-width: 769px) and (min-height: 721px) {
+  #map-controls-container:not([hidden]) {
+    box-sizing: border-box !important;
+    left: 380px !important;
+    right: 18px !important;
+    width: calc(100vw - 398px) !important;
+    max-width: none !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+  #map-controls-container .map-controls-toolbar {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+  #map-controls-container .map-controls-body {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 7px 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  #map-controls-container .toolbar-group {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  #map-controls-container .segmented-control {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    max-width: 100% !important;
+  }
+}
