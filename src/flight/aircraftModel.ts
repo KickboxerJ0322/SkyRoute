@@ -41,3 +41,15 @@ export const aircraftModelUrlForFlight = (flight: SkyRouteFlight | null): string
   const airline = airlineFromFlight(flight);
   return airline ? B738_MODELS[airline] : AIRCRAFT_MODEL_URL;
 };
+
+
+const STARTUP_MODELS = [
+  '/models/b737_800_ana.glb',
+  '/models/b737_800_jal.glb',
+  '/models/b737_800_skymark.glb',
+  '/models/skyroute_787_10.glb',
+] as const;
+
+/** Pick one of the bundled aircraft for the API-free Haneda startup scene. */
+export const randomStartupAircraftModel = (): string =>
+  STARTUP_MODELS[Math.floor(Math.random() * STARTUP_MODELS.length)];
