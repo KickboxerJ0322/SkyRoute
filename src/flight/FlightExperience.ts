@@ -53,6 +53,7 @@ export class FlightExperience {
   private loadingList=false;
   private animator:FlightAnimator;
   private playback:PlaybackControls;
+  private controls:MapControls;
   private statusLabel:HTMLElement;
 
   constructor(private aircraft:AircraftController,private camera:CameraController,private planned:RouteRenderer,private actual:RouteRenderer, map:any) {
@@ -67,12 +68,12 @@ export class FlightExperience {
       onTogglePlay:()=>{this.animator.togglePlay();this.syncPlayback();},onToggleReverse:()=>{this.animator.toggleReverse();this.syncPlayback();},
       onRestart:()=>{this.animator.restart();this.syncPlayback();},onSpeedChange:speed=>this.animator.setSpeed(speed),onSeek:progress=>this.animator.seek(progress),
     });
-    const controls=new MapControls(element('map-controls-container'),{
-      onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},
+    this.controls=new MapControls(element('map-controls-container'),{
+      onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},onAircraftModelChange:modelUrl=>this.setAircraftModel(modelUrl),
       onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:degrees=>this.camera.rotateOnce(degrees),
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
     });
-    this.camera.onModeChange(mode=>{controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW:AIRCRAFT_SCALE_NORMAL);});
+    this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW:AIRCRAFT_SCALE_NORMAL);});
     new PanelVisibility();
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
@@ -87,13 +88,14 @@ export class FlightExperience {
     window.addEventListener('pagehide',()=>this.stop());
   }
   async start() {await this.setMode('LIVE');this.showInitialHanedaScene();}
+  private setAircraftModel(modelUrl:string) {this.aircraft.setModel(modelUrl);this.controls.setAircraftModel(modelUrl);}
   private showInitialHanedaScene() {
     // Startup is deliberately API-free. Pick a bundled aircraft and park it on Haneda's apron.
     // Do not call camera.update() here: CLOSE mode would zoom to chase-camera distance.
     const parked:TelemetryData={lat:35.55231194044206,lng:139.791049187656,altitude:8,speedKmh:0,heading:90,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
     this.currentTelemetry=parked;
     this.aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
-    this.aircraft.setModel(randomStartupAircraftModel());
+    this.setAircraftModel(randomStartupAircraftModel());
     this.aircraft.setVisible(true);
     this.aircraft.update(parked);
     this.camera.setMode('FOLLOW');
@@ -118,7 +120,6 @@ export class FlightExperience {
   private stop() {this.cancelSelection();this.listAbort.abort();clearTimeout(this.listTimer);}
   async setMode(mode:'LIVE'|'DEMO') {
     this.stop();this.dataMode=mode;this.viewMode='LIVE';this.selected=null;this.listAbort=new AbortController();this.loadingList=false;
-    this.aircraft.setModel(aircraftModelUrlForFlight(null));
     element('data-live').setAttribute('aria-pressed',String(mode==='LIVE'));element('data-demo').setAttribute('aria-pressed',String(mode==='DEMO'));
     (element('refresh-flights') as HTMLButtonElement).disabled=mode==='DEMO';
     this.enablePlayback(mode==='DEMO');
@@ -169,11 +170,11 @@ export class FlightExperience {
     this.cancelSelection();this.viewMode='LIVE';this.enablePlayback(false);this.updateSource();
     this.selected=seed||this.provider.lastDepartures?.data.find(f=>f.id===id)||null;
     if(!this.selected)return;
-    this.aircraft.setModel(aircraftModelUrlForFlight(this.selected));
+    this.setAircraftModel(aircraftModelUrlForFlight(this.selected));
     this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();
     const signal=this.selectionAbort.signal;
     try {
-      try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;this.aircraft.setModel(aircraftModelUrlForFlight(this.selected));}
+      try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;this.setAircraftModel(aircraftModelUrlForFlight(this.selected));}
       catch(error) {if(signal.aborted)return;this.liveView.setMessage(errorText(error));}
       const [origin,destination]=await Promise.all([this.provider.resolveAirport(this.selected.origin,signal),this.provider.resolveAirport(this.selected.destination,signal)]);
       if(signal.aborted)return;this.selected={...this.selected,origin,destination};
@@ -396,7 +397,7 @@ export class FlightExperience {
     try {
       const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;
       this.selected={...detail.data,origin:this.selected.origin,destination:this.selected.destination};
-      this.aircraft.setModel(aircraftModelUrlForFlight(this.selected));
+      this.setAircraftModel(aircraftModelUrlForFlight(this.selected));
       if(this.selected.status!=='ENROUTE') {cancelAnimationFrame(this.raf);this.raf=0;this.interpolator.reset();this.lastPosition=null;}
       {this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();this.rebuildRoutes();this.placeStationary();}
       if(this.selected.status!=='ENROUTE')this.liveView.setMessage(this.selected.status==='CANCELLED'?'Cancelled':this.selected.status==='ARRIVED'?'Arrived':'Scheduled / Position not available yet.');

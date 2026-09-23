@@ -1610,3 +1610,46 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
     top: calc(16px + var(--top-controls-height, 48px)) !important;
   }
 }
+
+
+/* Aircraft model selector inside the camera toolbar */
+.aircraft-model-group {
+  min-width: 0;
+}
+
+.aircraft-model-select {
+  min-width: 190px;
+  max-width: 230px;
+  height: 28px;
+  padding: 3px 28px 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.aircraft-model-select:hover,
+.aircraft-model-select:focus {
+  border-color: var(--accent-cyan);
+}
+
+.aircraft-model-select option {
+  background: #071026;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .aircraft-model-group {
+    width: 100%;
+  }
+
+  .aircraft-model-select {
+    width: 100%;
+    max-width: none;
+  }
+}

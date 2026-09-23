@@ -5,10 +5,13 @@
  */
 
 import { CameraMode } from '../map/CameraController';
+import { AIRCRAFT_MODEL_URL } from '../config';
+import { AIRCRAFT_MODELS } from '../flight/aircraftModel';
 
 export interface MapControlsHandlers {
   onMapModeChange: (mode: 'HYBRID' | 'SATELLITE') => void;
   onCameraModeChange: (mode: CameraMode) => void;
+  onAircraftModelChange: (modelUrl: string) => void;
   onOpenMobileDepartures: () => void;
   onOffsetChange?: (offsetDeg: number) => void;
   onTiltChange?: (tiltDeg: number) => void;
@@ -20,6 +23,7 @@ export class MapControls {
   private handlers: MapControlsHandlers;
   private currentMapMode: 'HYBRID' | 'SATELLITE' = 'HYBRID';
   private currentCameraMode: CameraMode = 'CLOSE';
+  private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -38,6 +42,12 @@ export class MapControls {
         btn.classList.remove('active');
       }
     });
+  }
+
+  public setAircraftModel(modelUrl: string): void {
+    this.currentAircraftModelUrl = modelUrl || AIRCRAFT_MODEL_URL;
+    const select = this.container.querySelector<HTMLSelectElement>('#aircraft-model-select');
+    if (select) select.value = this.currentAircraftModelUrl;
   }
 
   public setMapMode(mode: 'HYBRID' | 'SATELLITE'): void {
@@ -72,6 +82,14 @@ export class MapControls {
         </div>
 
         <div class="map-controls-body">
+        <!-- Aircraft Model -->
+        <div class="toolbar-group aircraft-model-group">
+          <span class="group-label">AIRCRAFT</span>
+          <select id="aircraft-model-select" class="aircraft-model-select" aria-label="表示する航空機モデル">
+            ${AIRCRAFT_MODELS.map(model => `<option value="${model.url}" ${model.url === this.currentAircraftModelUrl ? 'selected' : ''}>${model.label}</option>`).join('')}
+          </select>
+        </div>
+
         <!-- Camera Modes -->
         <div class="toolbar-group">
           <span class="group-label">CAMERA</span>
@@ -145,6 +163,14 @@ export class MapControls {
   }
 
   private attachEventListeners(): void {
+    const aircraftSelect = this.container.querySelector<HTMLSelectElement>('#aircraft-model-select');
+    if (aircraftSelect) {
+      aircraftSelect.addEventListener('change', () => {
+        this.setAircraftModel(aircraftSelect.value);
+        this.handlers.onAircraftModelChange(aircraftSelect.value);
+      });
+    }
+
     const camButtons = this.container.querySelectorAll('.cam-mode-btn');
     camButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
