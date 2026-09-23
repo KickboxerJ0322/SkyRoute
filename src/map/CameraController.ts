@@ -83,15 +83,19 @@ export class CameraController {
     this.map.stopCameraAnimation?.();
     const startHeading = Number(this.map.heading ?? this.smoothHeading ?? 0);
     const start = performance.now();
-    const originalMode = this.mode;
     const tick = (now: number) => {
       const progress = Math.min(1, (now - start) / durationMillis);
       const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
       this.map.heading = startHeading + degrees * eased;
       if (progress < 1) requestAnimationFrame(tick);
       else {
-        this.map.heading = ((startHeading % 360) + 360) % 360;
-        if (originalMode !== 'FREE' && originalMode !== 'OVERVIEW') this.isInitialized = false;
+        const finalHeading = ((startHeading + degrees) % 360 + 360) % 360;
+        this.map.heading = finalHeading;
+        this.smoothHeading = finalHeading;
+        // Keep the rotated viewpoint instead of snapping back to the tracked heading.
+        // Persist it as the follow-camera heading offset as well.
+        this.headingOffset = ((this.headingOffset + degrees) % 360 + 360) % 360;
+        this.isInitialized = true;
       }
     };
     requestAnimationFrame(tick);
