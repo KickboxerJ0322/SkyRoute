@@ -13,10 +13,12 @@ export const AIRCRAFT_MODELS: readonly AircraftModelOption[] = [
   { url: '/models/a320_jetstar_japan.glb', label: 'Airbus A320 · Jetstar Japan' },
   { url: '/models/a320_peach.glb', label: 'Airbus A320 · Peach' },
   { url: '/models/a320_starflyer.glb', label: 'Airbus A320 · StarFlyer' },
+  { url: '/models/a321_ana.glb', label: 'Airbus A321 · ANA' },
   { url: '/models/a350_900_jal.glb', label: 'Airbus A350-900 · JAL' },
   { url: '/models/b737_800_ana.glb', label: 'Boeing 737-800 · ANA' },
   { url: '/models/b737_800_jal.glb', label: 'Boeing 737-800 · JAL' },
   { url: '/models/b737_800_skymark.glb', label: 'Boeing 737-800 · Skymark' },
+  { url: '/models/b767_300_jal.glb', label: 'Boeing 767-300 · JAL' },
   { url: '/models/b787_8_jal.glb', label: 'Boeing 787-8 · JAL' },
   { url: '/models/b787_9_ana.glb', label: 'Boeing 787-9 · ANA' },
   { url: '/models/skyroute_787_10.glb', label: 'Boeing 787-10 · SkyRoute' },
@@ -51,9 +53,29 @@ const isA320Ceo = (aircraftType: string | null | undefined): boolean => {
     || type.startsWith('AIRBUSA3202');
 };
 
+const isA321 = (aircraftType: string | null | undefined): boolean => {
+  const type = compact(aircraftType);
+  return type === 'A321'
+    || type === 'A21N'
+    || type === 'A321200'
+    || type === 'A321NEO'
+    || type === 'AIRBUSA321'
+    || type === 'AIRBUSA321200'
+    || type === 'AIRBUSA321NEO'
+    || type.startsWith('A3212');
+};
+
 const isA350900 = (aircraftType: string | null | undefined): boolean => {
   const type = compact(aircraftType);
   return type === 'A359' || type === 'A350900' || type === '350900' || type === 'AIRBUSA350900';
+};
+
+const isB767300 = (aircraftType: string | null | undefined): boolean => {
+  const type = compact(aircraftType);
+  return type === 'B763'
+    || type === 'B767300'
+    || type === '767300'
+    || type === 'BOEING767300';
 };
 
 const isB7878 = (aircraftType: string | null | undefined): boolean => {
@@ -108,8 +130,16 @@ export const aircraftModelUrlForFlight = (flight: SkyRouteFlight | null): string
     return A320_MODELS[airline] ?? AIRCRAFT_MODEL_URL;
   }
 
+  if (isA321(flight.aircraftType) && airline === 'ANA') {
+    return '/models/a321_ana.glb';
+  }
+
   if (isA350900(flight.aircraftType) && airline === 'JAL') {
     return '/models/a350_900_jal.glb';
+  }
+
+  if (isB767300(flight.aircraftType) && airline === 'JAL') {
+    return '/models/b767_300_jal.glb';
   }
 
   if (isB7878(flight.aircraftType) && airline === 'JAL') {
