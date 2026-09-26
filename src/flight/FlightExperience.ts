@@ -399,7 +399,7 @@ export class FlightExperience {
     const button=root.querySelector<HTMLButtonElement>('#live-ai');
     const panel=root.querySelector<HTMLElement>('#live-ai-commentary');
     if(!button||!panel)return;
-    button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;panel.textContent='AeroAPIの運航データをGeminiで解析しています…';
+    button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;panel.textContent='運航・METAR・SIGMET・NOWCASTをGeminiで解析しています…';
     const sample=<T>(items:T[],max=28)=>items.length<=max?items:Array.from({length:max},(_,i)=>items[Math.round(i*(items.length-1)/(max-1))]);
     let weather:{origin:unknown;destination:unknown}={origin:null,destination:null};
     try {
@@ -416,6 +416,12 @@ export class FlightExperience {
         destination:destinationObservation?{...destinationObservation,windDirectionDeg:weatherWindDirection(destinationObservation)}:null,
       };
     } catch {}
+    const [sigmetResult,nowcastResult]=await Promise.allSettled([
+      this.sigmet.getCommentaryContext(),
+      this.nowcastPanel.getCommentaryContext(),
+    ]);
+    const sigmet=sigmetResult.status==='fulfilled'?sigmetResult.value:null;
+    const nowcast=nowcastResult.status==='fulfilled'?nowcastResult.value:null;
     const payload={
       observedAt:new Date().toISOString(),
       flight:this.selected,
@@ -433,6 +439,8 @@ export class FlightExperience {
         actualTrack:sample(this.track),
       },
       weather,
+      sigmet,
+      nowcast,
     };
     try {
       const response=await fetch('/api/ai/flight-commentary',{
