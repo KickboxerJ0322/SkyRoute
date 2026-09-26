@@ -471,10 +471,11 @@ export class FlightExperience {
     const destination=this.selected?.destination;
     const remaining=destination?.latitude!=null&&destination.longitude!=null?distanceBetween({lat:p.latitude,lng:p.longitude},{lat:destination.latitude,lng:destination.longitude})/1000:0;
     const altitudeChange=(p.altitudeChange??'').toUpperCase();
-    const phase:TelemetryData['flightPhase']=remaining<35&&p.altitudeMeters<2500?'Approach'
+    const phase:TelemetryData['flightPhase']=p.altitudeMeters<300&&this.selected?.status==='ARRIVED'?'Landed'
+      :this.selected?.status!=='ENROUTE'&&p.altitudeMeters<500?'Takeoff'
+      :remaining<35&&p.altitudeMeters<2500?'Approach'
       :altitudeChange==='C'?'Climb'
       :altitudeChange==='D'?'Descent'
-      :p.altitudeMeters<300&&this.selected?.status==='ARRIVED'?'Landed'
       :'Cruise';
     const telemetry:TelemetryData={lat:p.latitude,lng:p.longitude,altitude:p.altitudeMeters,speedKmh:p.groundSpeedKmh??0,heading:p.heading??this.currentTelemetry?.heading??0,pitch:0,roll:0,
       progress:0,distanceRemainingKm:remaining,totalDistanceKm:remaining,isClimbing:phase==='Climb',isDescent:phase==='Descent'||phase==='Approach',flightPhase:phase};
