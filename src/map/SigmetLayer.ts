@@ -152,16 +152,24 @@ export class SigmetLayer {
   private data:SigmetCollection|null=null;
   private polygons:HTMLElement[]=[];
   private status:SigmetLayerStatus={enabled:false,count:0,message:'SIGMET OFF',stale:false};
+  private statusListener:((status:SigmetLayerStatus)=>void)|null=null;
+  private refreshTimer=0;
 
   constructor(
     private lib:Maps3DLibrary,
     private map:HTMLElement,
-    private onStatus?:(status:SigmetLayerStatus)=>void,
   ){}
+
+  public onStatusChange(listener:(status:SigmetLayerStatus)=>void):void{
+    this.statusListener=listener;
+    listener(this.status);
+  }
 
   public setRoute(waypoints:Waypoint[]):void{
     this.route=[...waypoints];
-    if(this.enabled&&this.data)this.render();
+    if(!this.enabled)return;
+    if(this.data)this.render();
+    else void this.setEnabled(true);
   }
 
   public clearRoute():void{
@@ -173,6 +181,8 @@ export class SigmetLayer {
   public async setEnabled(enabled:boolean):Promise<SigmetLayerStatus>{
     this.enabled=enabled;
     if(!enabled){
+      window.clearTimeout(this.refreshTimer);
+      this.refreshTimer=0;
       this.clearPolygons();
       this.updateStatus(0,'SIGMET OFF',false);
       return this.status;
@@ -189,10 +199,12 @@ export class SigmetLayer {
       if(!response.ok)throw new Error(body.error||'SIGMET_UNAVAILABLE');
       this.data=body as SigmetCollection;
       this.render();
+      this.scheduleRefresh();
       return this.status;
     }catch{
       this.clearPolygons();
       this.updateStatus(0,'SIGMET 取得失敗',false);
+      this.scheduleRefresh();
       return this.status;
     }
   }
@@ -253,13 +265,21 @@ export class SigmetLayer {
     this.polygons=[];
   }
 
+  private scheduleRefresh():void{
+    window.clearTimeout(this.refreshTimer);
+    if(!this.enabled||this.route.length<2)return;
+    this.refreshTimer=window.setTimeout(()=>void this.setEnabled(true),5*60*1000);
+  }
+
   private updateStatus(count:number,message:string,stale:boolean):void{
     this.status={enabled:this.enabled,count,message,stale};
-    this.onStatus?.(this.status);
+    this.statusListener?.(this.status);
   }
 
   public destroy():void{
     this.enabled=false;
+    window.clearTimeout(this.refreshTimer);
+    this.refreshTimer=0;
     this.clearPolygons();
     this.route=[];
     this.data=null;
