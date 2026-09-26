@@ -22,7 +22,9 @@ export class RouteRenderer {
    */
   public setRoute(waypoints: Waypoint[], type: 'FILED' | 'ACTUAL' | 'ESTIMATED' = 'ACTUAL'): void {
     if (waypoints.length < 2) { this.clear(); return; }
-    const color = type === 'ACTUAL' ? '#00D4FF' : type === 'FILED' ? '#3578FF' : '#3578FF66';
+    const color = type === 'ACTUAL' ? '#00D4FF' : type === 'FILED' ? '#3578FF' : '#FFB300';
+    const outerColor = type === 'ACTUAL' ? '#006C88' : type === 'FILED' ? '#153A91' : '#7A5200';
+    const strokeWidth = type === 'ESTIMATED' ? 6 : 8;
     const { Polyline3DElement, AltitudeMode } = this.lib;
 
     // Format coordinates with explicit altitude for 3D aerial path
@@ -36,9 +38,9 @@ export class RouteRenderer {
       this.polylineElement = new Polyline3DElement({
         coordinates,
         altitudeMode: AltitudeMode.ABSOLUTE,
-        strokeColor: color, // High-visibility luminous cyan
-        strokeWidth: 8,
-        outerColor: '#0044BB', // Darker blue glow contrast
+        strokeColor: color,
+        strokeWidth,
+        outerColor,
         outerWidth: 0.3,
         drawsOccludedSegments: true,
       });
@@ -49,6 +51,8 @@ export class RouteRenderer {
     } else {
       this.polylineElement.coordinates = coordinates;
       this.polylineElement.strokeColor = color;
+      this.polylineElement.strokeWidth = strokeWidth;
+      this.polylineElement.outerColor = outerColor;
     }
   }
 
