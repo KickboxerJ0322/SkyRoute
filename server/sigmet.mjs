@@ -96,6 +96,25 @@ const pickNumber=(p,...keys)=>{
   return null;
 };
 
+const parseAltitudeFeet=value=>{
+  if(value===null||value===undefined||value==='')return null;
+  if(typeof value==='number'&&Number.isFinite(value))return value;
+  const text=String(value).trim().toUpperCase();
+  if(text==='SFC'||text==='SURFACE')return 0;
+  const fl=text.match(/^FL\s*(\d{2,3})$/);
+  if(fl)return Number(fl[1])*100;
+  const numeric=Number(text.replace(/FT$/,'').trim());
+  return Number.isFinite(numeric)?numeric:null;
+};
+
+const pickAltitudeFeet=(p,...keys)=>{
+  for(const key of keys){
+    const parsed=parseAltitudeFeet(p?.[key]);
+    if(parsed!==null)return parsed;
+  }
+  return null;
+};
+
 const normalizedProperties=p=>{
   const from=parseTime(p?.validTimeFrom??p?.valid_time_from??p?.validFrom);
   const to=parseTime(p?.validTimeTo??p?.valid_time_to??p?.validTo);
@@ -110,8 +129,8 @@ const normalizedProperties=p=>{
     validTimeTo:to===null?null:new Date(to).toISOString(),
     // International SIGMET v4 uses base/top, while older/domestic shapes use
     // altitudeLo*/altitudeHi*. Accept both so the client contract stays stable.
-    altitudeLowFeet:pickNumber(p,'base','altitudeLo1','altitudeLo2','altitudeLow1','altitudeLow2','altitudeLow'),
-    altitudeHighFeet:pickNumber(p,'top','altitudeHi1','altitudeHi2','altitudeHigh'),
+    altitudeLowFeet:pickAltitudeFeet(p,'base','altitudeLo1','altitudeLo2','altitudeLow1','altitudeLow2','altitudeLow'),
+    altitudeHighFeet:pickAltitudeFeet(p,'top','altitudeHi1','altitudeHi2','altitudeHigh'),
     movementDir:pickNumber(p,'movementDir','movementDirection','dir'),
     movementSpd:pickNumber(p,'movementSpd','movementSpeed','spd'),
     rawText:String(p?.rawSigmet??p?.rawAirSigmet??p?.rawText??p?.raw??'').slice(0,2000),
