@@ -1,5 +1,7 @@
 ﻿import type { SkyRouteFlight, SkyRoutePosition, RouteType } from '../flight/liveTypes';
+import type { TelemetryData } from '../flight/types';
 import { formatJst } from '../flight/AeroApiFlightProvider';
+import { flightPhaseLabel, remainingTimeLabel, routeTypeLabel } from '../flight/presentation';
 export const escapeHtml=(value:unknown)=>String(value??'--').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export class LiveFlightView {
   private flights:SkyRouteFlight[]=[];
@@ -32,7 +34,7 @@ export class LiveFlightView {
     this.info.innerHTML=`<div class="flight-info-hud live-info"><div class="hud-top-bar"><span class="hud-route-text">${escapeHtml(f.ident)} · ${escapeHtml(f.origin.iata||f.origin.icao||'--')} → ${escapeHtml(f.destination.iata||f.destination.icao||'--')}</span><span class="phase-pill" id="live-view-mode">${escapeHtml(mode)}</span></div>
       <div class="live-airports">${escapeHtml(f.origin.name)} → ${escapeHtml(f.destination.name)}</div>
       <div class="live-metadata">Operated by ${escapeHtml(f.operator)} · <span id="live-flight-status">${escapeHtml(f.status)}</span><br>Actual aircraft: ${escapeHtml(f.aircraftType)} · 3D model: SkyRoute 787-10</div>
-      <div class="hud-grid"><div><div class="metric-label">ALTITUDE</div><div class="metric-value luminous" id="live-altitude">--</div></div><div><div class="metric-label">GROUND SPEED</div><div class="metric-value" id="live-speed">--</div></div><div><div class="metric-label">HEADING</div><div class="metric-value" id="live-heading">--</div></div><div><div class="metric-label">ROUTE</div><div id="live-route-type">--</div></div></div>
+      <div class="hud-grid"><div><div class="metric-label">ALTITUDE</div><div class="metric-value luminous" id="live-altitude">--</div></div><div><div class="metric-label">GROUND SPEED</div><div class="metric-value" id="live-speed">--</div></div><div><div class="metric-label">HEADING</div><div class="metric-value" id="live-heading">--</div></div><div><div class="metric-label">PHASE</div><div class="metric-value" id="live-phase">--</div></div><div><div class="metric-label">REMAINING</div><div class="metric-value" id="live-remaining">--</div></div><div><div class="metric-label">ROUTE</div><div id="live-route-type">--</div></div></div>
       <div class="live-flight-actions"><button id="live-return">LIVE</button><button id="live-refresh-position">現在位置更新</button><button id="live-preview" disabled>Preview Flight</button><button id="live-replay" disabled>Replay track</button><button id="live-ai">AI解説</button><button id="live-speak">🔊 音声</button><button id="live-stop-speak">■ 停止</button></div>
       <div class="live-ai-commentary" id="live-ai-commentary" hidden></div>
       <div class="live-ai-model-note" id="live-ai-model-note" hidden></div>
@@ -43,13 +45,23 @@ export class LiveFlightView {
   }
   setAirport(icao:string) {this.airport=icao;}
   setMessage(message:string) {const node=this.info.querySelector('#live-message');if(node)node.textContent=message;}
-  setRoute(type:RouteType|null,actual=false) {const node=this.info.querySelector('#live-route-type');if(node)node.textContent=type?(actual&&type!=='ACTUAL'?'ACTUAL + ':'')+type:'--';}
+  setRoute(type:RouteType|null,actual=false) {
+    const node=this.info.querySelector('#live-route-type');
+    if(node)node.textContent=type
+      ?(actual&&type!=='ACTUAL'?`実測 + ${routeTypeLabel(type)}`:routeTypeLabel(type))
+      :'--';
+  }
   updatePosition(position:SkyRoutePosition|null) {
     const set=(id:string,text:string)=>{const node=this.info.querySelector('#'+id);if(node)node.textContent=text;};
     set('live-altitude',position?.altitudeMeters!=null?`${Math.round(position.altitudeMeters).toLocaleString()} m${position.altitudeEstimated?' (est.)':''}`:'--');
     set('live-speed',position?.groundSpeedKmh!=null?`${Math.round(position.groundSpeedKmh)} km/h`:'--');
     set('live-heading',position?.heading!=null?`${Math.round(position.heading)}°`:'--');
     set('live-updated',position?`Position: ${formatJst(position.timestamp,true)} JST`:'Position not available yet.');
+  }
+  updateTelemetry(telemetry:TelemetryData) {
+    const set=(id:string,text:string)=>{const node=this.info.querySelector('#'+id);if(node)node.textContent=text;};
+    set('live-phase',flightPhaseLabel(telemetry.flightPhase));
+    set('live-remaining',`${telemetry.distanceRemainingKm.toFixed(0)} km · ${remainingTimeLabel(telemetry.distanceRemainingKm,telemetry.speedKmh)}`);
   }
   debug(values:Record<string,unknown>) {const node=this.info.querySelector('#live-debug');if(node)node.textContent=Object.entries(values).map(([k,v])=>`${k}: ${v??'--'}`).join('\n');}
 }
