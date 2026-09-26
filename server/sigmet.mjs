@@ -1,6 +1,9 @@
 import { ApiError } from './cache.mjs';
 
-const NOAA_ENDPOINT='https://aviationweather.gov/api/data/isigmet';
+const NOAA_ENDPOINTS=[
+  'https://aviationweather.gov/api/data/isigmet',
+  'https://connect.aviationweather.gov/api/data/isigmet',
+];
 const CACHE_TTL_MS=5*60*1000;
 
 const parseTime=value=>{
@@ -54,8 +57,12 @@ const cleanGeometry=geometry=>{
 };
 
 const coordsGeometry=record=>{
-  if(!Array.isArray(record?.coords))return null;
-  const ring=cleanRing(record.coords.map(point=>[
+  let coords=record?.coords;
+  if(typeof coords==='string'){
+    try{coords=JSON.parse(coords);}catch{return null;}
+  }
+  if(!Array.isArray(coords))return null;
+  const ring=cleanRing(coords.map(point=>[
     Number(point?.lon??point?.lng??point?.longitude),
     Number(point?.lat??point?.latitude),
   ]));
@@ -116,8 +123,8 @@ const normalizeJsonRecord=(record,index)=>{
   };
 };
 
-const requestNoaa=async(fetcher,format)=>{
-  const response=await fetcher(`${NOAA_ENDPOINT}?format=${format}`,{
+const requestNoaa=async(fetcher,endpoint,format)=>{
+  const response=await fetcher(`${endpoint}?format=${format}`,{
     headers:{
       Accept:format==='geojson'?'application/geo+json':'application/json',
       'User-Agent':'SkyRoute/1.0 aviation-weather-client',
@@ -149,26 +156,34 @@ export function createSigmetService({fetcher=fetch,now=Date.now,logger=console.l
     if(cache&&current<expires)return {...cache,cached:true};
 
     const attempts=[];
-    for(const format of ['geojson','json']){
-      try{
-        const result=await requestNoaa(fetcher,format);
-        attempts.push({format,status:result.status});
-        if(!result.ok)continue;
+    for(const endpoint of NOAA_ENDPOINTS){
+      for(const format of ['geojson','json']){
+        try{
+          const result=await requestNoaa(fetcher,endpoint,format);
+          attempts.push({endpoint,format,status:result.status});
+          if(!result.ok)continue;
 
-        const features=result.features.filter(feature=>validAt(feature.properties,current));
-        cache={
-          type:'FeatureCollection',
-          features,
-          fetchedAt:new Date(current).toISOString(),
-          source:'NOAA Aviation Weather Center',
-          sourceFormat:format,
-          stale:false,
-        };
-        expires=current+CACHE_TTL_MS;
-        logger(JSON.stringify({endpoint:'sigmet',status:200,format,count:features.length}));
-        return {...cache,cached:false};
-      }catch(error){
-        attempts.push({format,status:'NETWORK_ERROR'});
+          const features=result.features.filter(feature=>validAt(feature.properties,current));
+          cache={
+            type:'FeatureCollection',
+            features,
+            fetchedAt:new Date(current).toISOString(),
+            source:'NOAA Aviation Weather Center',
+            sourceEndpoint:endpoint,
+            sourceFormat:format,
+            stale:false,
+          };
+          expires=current+CACHE_TTL_MS;
+          logger(JSON.stringify({endpoint:'sigmet',status:200,sourceEndpoint:endpoint,format,count:features.length}));
+          return {...cache,cached:false};
+        }catch(error){
+          attempts.push({
+            endpoint,
+            format,
+            status:'NETWORK_ERROR',
+            message:error instanceof Error?error.message:String(error),
+          });
+        }
       }
     }
 
