@@ -15,6 +15,10 @@ import { angleDifference, bearingBetween, distanceBetween } from '../utils/geo';
 export interface RouteShapingOptions {
   departure?: boolean;
   arrival?: boolean;
+  /** Meteorological wind direction: degrees the wind comes FROM. */
+  departureWindDirectionDeg?: number | null;
+  /** Meteorological wind direction: degrees the wind comes FROM. */
+  arrivalWindDirectionDeg?: number | null;
 }
 
 const TERMINAL_RADIUS_METERS = 9000;
@@ -94,59 +98,94 @@ const lastUsefulPoint = (airport: Airport, waypoints: Waypoint[]): Waypoint =>
 const turnDirectionForBearing = (bearing: number): 1 | -1 =>
   bearing >= 180 ? -1 : 1;
 
-const buildDepartureSpiral = (route: FlightRoute): Waypoint[] => {
+const buildDepartureSpiral = (
+  route: FlightRoute,
+  windDirectionDeg?: number | null,
+): Waypoint[] => {
   const airport = route.origin;
   const reference = firstUsefulPoint(airport, route.waypoints);
   const outboundBearing = bearingBetween(airport, reference);
-  const turnDirection = turnDirectionForBearing(outboundBearing);
+  const takeoffHeading = windDirectionDeg ?? (
+    outboundBearing - turnDirectionForBearing(outboundBearing) * TERMINAL_SWEEP_DEGREES
+  );
+  const directTurn = angleDifference(outboundBearing, takeoffHeading);
+  const turnDirection: 1 | -1 = directTurn === 0
+    ? turnDirectionForBearing(outboundBearing)
+    : directTurn > 0 ? 1 : -1;
+  const totalTurn = directTurn + turnDirection * 180;
   const cruiseEntryAltitude = Math.max(2600, airport.altitude + 2400);
 
-  return Array.from({ length: TERMINAL_STEPS + 1 }, (_, index) => {
+  const points: Waypoint[] = [
+    airportWaypoint(airport, `${airport.code} departure`),
+    pointAtDistance(
+      airport,
+      takeoffHeading,
+      900,
+      airport.altitude + 90,
+      windDirectionDeg == null ? 'Departure roll-out' : `Into-wind departure ${Math.round(takeoffHeading)}°`,
+    ),
+  ];
+
+  for (let index = 1; index <= TERMINAL_STEPS; index += 1) {
     const t = index / TERMINAL_STEPS;
     const eased = smoothStep(t);
-    const radius = TERMINAL_RADIUS_METERS * Math.pow(t, 0.82);
-    const radialBearing =
-      outboundBearing - turnDirection * TERMINAL_SWEEP_DEGREES * (1 - t);
-    return pointAtDistance(
+    const radius = 900 + (TERMINAL_RADIUS_METERS - 900) * Math.pow(t, 0.82);
+    const radialBearing = takeoffHeading + totalTurn * t;
+    points.push(pointAtDistance(
       airport,
       radialBearing,
       radius,
-      airport.altitude + (cruiseEntryAltitude - airport.altitude) * eased,
-      index === 0
-        ? `${airport.code} departure`
-        : index === TERMINAL_STEPS
-          ? 'Departure arc exit'
-          : undefined,
-    );
-  });
+      airport.altitude + 90 + (cruiseEntryAltitude - airport.altitude - 90) * eased,
+      index === TERMINAL_STEPS ? 'Departure arc exit' : undefined,
+    ));
+  }
+
+  return points;
 };
 
-const buildArrivalSpiral = (route: FlightRoute): Waypoint[] => {
+const buildArrivalSpiral = (
+  route: FlightRoute,
+  windDirectionDeg?: number | null,
+): Waypoint[] => {
   const airport = route.destination;
   const reference = lastUsefulPoint(airport, route.waypoints);
   const radialStartBearing = bearingBetween(airport, reference);
-  const inboundBearing = bearingBetween(reference, airport);
-  const turnDirection = turnDirectionForBearing(inboundBearing);
+  // Landing into the wind means the last inbound heading approximately matches
+  // the meteorological wind direction. The radial point is therefore reciprocal.
+  const finalApproachRadial = windDirectionDeg == null
+    ? radialStartBearing + turnDirectionForBearing(bearingBetween(reference, airport)) * TERMINAL_SWEEP_DEGREES
+    : windDirectionDeg + 180;
+  const directTurn = angleDifference(finalApproachRadial, radialStartBearing);
+  const turnDirection: 1 | -1 = directTurn === 0
+    ? turnDirectionForBearing(bearingBetween(reference, airport))
+    : directTurn > 0 ? 1 : -1;
+  const totalTurn = directTurn + turnDirection * 180;
   const entryAltitude = Math.max(2600, airport.altitude + 2400);
+  const points: Waypoint[] = [];
 
-  return Array.from({ length: TERMINAL_STEPS + 1 }, (_, index) => {
+  for (let index = 0; index < TERMINAL_STEPS; index += 1) {
     const t = index / TERMINAL_STEPS;
     const eased = smoothStep(t);
-    const radius = TERMINAL_RADIUS_METERS * Math.pow(1 - t, 0.82);
-    const radialBearing =
-      radialStartBearing + turnDirection * TERMINAL_SWEEP_DEGREES * t;
-    return pointAtDistance(
+    const radius = TERMINAL_RADIUS_METERS - (TERMINAL_RADIUS_METERS - 900) * Math.pow(t, 0.82);
+    const radialBearing = radialStartBearing + totalTurn * t;
+    points.push(pointAtDistance(
       airport,
       radialBearing,
       radius,
-      entryAltitude + (airport.altitude - entryAltitude) * eased,
-      index === 0
-        ? 'Arrival arc entry'
-        : index === TERMINAL_STEPS
-          ? `${airport.code} arrival`
-          : undefined,
-    );
-  });
+      entryAltitude + (airport.altitude + 90 - entryAltitude) * eased,
+      index === 0 ? 'Arrival arc entry' : undefined,
+    ));
+  }
+
+  points.push(pointAtDistance(
+    airport,
+    finalApproachRadial,
+    900,
+    airport.altitude + 90,
+    windDirectionDeg == null ? 'Final approach' : `Into-wind final ${Math.round(windDirectionDeg)}°`,
+  ));
+  points.push(airportWaypoint(airport, `${airport.code} arrival`));
+  return points;
 };
 
 const removeNearAirportPoints = (
@@ -197,9 +236,15 @@ export const withTerminalManeuvers = (
   if (arrival) core = removeNearAirportPoints(core, route.destination, false);
 
   const waypoints: Waypoint[] = [];
-  if (departure) appendDistinct(waypoints, buildDepartureSpiral(route));
+  if (departure) appendDistinct(
+    waypoints,
+    buildDepartureSpiral(route, options.departureWindDirectionDeg),
+  );
   appendDistinct(waypoints, core);
-  if (arrival) appendDistinct(waypoints, buildArrivalSpiral(route));
+  if (arrival) appendDistinct(
+    waypoints,
+    buildArrivalSpiral(route, options.arrivalWindDirectionDeg),
+  );
 
   return {
     ...route,
