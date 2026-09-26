@@ -1,4 +1,5 @@
 import { greatCirclePoints } from './liveGeometry';
+import { shapePreviewRoute } from './routeShaping';
 ﻿import { AircraftController } from '../map/AircraftController';
 import { RouteRenderer } from '../map/RouteRenderer';
 import { CameraController } from '../map/CameraController';
@@ -156,10 +157,11 @@ export class FlightExperience {
     };
     this.setAircraftModel(demoModels[id] ?? '/models/skyroute_787_10.glb');
     this.aircraftModelManuallySelected=false;
-    this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.planned.setRoute(route.waypoints);this.camera.setRoute(route);
+    const previewRoute=shapePreviewRoute(route);
+    this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.planned.setRoute(previewRoute.waypoints);this.camera.setRoute(previewRoute);
     this.lastAiCommentary=demoCommentary[id]??'';
     this.bindDemoActions();
-    this.animator.setRoute(route);this.animator.play();this.syncPlayback();this.enablePlayback(true);
+    this.animator.setRoute(previewRoute);this.animator.play();this.syncPlayback();this.enablePlayback(true);
   }
   private bindDemoActions() {
     const root=element('flight-info-root');
@@ -461,8 +463,12 @@ export class FlightExperience {
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);cancelAnimationFrame(this.raf);this.raf=0;
     this.viewMode=replay?'REPLAY':'PREVIEW';this.updateSource();element('live-view-mode').textContent=this.viewMode;
     this.liveView.setMessage(replay?'Recorded track replay · not the current position':'Simulated flight · not the current position');
-    this.planned.setRoute(route.type==='ACTUAL'?[]:route.waypoints.map(p=>({lat:p.latitude,lng:p.longitude,altitude:p.altitudeMeters})),route.type);
-    this.enablePlayback(true);const animationRoute=toAnimationRoute(this.selected,route);this.camera.setRoute(animationRoute);
+    const animationBase=toAnimationRoute(this.selected,route);
+    const animationRoute=route.type==='ACTUAL'
+      ?animationBase
+      :shapePreviewRoute(animationBase,{departure:this.selected.status!=='ENROUTE',arrival:true});
+    this.planned.setRoute(route.type==='ACTUAL'?[]:animationRoute.waypoints,route.type);
+    this.enablePlayback(true);this.camera.setRoute(animationRoute);
     this.animator.setRoute(animationRoute);this.animator.play();this.syncPlayback();
   }
   private async returnLive() {
