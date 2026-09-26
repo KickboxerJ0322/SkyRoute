@@ -1158,3 +1158,10 @@
   }
 }
 
+/* 2026-09-26: make aviation weather state obvious without changing the HUD layout. */
+#sigmet-toggle.active {
+  border-color: rgba(255, 95, 95, .78) !important;
+  color: #ffd6d6 !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 95, 95, .18), 0 0 10px rgba(255, 55, 55, .14) !important;
+}
+
