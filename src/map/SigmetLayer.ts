@@ -24,6 +24,8 @@ interface SigmetFeature {
   id:string;
   properties:SigmetProperties;
   geometry:
+    | {type:'Point';coordinates:LngLat}
+    | {type:'MultiPoint';coordinates:LngLat[]}
     | {type:'Polygon';coordinates:LngLat[][]}
     | {type:'MultiPolygon';coordinates:LngLat[][][]};
 }
@@ -61,15 +63,23 @@ const hazardStyle=(hazard:string)=>{
   return {fill:'#ff37373d',stroke:'#ff5f5ff2'};
 };
 
-const outerRings=(feature:SigmetFeature):LngLat[][]=>
-  feature.geometry.type==='Polygon'
-    ?feature.geometry.coordinates.slice(0,1)
-    :feature.geometry.coordinates.map(polygon=>polygon[0]).filter(Boolean);
+const outerRings=(feature:SigmetFeature):LngLat[][]=>{
+  if(feature.geometry.type==='Polygon')return feature.geometry.coordinates.slice(0,1);
+  if(feature.geometry.type==='MultiPolygon')return feature.geometry.coordinates.map(polygon=>polygon[0]).filter(Boolean);
+  return [];
+};
 
-const featurePolygons=(feature:SigmetFeature):LngLat[][][]=>
-  feature.geometry.type==='Polygon'
-    ?[feature.geometry.coordinates]
-    :feature.geometry.coordinates;
+const featurePolygons=(feature:SigmetFeature):LngLat[][][]=>{
+  if(feature.geometry.type==='Polygon')return [feature.geometry.coordinates];
+  if(feature.geometry.type==='MultiPolygon')return feature.geometry.coordinates;
+  return [];
+};
+
+const featurePoints=(feature:SigmetFeature):LngLat[]=>{
+  if(feature.geometry.type==='Point')return [feature.geometry.coordinates];
+  if(feature.geometry.type==='MultiPoint')return feature.geometry.coordinates;
+  return [];
+};
 
 const pointInRing=(point:{lat:number;lng:number},ring:LngLat[]):boolean=>{
   let inside=false;
@@ -119,8 +129,36 @@ const featureBounds=(rings:LngLat[][])=>{
   };
 };
 
+const pointCircleRing=(center:LngLat,radiusKm=45,steps=40):LngLat[]=>{
+  const [lng,lat]=center;
+  const latRad=toRad(lat);
+  const latDelta=radiusKm/111;
+  const lngDelta=radiusKm/(111*Math.max(.2,Math.cos(latRad)));
+  const ring:Array<LngLat>=[];
+  for(let i=0;i<=steps;i++){
+    const angle=2*Math.PI*i/steps;
+    ring.push([
+      lng+Math.cos(angle)*lngDelta,
+      lat+Math.sin(angle)*latDelta,
+    ]);
+  }
+  return ring;
+};
+
 const featureNearRoute=(feature:SigmetFeature,route:Waypoint[],corridorKm=CORRIDOR_KM):boolean=>{
   if(route.length<2)return false;
+
+  const points=featurePoints(feature);
+  if(points.length){
+    for(const [lng,lat] of points){
+      const point={lat,lng};
+      for(let i=0;i<route.length-1;i++){
+        if(pointToSegmentKm(point,route[i],route[i+1])<=corridorKm)return true;
+      }
+    }
+    return false;
+  }
+
   const rings=outerRings(feature).filter(ring=>ring.length>=4);
   if(!rings.length)return false;
 
@@ -238,9 +276,8 @@ export class SigmetLayer {
     const nearby=this.data.features.filter(feature=>featureNearRoute(feature,this.route));
     for(const feature of nearby){
       const style=hazardStyle(feature.properties.hazard);
-      for(const polygon of featurePolygons(feature)){
-        const [outer,...holes]=polygon;
-        if(!outer||outer.length<4)continue;
+      const renderPolygon=(outer:LngLat[],holes:LngLat[][]=[])=>{
+        if(!outer||outer.length<4)return;
         const element=new this.lib.Polygon3DInteractiveElement({
           altitudeMode:this.lib.AltitudeMode.CLAMP_TO_GROUND,
           fillColor:style.fill,
@@ -257,21 +294,31 @@ export class SigmetLayer {
         element.setAttribute('title',this.featureTitle(feature));
         element.addEventListener('gmp-click',()=>{
           this.map.dispatchEvent(new CustomEvent('skyroute-sigmet-click',{
-            detail:{...feature.properties,id:feature.id},
+            detail:{...feature.properties,id:feature.id,geometryType:feature.geometry.type},
             bubbles:true,
           }));
         });
         this.map.appendChild(element);
         this.polygons.push(element);
+      };
+
+      for(const polygon of featurePolygons(feature)){
+        const [outer,...holes]=polygon;
+        renderPolygon(outer,holes);
+      }
+
+      // Point SIGMETs carry a location but no warning boundary. Draw a compact
+      // visual-radius circle so the location remains visible without implying
+      // that NOAA supplied an exact polygon.
+      for(const point of featurePoints(feature)){
+        renderPolygon(pointCircleRing(point));
       }
     }
 
     const stale=Boolean(this.data.stale);
     this.updateStatus(
       nearby.length,
-      nearby.length
-        ?`SIGMET ON · 航路周辺 ${nearby.length}件${stale?' · cached':''}`
-        :`SIGMET ON · 航路周辺なし${stale?' · cached':''}`,
+      `SIGMET ON · ${nearby.length}件${stale?' · cached':''}`,
       stale,
     );
   }
