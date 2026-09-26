@@ -16,6 +16,7 @@ export interface MapControlsHandlers {
   onOffsetChange?: (offsetDeg: number) => void;
   onTiltChange?: (tiltDeg: number) => void;
   onRotateView?: (degrees: number) => void;
+  onSigmetToggle?: (enabled: boolean) => void;
 }
 
 export class MapControls {
@@ -24,6 +25,7 @@ export class MapControls {
   private currentMapMode: 'HYBRID' | 'SATELLITE' = 'HYBRID';
   private currentCameraMode: CameraMode = 'CLOSE';
   private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
+  private sigmetEnabled = false;
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -48,6 +50,16 @@ export class MapControls {
     this.currentAircraftModelUrl = modelUrl || AIRCRAFT_MODEL_URL;
     const select = this.container.querySelector<HTMLSelectElement>('#aircraft-model-select');
     if (select) select.value = this.currentAircraftModelUrl;
+  }
+
+  public setSigmetState(enabled: boolean, status?: string): void {
+    this.sigmetEnabled = enabled;
+    const button = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
+    if (!button) return;
+    button.classList.toggle('active', enabled);
+    button.setAttribute('aria-pressed', String(enabled));
+    button.textContent = enabled ? 'SIGMET ON' : 'SIGMET OFF';
+    button.title = status || (enabled ? 'SIGMET表示をOFFにする' : '航路周辺のSIGMETを表示');
   }
 
   public setMapMode(mode: 'HYBRID' | 'SATELLITE'): void {
@@ -125,6 +137,16 @@ export class MapControls {
           </div>
         </div>
 
+        <!-- Aviation Weather -->
+        <div class="toolbar-group">
+          <span class="group-label">WEATHER</span>
+          <div class="segmented-control">
+            <button id="sigmet-toggle" class="sigmet-toggle-btn" type="button" aria-pressed="false" title="航路周辺のSIGMETを表示">
+              SIGMET OFF
+            </button>
+          </div>
+        </div>
+
         <!-- Camera Orientation -->
         <div class="toolbar-group">
           <span class="group-label" title="カメラの方位（追従方向からの角度）">HEADING</span>
@@ -196,6 +218,15 @@ export class MapControls {
       satelliteBtn.addEventListener('click', () => {
         this.setMapMode('SATELLITE');
         this.handlers.onMapModeChange('SATELLITE');
+      });
+    }
+
+    const sigmetBtn = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
+    if (sigmetBtn) {
+      sigmetBtn.addEventListener('click', () => {
+        this.sigmetEnabled = !this.sigmetEnabled;
+        this.setSigmetState(this.sigmetEnabled, this.sigmetEnabled ? 'SIGMET 読込中…' : 'SIGMET OFF');
+        this.handlers.onSigmetToggle?.(this.sigmetEnabled);
       });
     }
 
