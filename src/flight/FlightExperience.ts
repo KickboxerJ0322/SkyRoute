@@ -109,6 +109,19 @@ export class FlightExperience {
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
     this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message,status.count));
     new PanelVisibility();
+    document.addEventListener('skyroute-panel-visibility',(event)=>{
+      const detail=(event as CustomEvent<{id:string;visible:boolean}>).detail;
+      if(!detail)return;
+      if(detail.id==='flight-map-status') {
+        if(detail.visible&&this.currentTelemetry)this.updateMapStatus(this.currentTelemetry);
+        else if(!detail.visible)this.mapStatus.hidden=true;
+      }
+      if(detail.id==='route-legend') {
+        this.setRouteLegendVisible(detail.visible&&Boolean(
+          this.activeAnimationRoute||this.route?.waypoints.length||this.track.length
+        ));
+      }
+    });
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
     modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><button id="refresh-flights">更新</button><span id="data-source-status" role="status">「更新」を押すと便一覧を取得します</span>';
@@ -152,11 +165,13 @@ export class FlightExperience {
       ?? this.selected?.destination.iata
       ?? this.selected?.destination.icao
       ?? '';
-    if(!destination){this.mapStatus.hidden=true;return;}
+    if(!destination||this.mapStatus.classList.contains('panel-user-hidden')){this.mapStatus.hidden=true;return;}
     this.mapStatus.hidden=false;
     this.mapStatus.textContent=`${destination} · ${t.distanceRemainingKm.toFixed(0)} km · ${remainingTimeLabel(t.distanceRemainingKm,t.speedKmh)} · ${flightPhaseLabel(t.flightPhase)}`;
   }
-  private setRouteLegendVisible(visible:boolean) {this.routeLegend.hidden=!visible;}
+  private setRouteLegendVisible(visible:boolean) {
+    this.routeLegend.hidden=!visible||this.routeLegend.classList.contains('panel-user-hidden');
+  }
   private async toggleSigmet(enabled:boolean) {
     const status=await this.sigmet.setEnabled(enabled);
     this.controls.setSigmetState(status.enabled,status.message,status.count);
