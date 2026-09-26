@@ -1010,3 +1010,15 @@
   }
 }
 
+/* 2026-09-26: desktop top action strip matches the 80%-opaque SkyRoute bar. */
+@media (min-width: 769px) {
+  #top-app-bar #panel-visibility-controls button,
+  #top-app-bar #data-source-status {
+    background: rgba(0, 0, 0, .80) !important;
+    background-color: rgba(0, 0, 0, .80) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+}
+
