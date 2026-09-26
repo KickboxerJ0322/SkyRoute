@@ -6,6 +6,7 @@ import { createAeroApi } from './aeroApi.mjs';
 import { ApiError } from './cache.mjs';
 import { createFlightCommentator } from './gemini.mjs';
 import { createTts } from './tts.mjs';
+import { createSigmetService } from './sigmet.mjs';
 try { process.loadEnvFile('.env.local'); } catch(error) { if(error.code!=='ENOENT') throw error; }
 async function readJson(req, maxBytes=65536) {
   let size=0, body='';
@@ -16,7 +17,7 @@ async function readJson(req, maxBytes=65536) {
   }
   try { return JSON.parse(body || '{}'); } catch { throw new ApiError(400,'INVALID_JSON'); }
 }
-export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=createTts(),dist=resolve('dist')}={}) {
+export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=createTts(),sigmet=createSigmetService(),dist=resolve('dist')}={}) {
   return createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
@@ -41,6 +42,9 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
       }
       if(req.method!=='GET'&&req.method!=='HEAD') return json(405,{error:'METHOD_NOT_ALLOWED'});
       if(url.pathname==='/api/health') return json(200,{status:'ok',source:api.mode});
+      if(url.pathname==='/api/weather/sigmet') {
+        return json(200,await sigmet());
+      }
       if(url.pathname==='/api/flights/departures') {
         const airport=(url.searchParams.get('airport')||'RJTT').toUpperCase();
         if(!/^(RJTT|RJAA|RJBB|RJOO|RJCC|RJFF|ROAH)$/.test(airport)) throw new ApiError(400,'INVALID_AIRPORT');
