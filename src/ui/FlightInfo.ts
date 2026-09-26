@@ -30,7 +30,7 @@ export class FlightInfo {
       <div><div class="metric-label">HEADING</div><div class="metric-value" id="hud-heading">--</div></div>
       <div><div class="metric-label">PHASE</div><div class="metric-value" id="hud-phase">--</div></div>
       <div><div class="metric-label">REMAINING</div><div class="metric-value" id="hud-remaining">--</div></div>
-      <div><div class="metric-label">ROUTE</div><div id="demo-route-type">模擬 · DEMO</div></div></div>
+      <div><div class="metric-label">ROUTE</div><div class="metric-value route-type-value" id="demo-route-type" data-route-kind="DEMO">模擬 · DEMO</div></div></div>
       <div class="demo-wind-line" id="demo-wind-line">DEMO WIND · --</div>
       <div class="live-flight-actions"><button id="demo-live">LIVE</button><button id="demo-position">現在位置</button><button id="demo-preview">Preview Flight</button><button id="demo-replay">Replay demo</button><button id="demo-ai">AI解説</button><button id="live-speak">🔊 音声</button><button id="live-stop-speak">■ 停止</button></div>
       <div class="live-ai-commentary" id="live-ai-commentary"><div class="live-ai-text">${escapeHtml(demoCommentary[route.id] ?? '')}</div></div>
