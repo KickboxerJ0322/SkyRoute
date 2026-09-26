@@ -279,6 +279,56 @@ export class SigmetLayer {
 
   public getStatus():SigmetLayerStatus{return this.status;}
 
+  public async getCommentaryContext():Promise<{
+    count:number;
+    corridorKm:number;
+    fetchedAt:string|null;
+    source:string|null;
+    items:Array<{
+      id:string;
+      hazard:string;
+      qualifier:string;
+      fir:string;
+      validTimeFrom:string|null;
+      validTimeTo:string|null;
+      altitudeLowFeet:number|null;
+      altitudeHighFeet:number|null;
+      movementDir:number|null;
+      movementSpd:number|null;
+      geometryType:SigmetFeature['geometry']['type'];
+    }>;
+  }>{
+    if(this.route.length<2)return {
+      count:0,corridorKm:CORRIDOR_KM,fetchedAt:null,source:null,items:[],
+    };
+    let body:SigmetCollection;
+    const response=await fetch('/api/weather/sigmet',{headers:{Accept:'application/json'}});
+    const payload=await response.json();
+    if(!response.ok)throw new Error(payload.error||'SIGMET_UNAVAILABLE');
+    body=payload as SigmetCollection;
+    this.data=body;
+    const nearby=body.features.filter(feature=>featureNearRoute(feature,this.route));
+    return {
+      count:nearby.length,
+      corridorKm:CORRIDOR_KM,
+      fetchedAt:body.fetchedAt??null,
+      source:body.source??null,
+      items:nearby.slice(0,12).map(feature=>({
+        id:feature.id,
+        hazard:feature.properties.hazard,
+        qualifier:feature.properties.qualifier,
+        fir:feature.properties.firName||feature.properties.firId||feature.properties.icaoId,
+        validTimeFrom:feature.properties.validTimeFrom,
+        validTimeTo:feature.properties.validTimeTo,
+        altitudeLowFeet:feature.properties.altitudeLowFeet,
+        altitudeHighFeet:feature.properties.altitudeHighFeet,
+        movementDir:feature.properties.movementDir,
+        movementSpd:feature.properties.movementSpd,
+        geometryType:feature.geometry.type,
+      })),
+    };
+  }
+
   private render():void{
     this.clearPolygons();
     if(!this.enabled||!this.data||this.route.length<2)return;
