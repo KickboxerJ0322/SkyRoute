@@ -129,7 +129,17 @@ const featureBounds=(rings:LngLat[][])=>{
   };
 };
 
-const pointCircleRing=(center:LngLat,radiusKm=45,steps=40):LngLat[]=>{
+const feetToMeters=(feet:number)=>feet*0.3048;
+
+const altitudeBand=(feature:SigmetFeature):{low:number;high:number|null}=>{
+  const lowFeet=feature.properties.altitudeLowFeet;
+  const highFeet=feature.properties.altitudeHighFeet;
+  const low=lowFeet!=null&&Number.isFinite(lowFeet)?Math.max(0,feetToMeters(lowFeet)):0;
+  const high=highFeet!=null&&Number.isFinite(highFeet)?Math.max(0,feetToMeters(highFeet)):null;
+  return {low,high:high!=null&&high>low+30?high:null};
+};
+
+const pointCircleRing=(center:LngLat,radiusKm=45,steps=24):LngLat[]=>{
   const [lng,lat]=center;
   const latRad=toRad(lat);
   const latDelta=radiusKm/111;
@@ -276,21 +286,9 @@ export class SigmetLayer {
     const nearby=this.data.features.filter(feature=>featureNearRoute(feature,this.route));
     for(const feature of nearby){
       const style=hazardStyle(feature.properties.hazard);
-      const renderPolygon=(outer:LngLat[],holes:LngLat[][]=[])=>{
-        if(!outer||outer.length<4)return;
-        const element=new this.lib.Polygon3DInteractiveElement({
-          altitudeMode:this.lib.AltitudeMode.CLAMP_TO_GROUND,
-          fillColor:style.fill,
-          strokeColor:style.stroke,
-          strokeWidth:3,
-          drawsOccludedSegments:true,
-          geodesic:true,
-          zIndex:12,
-        });
-        element.path=outer.map(([lng,lat])=>({lat,lng}));
-        if(holes.length){
-          element.innerPaths=holes.map(ring=>ring.map(([lng,lat])=>({lat,lng})));
-        }
+      const band=altitudeBand(feature);
+
+      const attachElement=(element:HTMLElement)=>{
         element.setAttribute('title',this.featureTitle(feature));
         element.addEventListener('gmp-click',()=>{
           this.map.dispatchEvent(new CustomEvent('skyroute-sigmet-click',{
@@ -302,17 +300,88 @@ export class SigmetLayer {
         this.polygons.push(element);
       };
 
+      const makePolygon=(path:Array<{lat:number;lng:number;altitude?:number}>,fillColor:string,strokeWidth=2)=>{
+        const element=new this.lib.Polygon3DInteractiveElement({
+          altitudeMode:this.lib.AltitudeMode.ABSOLUTE,
+          fillColor,
+          strokeColor:style.stroke,
+          strokeWidth,
+          drawsOccludedSegments:true,
+          geodesic:true,
+          zIndex:12,
+        });
+        element.path=path;
+        attachElement(element);
+      };
+
+      const renderPolygon=(outer:LngLat[],holes:LngLat[][]=[])=>{
+        if(!outer||outer.length<4)return;
+
+        if(band.high===null){
+          const element=new this.lib.Polygon3DInteractiveElement({
+            altitudeMode:this.lib.AltitudeMode.CLAMP_TO_GROUND,
+            fillColor:style.fill,
+            strokeColor:style.stroke,
+            strokeWidth:3,
+            drawsOccludedSegments:true,
+            geodesic:true,
+            zIndex:12,
+          });
+          element.path=outer.map(([lng,lat])=>({lat,lng}));
+          if(holes.length)element.innerPaths=holes.map(ring=>ring.map(([lng,lat])=>({lat,lng})));
+          attachElement(element);
+          return;
+        }
+
+        const low=band.low;
+        const high=band.high;
+        const bottom=new this.lib.Polygon3DInteractiveElement({
+          altitudeMode:this.lib.AltitudeMode.ABSOLUTE,
+          fillColor:style.fill,
+          strokeColor:style.stroke,
+          strokeWidth:2,
+          drawsOccludedSegments:true,
+          geodesic:true,
+          zIndex:12,
+        });
+        bottom.path=outer.map(([lng,lat])=>({lat,lng,altitude:low}));
+        if(holes.length)bottom.innerPaths=holes.map(ring=>ring.map(([lng,lat])=>({lat,lng,altitude:low})));
+        attachElement(bottom);
+
+        const top=new this.lib.Polygon3DInteractiveElement({
+          altitudeMode:this.lib.AltitudeMode.ABSOLUTE,
+          fillColor:style.fill,
+          strokeColor:style.stroke,
+          strokeWidth:3,
+          drawsOccludedSegments:true,
+          geodesic:true,
+          zIndex:13,
+        });
+        top.path=outer.map(([lng,lat])=>({lat,lng,altitude:high}));
+        if(holes.length)top.innerPaths=holes.map(ring=>ring.map(([lng,lat])=>({lat,lng,altitude:high})));
+        attachElement(top);
+
+        for(let index=0;index<outer.length-1;index++){
+          const [lng1,lat1]=outer[index];
+          const [lng2,lat2]=outer[index+1];
+          makePolygon([
+            {lat:lat1,lng:lng1,altitude:low},
+            {lat:lat2,lng:lng2,altitude:low},
+            {lat:lat2,lng:lng2,altitude:high},
+            {lat:lat1,lng:lng1,altitude:high},
+            {lat:lat1,lng:lng1,altitude:low},
+          ],style.fill,1);
+        }
+      };
+
       for(const polygon of featurePolygons(feature)){
         const [outer,...holes]=polygon;
         renderPolygon(outer,holes);
       }
 
-      // Point SIGMETs carry a location but no warning boundary. Draw a compact
-      // visual-radius circle so the location remains visible without implying
-      // that NOAA supplied an exact polygon.
-      for(const point of featurePoints(feature)){
-        renderPolygon(pointCircleRing(point));
-      }
+      // Point SIGMETs have no official horizontal boundary. The 45 km circle
+      // is only a visualization aid; altitude still uses the reported band.
+      for(const point of featurePoints(feature))renderPolygon(pointCircleRing(point));
     }
 
     const stale=Boolean(this.data.stale);
@@ -326,7 +395,10 @@ export class SigmetLayer {
   private featureTitle(feature:SigmetFeature):string{
     const p=feature.properties;
     const area=p.firName||p.firId||p.icaoId||'';
-    return [p.hazard||'SIGMET',area,p.seriesId].filter(Boolean).join(' · ');
+    const altitude=p.altitudeHighFeet!=null
+      ?`${p.altitudeLowFeet!=null?`FL${Math.round(p.altitudeLowFeet/100)}`:'SFC'}–FL${Math.round(p.altitudeHighFeet/100)}`
+      :'高度不明';
+    return [p.hazard||'SIGMET',area,p.seriesId,altitude].filter(Boolean).join(' · ');
   }
 
   private clearPolygons():void{
