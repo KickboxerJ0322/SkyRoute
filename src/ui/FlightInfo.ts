@@ -1,5 +1,6 @@
 import type { TelemetryData, FlightRoute } from '../flight/types';
 import { escapeHtml } from './LiveFlightView';
+import { flightPhaseLabel, remainingTimeLabel } from '../flight/presentation';
 
 /** Fixed scripts for the four fictional flights. No external AI or live data is used. */
 export const demoCommentary: Record<string, string> = {
@@ -27,7 +28,10 @@ export class FlightInfo {
       <div class="hud-grid"><div><div class="metric-label">ALTITUDE</div><div class="metric-value luminous" id="hud-altitude">--</div></div>
       <div><div class="metric-label">GROUND SPEED</div><div class="metric-value" id="hud-speed">--</div></div>
       <div><div class="metric-label">HEADING</div><div class="metric-value" id="hud-heading">--</div></div>
-      <div><div class="metric-label">ROUTE</div><div id="demo-route-type">DEMO</div></div></div>
+      <div><div class="metric-label">PHASE</div><div class="metric-value" id="hud-phase">--</div></div>
+      <div><div class="metric-label">REMAINING</div><div class="metric-value" id="hud-remaining">--</div></div>
+      <div><div class="metric-label">ROUTE</div><div id="demo-route-type">模擬 · DEMO</div></div></div>
+      <div class="demo-wind-line" id="demo-wind-line">DEMO WIND · --</div>
       <div class="live-flight-actions"><button id="demo-live">LIVE</button><button id="demo-position">現在位置</button><button id="demo-preview">Preview Flight</button><button id="demo-replay">Replay demo</button><button id="demo-ai">AI解説</button><button id="live-speak">🔊 音声</button><button id="live-stop-speak">■ 停止</button></div>
       <div class="live-ai-commentary" id="live-ai-commentary"><div class="live-ai-text">${escapeHtml(demoCommentary[route.id] ?? '')}</div></div>
       <div class="live-ai-model-note" id="live-ai-model-note">AI解説サンプル · 仮の文章（AIによる取得・生成結果ではありません）</div>
@@ -41,5 +45,12 @@ export class FlightInfo {
     set('hud-altitude', `${Math.round(telemetry.altitude).toLocaleString()} m (est.)`);
     set('hud-speed', `${Math.round(telemetry.speedKmh)} km/h`);
     set('hud-heading', `${Math.round(telemetry.heading)}°`);
+    set('hud-phase', flightPhaseLabel(telemetry.flightPhase));
+    set('hud-remaining', `${telemetry.distanceRemainingKm.toFixed(0)} km · ${remainingTimeLabel(telemetry.distanceRemainingKm, telemetry.speedKmh)}`);
+  }
+
+  setDemoWind(departureDeg: number, arrivalDeg: number): void {
+    const node = this.container.querySelector('#demo-wind-line');
+    if (node) node.textContent = `DEMO WIND（演出） · 出発 ${Math.round(departureDeg)}° / 到着 ${Math.round(arrivalDeg)}°`;
   }
 }
