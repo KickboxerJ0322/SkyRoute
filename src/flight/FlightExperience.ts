@@ -533,7 +533,7 @@ export class FlightExperience {
       // Preview must represent the planned route. For an en-route aircraft,
       // start from its current position and continue through the remaining FILED waypoints.
       route=this.filed;
-      if(selected.status==='ENROUTE'&&this.lastPosition?.altitudeMeters!==null) {
+      if(selected.status==='ENROUTE'&&this.lastPosition&&this.lastPosition.altitudeMeters!==null) {
         const current={
           latitude:this.lastPosition.latitude,
           longitude:this.lastPosition.longitude,
