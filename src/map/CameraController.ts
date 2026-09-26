@@ -14,7 +14,7 @@ export class CameraController {
   private map: any = null;
 
   // Smoothed camera state
-  private smoothCenter = { lat: 35.5422398, lng: 139.7841925, altitude: 1000 };
+  private smoothCenter = { lat: 35.5463558, lng: 139.7833912, altitude: 1000 };
   private smoothHeading = 340;
   private smoothTilt = 78;
   private smoothRange = 220;
@@ -24,6 +24,10 @@ export class CameraController {
   private tiltOverride: number | null = null;
 
   private activeRoute: FlightRoute | null = null;
+  private lastTelemetry: TelemetryData | null = null;
+  private overviewRange = 250000;
+  private overviewTracksAircraft = false;
+  private readonly maxOverviewRange = 2050000;
   private onModeChangeCallback: ((mode: CameraMode) => void) | null = null;
 
   constructor(map: any) {
@@ -35,6 +39,7 @@ export class CameraController {
     this.isInitialized = false;
     if (this.mode === 'OVERVIEW') {
       this.applyOverviewView();
+      this.onModeChangeCallback?.(this.mode);
     }
   }
 
@@ -110,10 +115,36 @@ export class CameraController {
   }
 
   /**
+   * Keep the aircraft visually useful as OVERVIEW zooms farther out.
+   * Around HND→ITM the original scale is retained; HND→OKA grows to roughly 3x.
+   */
+  public getOverviewScaleMultiplier(): number {
+    return clamp(this.overviewRange / 650000, 1, 3.5);
+  }
+
+  /**
    * Called on every telemetry tick to update camera in CLOSE, FOLLOW, or COCKPIT modes.
    */
   public update(telemetry: TelemetryData): void {
-    if (this.mode === 'FREE' || this.mode === 'OVERVIEW' || !this.map) {
+    this.lastTelemetry = telemetry;
+
+    if (!this.map || this.mode === 'FREE') {
+      return;
+    }
+
+    // For routes longer than the maximum useful overview extent, keep the same
+    // useful map scale and move the overview window with the aircraft.
+    if (this.mode === 'OVERVIEW') {
+      if (this.overviewTracksAircraft) {
+        this.map.center = {
+          lat: telemetry.lat,
+          lng: telemetry.lng,
+          altitude: Math.max(10000, telemetry.altitude),
+        };
+        this.map.heading = this.headingOffset;
+        this.map.tilt = this.tiltOverride ?? 35;
+        this.map.range = this.overviewRange;
+      }
       return;
     }
 
@@ -210,29 +241,43 @@ export class CameraController {
     const midIndex = Math.floor(waypoints.length / 2);
     const midPoint = waypoints[midIndex];
 
-    // Estimate suitable camera range based on route extent
+    // Estimate a useful route-wide range, but never zoom farther out than the
+    // HND→OKA class of view. Beyond that distance the overview follows the
+    // aircraft instead of shrinking the whole Earth into the viewport.
     const start = waypoints[0];
     const end = waypoints[waypoints.length - 1];
     const latDiff = Math.abs(end.lat - start.lat);
-    const lngDiff = Math.abs(end.lng - start.lng);
+    const rawLngDiff = Math.abs(end.lng - start.lng);
+    const lngDiff = Math.min(rawLngDiff, 360 - rawLngDiff);
     const maxDiff = Math.max(latDiff, lngDiff);
-    const range = Math.max(250000, maxDiff * 110000 * 1.5);
+    const requestedRange = Math.max(250000, maxDiff * 110000 * 1.5);
+
+    this.overviewTracksAircraft = requestedRange > this.maxOverviewRange;
+    this.overviewRange = Math.min(requestedRange, this.maxOverviewRange);
+
+    const overviewCenter = this.overviewTracksAircraft && this.lastTelemetry
+      ? {
+          lat: this.lastTelemetry.lat,
+          lng: this.lastTelemetry.lng,
+          altitude: Math.max(10000, this.lastTelemetry.altitude),
+        }
+      : { lat: midPoint.lat, lng: midPoint.lng, altitude: 10000 };
 
     if (this.map.flyCameraTo) {
       this.map.flyCameraTo({
         endCamera: {
-          center: { lat: midPoint.lat, lng: midPoint.lng, altitude: 10000 },
+          center: overviewCenter,
           heading: this.headingOffset,
           tilt: this.tiltOverride ?? 35,
-          range: range,
+          range: this.overviewRange,
         },
         durationMillis: 2000,
       });
     } else {
-      this.map.center = { lat: midPoint.lat, lng: midPoint.lng, altitude: 10000 };
+      this.map.center = overviewCenter;
       this.map.heading = this.headingOffset;
       this.map.tilt = this.tiltOverride ?? 35;
-      this.map.range = range;
+      this.map.range = this.overviewRange;
     }
   }
 
