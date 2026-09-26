@@ -17,6 +17,7 @@ export interface MapControlsHandlers {
   onTiltChange?: (tiltDeg: number) => void;
   onRotateView?: (degrees: number) => void;
   onSigmetToggle?: (enabled: boolean) => void;
+  onNowcastToggle?: (enabled: boolean) => void;
 }
 
 export class MapControls {
@@ -26,6 +27,7 @@ export class MapControls {
   private currentCameraMode: CameraMode = 'CLOSE';
   private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
   private sigmetEnabled = false;
+  private nowcastEnabled = false;
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -62,6 +64,16 @@ export class MapControls {
       ? (count === undefined ? 'SIGMET ON' : `SIGMET ON · ${count}件`)
       : 'SIGMET OFF';
     button.title = status || (enabled ? 'SIGMET表示をOFFにする' : '航路周辺のSIGMETを表示');
+  }
+
+  public setNowcastState(enabled: boolean, status?: string): void {
+    this.nowcastEnabled = enabled;
+    const button = this.container.querySelector<HTMLButtonElement>('#nowcast-toggle');
+    if (!button) return;
+    button.classList.toggle('active', enabled);
+    button.setAttribute('aria-pressed', String(enabled));
+    button.textContent = enabled ? 'NOWCAST ON' : 'NOWCAST OFF';
+    button.title = status || (enabled ? '空港ナウキャストを閉じる' : '出発・到着空港のナウキャストを表示');
   }
 
   public setMapMode(mode: 'HYBRID' | 'SATELLITE'): void {
@@ -146,6 +158,9 @@ export class MapControls {
             <button id="sigmet-toggle" class="map-layer-btn sigmet-toggle-btn" type="button" aria-pressed="false" title="航路周辺のSIGMETを表示">
               SIGMET OFF
             </button>
+            <button id="nowcast-toggle" class="map-layer-btn nowcast-toggle-btn" type="button" aria-pressed="false" title="出発・到着空港のナウキャストを表示">
+              NOWCAST OFF
+            </button>
           </div>
         </div>
 
@@ -229,6 +244,15 @@ export class MapControls {
         this.sigmetEnabled = !this.sigmetEnabled;
         this.setSigmetState(this.sigmetEnabled, this.sigmetEnabled ? 'SIGMET 読込中…' : 'SIGMET OFF');
         this.handlers.onSigmetToggle?.(this.sigmetEnabled);
+      });
+    }
+
+    const nowcastBtn = this.container.querySelector<HTMLButtonElement>('#nowcast-toggle');
+    if (nowcastBtn) {
+      nowcastBtn.addEventListener('click', () => {
+        this.nowcastEnabled = !this.nowcastEnabled;
+        this.setNowcastState(this.nowcastEnabled, this.nowcastEnabled ? 'ナウキャスト読込中…' : 'NOWCAST OFF');
+        this.handlers.onNowcastToggle?.(this.nowcastEnabled);
       });
     }
 
