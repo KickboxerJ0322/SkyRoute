@@ -98,6 +98,7 @@ export class FlightExperience {
       onSigmetToggle:enabled=>void this.toggleSigmet(enabled),
     });
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
+    this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message));
     new PanelVisibility();
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
