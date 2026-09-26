@@ -17,6 +17,38 @@ interface NowcastTimes {
   tileTemplate:string;
 }
 
+export interface NowcastIntensity {
+  status:string;
+  minMmPerHour:number|null;
+  maxMmPerHour:number|null;
+  label:string;
+  zoom:number|null;
+}
+
+export interface NowcastFrameAnalysis {
+  basetime:string;
+  validtime:string;
+  radiusKm:number;
+  center:NowcastIntensity;
+  nearbyMax:NowcastIntensity;
+  availableSamples:number;
+  totalSamples:number;
+}
+
+export interface NowcastPointAnalysis {
+  lat:number;
+  lng:number;
+  current:NowcastFrameAnalysis;
+  forecast60:NowcastFrameAnalysis;
+  fetchedAt:string;
+  source:string;
+}
+
+export interface NowcastCommentaryContext {
+  origin:{airport:NowcastAirport;analysis:NowcastPointAnalysis}|null;
+  destination:{airport:NowcastAirport;analysis:NowcastPointAnalysis}|null;
+}
+
 const esc=(value:unknown)=>String(value??'').replace(/[&<>"']/g,ch=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
 }[ch]!));
@@ -35,6 +67,16 @@ const formatJst=(value:string)=>{
   return new Intl.DateTimeFormat('ja-JP',{
     timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false,
   }).format(new Date(ms));
+};
+
+const intensityText=(value:NowcastIntensity)=>{
+  if(value.status!=='available')return value.label||'判定不能';
+  if(value.minMmPerHour===0)return '降水域なし';
+  if(value.minMmPerHour==null)return value.label||'判定不能';
+  const range=value.maxMmPerHour==null
+    ?`${value.minMmPerHour} mm/h以上`
+    :`${value.minMmPerHour}–${value.maxMmPerHour} mm/h`;
+  return `${value.label} · ${range}`;
 };
 
 const tileFloat=(lat:number,lng:number,z:number)=>{
@@ -78,11 +120,19 @@ const radarFrame=(airport:NowcastAirport,time:NowcastTime,label:string,template:
     </div>`;
 };
 
+const structuredFrame=(label:string,frame:NowcastFrameAnalysis)=>`
+  <div class="nowcast-structured-row">
+    <span class="nowcast-structured-time">${esc(label)} · ${esc(formatJst(frame.validtime))}</span>
+    <span><b>空港直上</b> ${esc(intensityText(frame.center))}</span>
+    <span><b>周辺${frame.radiusKm}km最大</b> ${esc(intensityText(frame.nearbyMax))}</span>
+  </div>`;
+
 export class NowcastPanel {
   private origin:NowcastAirport|null=null;
   private destination:NowcastAirport|null=null;
   private enabled=false;
   private requestId=0;
+  private structured:NowcastCommentaryContext|null=null;
 
   constructor(private container:HTMLElement){
     this.container.hidden=true;
@@ -91,12 +141,14 @@ export class NowcastPanel {
   public setAirports(origin:NowcastAirport|null,destination:NowcastAirport|null):void{
     this.origin=origin;
     this.destination=destination;
+    this.structured=null;
     if(this.enabled)void this.refresh();
   }
 
   public clear():void{
     this.origin=null;
     this.destination=null;
+    this.structured=null;
     this.container.hidden=true;
     this.container.replaceChildren();
   }
@@ -111,6 +163,31 @@ export class NowcastPanel {
     await this.refresh();
   }
 
+  public async getCommentaryContext():Promise<NowcastCommentaryContext>{
+    if(this.structured)return this.structured;
+    this.structured=await this.fetchStructured();
+    return this.structured;
+  }
+
+  private async fetchPoint(airport:NowcastAirport):Promise<NowcastPointAnalysis>{
+    const params=new URLSearchParams({lat:String(airport.lat),lng:String(airport.lng)});
+    const response=await fetch(`/api/weather/nowcast/point?${params}`,{headers:{Accept:'application/json'}});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'NOWCAST_ANALYSIS_UNAVAILABLE');
+    return data as NowcastPointAnalysis;
+  }
+
+  private async fetchStructured():Promise<NowcastCommentaryContext>{
+    const [origin,destination]=await Promise.all([
+      this.origin?this.fetchPoint(this.origin):Promise.resolve(null),
+      this.destination?this.fetchPoint(this.destination):Promise.resolve(null),
+    ]);
+    return {
+      origin:this.origin&&origin?{airport:this.origin,analysis:origin}:null,
+      destination:this.destination&&destination?{airport:this.destination,analysis:destination}:null,
+    };
+  }
+
   private async refresh():Promise<void>{
     const id=++this.requestId;
     if(!this.origin||!this.destination){
@@ -119,11 +196,17 @@ export class NowcastPanel {
     }
     this.container.innerHTML='<div class="nowcast-panel-message">気象庁ナウキャスト読込中…</div>';
     try{
-      const response=await fetch('/api/weather/nowcast/times',{headers:{Accept:'application/json'}});
-      const data=await response.json() as NowcastTimes & {error?:string};
-      if(!response.ok)throw new Error(data.error||'NOWCAST_UNAVAILABLE');
+      const [times,structured]=await Promise.all([
+        fetch('/api/weather/nowcast/times',{headers:{Accept:'application/json'}}).then(async response=>{
+          const data=await response.json();
+          if(!response.ok)throw new Error(data.error||'NOWCAST_UNAVAILABLE');
+          return data as NowcastTimes;
+        }),
+        this.fetchStructured(),
+      ]);
       if(id!==this.requestId)return;
-      this.render(data);
+      this.structured=structured;
+      this.render(times,structured);
     }catch(error){
       if(id!==this.requestId)return;
       console.error('NOWCAST_FETCH_FAILED',error);
@@ -131,17 +214,26 @@ export class NowcastPanel {
     }
   }
 
-  private render(data:NowcastTimes):void{
-    const airports=[this.origin,this.destination].filter((value):value is NowcastAirport=>Boolean(value));
+  private render(data:NowcastTimes,structured:NowcastCommentaryContext):void{
+    const airports=[
+      {airport:this.origin,context:structured.origin},
+      {airport:this.destination,context:structured.destination},
+    ].filter((value):value is {airport:NowcastAirport;context:{airport:NowcastAirport;analysis:NowcastPointAnalysis}}=>
+      Boolean(value.airport&&value.context)
+    );
     this.container.innerHTML=`
       <div class="nowcast-panel-head">
         <div><strong>JMA NOWCAST</strong><span> 出発・到着空港</span></div>
         <button type="button" id="nowcast-panel-close" aria-label="ナウキャストを閉じる">×</button>
       </div>
       <div class="nowcast-airports">
-        ${airports.map(airport=>`
+        ${airports.map(({airport,context})=>`
           <section class="nowcast-airport-card">
             <div class="nowcast-airport-title">${esc(airport.code)} · ${esc(airport.name)}</div>
+            <div class="nowcast-structured">
+              ${structuredFrame('現在',context.analysis.current)}
+              ${structuredFrame('約60分後',context.analysis.forecast60)}
+            </div>
             <div class="nowcast-frame-row">
               ${radarFrame(airport,data.current,'現在',data.tileTemplate)}
               ${radarFrame(airport,data.forecast60,'約60分後',data.tileTemplate)}
@@ -149,7 +241,7 @@ export class NowcastPanel {
           </section>
         `).join('')}
       </div>
-      <div class="nowcast-foot">気象庁 高解像度降水ナウキャスト · 中央十字＝空港位置</div>`;
+      <div class="nowcast-foot">出典: 気象庁 高解像度降水ナウキャスト · 構造化値はPNGの降水強度階級を空港直上/周辺10kmで解析 · 中央十字＝空港位置</div>`;
     this.container.querySelector<HTMLButtonElement>('#nowcast-panel-close')?.addEventListener('click',()=>{
       this.enabled=false;
       this.container.hidden=true;
