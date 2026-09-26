@@ -361,9 +361,11 @@ export class FlightExperience {
         originCode?this.provider.getWeather(originCode):Promise.resolve(null),
         destinationCode?this.provider.getWeather(destinationCode):Promise.resolve(null),
       ]);
+      const originObservation=originWeather.status==='fulfilled'&&originWeather.value?originWeather.value.data:null;
+      const destinationObservation=destinationWeather.status==='fulfilled'&&destinationWeather.value?destinationWeather.value.data:null;
       weather={
-        origin:originWeather.status==='fulfilled'&&originWeather.value?originWeather.value.data:null,
-        destination:destinationWeather.status==='fulfilled'&&destinationWeather.value?destinationWeather.value.data:null,
+        origin:originObservation?{...originObservation,windDirectionDeg:weatherWindDirection(originObservation)}:null,
+        destination:destinationObservation?{...destinationObservation,windDirectionDeg:weatherWindDirection(destinationObservation)}:null,
       };
     } catch {}
     const payload={
