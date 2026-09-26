@@ -10,6 +10,7 @@ import { loadMaps3DLibrary, createMap3DElement } from './map/initMap3D';
 import { AircraftController } from './map/AircraftController';
 import { RouteRenderer } from './map/RouteRenderer';
 import { CameraController } from './map/CameraController';
+import { SigmetLayer } from './map/SigmetLayer';
 import { LoadingOverlay } from './ui/LoadingOverlay';
 import { ErrorOverlay } from './ui/ErrorOverlay';
 import { InfoView } from './ui/InfoView';
@@ -69,7 +70,8 @@ async function initSkyRoute(): Promise<void> {
   const plannedRoute = new RouteRenderer(maps3dLib, map);
   const actualRoute = new RouteRenderer(maps3dLib, map);
   const cameraController = new CameraController(map);
-  const experience = new FlightExperience(aircraft, cameraController, plannedRoute, actualRoute, map);
+  const sigmetLayer = new SigmetLayer(maps3dLib, map);
+  const experience = new FlightExperience(aircraft, cameraController, plannedRoute, actualRoute, sigmetLayer, map);
   const homeButton = document.getElementById('app-home');
   const routeButton = document.getElementById('mode-route');
   const infoButton = document.getElementById('mode-info');
