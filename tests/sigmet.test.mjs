@@ -125,3 +125,52 @@ const hostFallback=await hostFallbackService();
 assert.equal(hostFallback.features.length,1,'connect host fallback returns SIGMET data');
 assert.ok(hostFallback.sourceEndpoint.includes('connect.aviationweather.gov'));
 assert.equal(hostCalls,3,'main host geojson/json are tried before connect host');
+
+
+const pointGeoService=createSigmetService({
+  fetcher:async()=>new Response(JSON.stringify({
+    type:'FeatureCollection',
+    features:[{
+      type:'Feature',
+      properties:{
+        icaoId:'RJTD',
+        firId:'RJJJ',
+        firName:'FUKUOKA',
+        hazard:'ICE',
+        validTimeFrom:Math.floor((now-5*60*1000)/1000),
+        validTimeTo:Math.floor((now+55*60*1000)/1000),
+      },
+      geometry:{type:'Point',coordinates:[141.2,35.4]},
+    }],
+  }),{status:200,headers:{'Content-Type':'application/geo+json'}}),
+  now:()=>now,
+  logger:()=>{},
+});
+const pointGeo=await pointGeoService();
+assert.equal(pointGeo.features.length,1,'GeoJSON Point SIGMET is preserved');
+assert.equal(pointGeo.features[0].geometry.type,'Point');
+assert.deepEqual(pointGeo.features[0].geometry.coordinates,[141.2,35.4]);
+
+let pointJsonCalls=0;
+const pointJsonService=createSigmetService({
+  fetcher:async url=>{
+    pointJsonCalls+=1;
+    if(String(url).includes('format=geojson'))return new Response('fallback',{status:502});
+    return new Response(JSON.stringify([{
+      icaoId:'RJTD',
+      firId:'RJJJ',
+      firName:'FUKUOKA',
+      hazard:'ICE',
+      validTimeFrom:Math.floor((now-5*60*1000)/1000),
+      validTimeTo:Math.floor((now+55*60*1000)/1000),
+      coords:JSON.stringify([{lat:35.4,lon:141.2}]),
+    }]),{status:200,headers:{'Content-Type':'application/json'}});
+  },
+  now:()=>now,
+  logger:()=>{},
+});
+const pointJson=await pointJsonService();
+assert.equal(pointJson.features.length,1,'single JSON coord becomes a Point SIGMET');
+assert.equal(pointJson.features[0].geometry.type,'Point');
+assert.deepEqual(pointJson.features[0].geometry.coordinates,[141.2,35.4]);
+assert.equal(pointJsonCalls,2);
