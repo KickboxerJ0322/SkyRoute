@@ -952,3 +952,61 @@
     background-color: rgba(0, 0, 0, .10) !important;
   }
 }
+
+/* 2026-09-26: final mobile HUD surface tuning.
+   "20% transparency" means black at 80% opacity. */
+#top-app-bar .app-mode-switch {
+  background: rgba(0, 0, 0, .80) !important;
+  background-color: rgba(0, 0, 0, .80) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@media (max-width: 768px) {
+  /* Match CAMERA panel background exactly to the playback bar surface. */
+  #map-controls-container .map-controls-toolbar {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  #map-controls-container .map-controls-body {
+    margin-top: 0 !important;
+    background: rgba(0, 0, 0, .30) !important;
+    background-color: rgba(0, 0, 0, .30) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: var(--shadow-hud) !important;
+  }
+
+  /* 操作 button: same 20%-transparent black as the SkyRoute bar. */
+  #top-app-bar #panel-visibility-menu-toggle,
+  #top-app-bar #panel-visibility-menu-toggle:hover,
+  #top-app-bar #panel-visibility-menu-toggle:focus-visible {
+    background: rgba(0, 0, 0, .80) !important;
+    background-color: rgba(0, 0, 0, .80) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Keep the drawer itself transparent so button backgrounds do not stack. */
+  #top-app-bar .panel-visibility-items,
+  #top-app-bar #panel-visibility-controls .panel-visibility-items,
+  #top-app-bar #panel-visibility-controls .data-mode-controls {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Every button revealed by 操作 uses the same 20%-transparent black. */
+  #top-app-bar .panel-visibility-items button {
+    background: rgba(0, 0, 0, .80) !important;
+    background-color: rgba(0, 0, 0, .80) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
