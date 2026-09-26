@@ -33,6 +33,8 @@ interface SigmetCollection {
   features:SigmetFeature[];
   fetchedAt?:string;
   source?:string;
+  sourceEndpoint?:string;
+  sourceFormat?:string;
   stale?:boolean;
   warning?:string;
 }
@@ -50,12 +52,13 @@ const toRad=(value:number)=>value*Math.PI/180;
 
 const hazardStyle=(hazard:string)=>{
   const value=hazard.toUpperCase();
-  if(value.includes('TURB'))return {fill:'rgba(255,145,0,.24)',stroke:'rgba(255,170,40,.92)'};
-  if(value.includes('ICE'))return {fill:'rgba(75,120,255,.24)',stroke:'rgba(115,155,255,.95)'};
-  if(value.includes('VA')||value.includes('ASH'))return {fill:'rgba(145,120,170,.25)',stroke:'rgba(190,160,220,.95)'};
-  if(value.includes('TC')||value.includes('CYCL'))return {fill:'rgba(255,55,165,.24)',stroke:'rgba(255,105,190,.95)'};
-  if(value.includes('MTW')||value.includes('MOUNTAIN'))return {fill:'rgba(190,145,60,.24)',stroke:'rgba(225,180,85,.95)'};
-  return {fill:'rgba(255,55,55,.24)',stroke:'rgba(255,95,95,.95)'};
+  // Use the same 8-digit hex notation as the official Maps 3D polygon examples.
+  if(value.includes('TURB'))return {fill:'#ff91003d',stroke:'#ffaa28eb'};
+  if(value.includes('ICE'))return {fill:'#4b78ff3d',stroke:'#739bfff2'};
+  if(value.includes('VA')||value.includes('ASH'))return {fill:'#9178aa40',stroke:'#bea0dcf2'};
+  if(value.includes('TC')||value.includes('CYCL'))return {fill:'#ff37a53d',stroke:'#ff69bef2'};
+  if(value.includes('MTW')||value.includes('MOUNTAIN'))return {fill:'#be913c3d',stroke:'#e1b455f2'};
+  return {fill:'#ff37373d',stroke:'#ff5f5ff2'};
 };
 
 const outerRings=(feature:SigmetFeature):LngLat[][]=>
@@ -193,14 +196,13 @@ export class SigmetLayer {
     }
 
     this.updateStatus(0,'SIGMET 読込中…',false);
+
+    let body:SigmetCollection;
     try{
       const response=await fetch('/api/weather/sigmet',{headers:{Accept:'application/json'}});
-      const body=await response.json();
-      if(!response.ok)throw new Error(body.error||'SIGMET_UNAVAILABLE');
-      this.data=body as SigmetCollection;
-      this.render();
-      this.scheduleRefresh();
-      return this.status;
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.error||'SIGMET_UNAVAILABLE');
+      body=payload as SigmetCollection;
     }catch(error){
       this.clearPolygons();
       const code=error instanceof Error?error.message:'SIGMET_UNAVAILABLE';
@@ -208,11 +210,23 @@ export class SigmetLayer {
         ?'SIGMET · NOAA制限中'
         :code==='NOAA_SIGMET_UNAVAILABLE'
           ?'SIGMET · NOAA接続失敗'
-          :'SIGMET 取得失敗';
+          :'SIGMET · API取得失敗';
+      console.error('SIGMET_FETCH_FAILED',error);
       this.updateStatus(0,message,false);
       this.scheduleRefresh();
       return this.status;
     }
+
+    this.data=body;
+    try{
+      this.render();
+    }catch(error){
+      console.error('SIGMET_RENDER_FAILED',error);
+      this.clearPolygons();
+      this.updateStatus(0,'SIGMET · 3D描画失敗',Boolean(body.stale));
+    }
+    this.scheduleRefresh();
+    return this.status;
   }
 
   public getStatus():SigmetLayerStatus{return this.status;}
@@ -228,16 +242,18 @@ export class SigmetLayer {
         const [outer,...holes]=polygon;
         if(!outer||outer.length<4)continue;
         const element=new this.lib.Polygon3DInteractiveElement({
-          path:outer.map(([lng,lat])=>({lat,lng,altitude:120})),
-          innerPaths:holes.map(ring=>ring.map(([lng,lat])=>({lat,lng,altitude:120}))),
-          altitudeMode:this.lib.AltitudeMode.RELATIVE_TO_GROUND,
+          altitudeMode:this.lib.AltitudeMode.CLAMP_TO_GROUND,
           fillColor:style.fill,
           strokeColor:style.stroke,
-          strokeWidth:2,
+          strokeWidth:3,
           drawsOccludedSegments:true,
           geodesic:true,
           zIndex:12,
         });
+        element.path=outer.map(([lng,lat])=>({lat,lng}));
+        if(holes.length){
+          element.innerPaths=holes.map(ring=>ring.map(([lng,lat])=>({lat,lng})));
+        }
         element.setAttribute('title',this.featureTitle(feature));
         element.addEventListener('gmp-click',()=>{
           this.map.dispatchEvent(new CustomEvent('skyroute-sigmet-click',{
