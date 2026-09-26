@@ -1374,3 +1374,72 @@
   .nowcast-radar { width: 100%; height: 96px; }
 }
 
+/* 2026-09-27: structured precipitation summary in the NOWCAST panel. */
+.nowcast-structured {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+.nowcast-structured-row {
+  display: grid;
+  grid-template-columns: minmax(72px,.65fr) 1fr 1.25fr;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 6px;
+  border: 1px solid rgba(0,212,255,.12);
+  border-radius: 6px;
+  background: rgba(0,0,0,.28);
+  color: var(--text-main);
+  font: 600 9px/1.35 var(--font-mono);
+}
+.nowcast-structured-row b {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.nowcast-structured-time {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+/* NOWCAST uses exactly the same map-layer button language as SIGMET. */
+#map-controls-container #nowcast-toggle,
+#map-controls-container #nowcast-toggle:hover,
+#map-controls-container #nowcast-toggle:focus-visible {
+  font-family: var(--font-mono) !important;
+  font-size: .68rem !important;
+  font-weight: 600 !important;
+  padding: 4px 7px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+}
+#map-controls-container #nowcast-toggle:hover,
+#map-controls-container #nowcast-toggle:focus-visible {
+  color: #fff !important;
+}
+#map-controls-container #nowcast-toggle.active {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-cyan) 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px var(--accent-cyan-glow) !important;
+}
+
+@media (max-width: 768px) {
+  .nowcast-structured-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    font-size: 9px;
+  }
+
+  /* Mobile starts with only the title bar and 操作 button visible. */
+  #flight-panel-root[hidden],
+  #flight-info-root[hidden],
+  #map-controls-container[hidden],
+  #playback-container[hidden],
+  #flight-map-status.panel-user-hidden,
+  #route-legend.panel-user-hidden {
+    display: none !important;
+  }
+}
+
