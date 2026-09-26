@@ -7,6 +7,7 @@ import { ApiError } from './cache.mjs';
 import { createFlightCommentator } from './gemini.mjs';
 import { createTts } from './tts.mjs';
 import { createSigmetService } from './sigmet.mjs';
+import { createNowcastService } from './nowcast.mjs';
 try { process.loadEnvFile('.env.local'); } catch(error) { if(error.code!=='ENOENT') throw error; }
 async function readJson(req, maxBytes=65536) {
   let size=0, body='';
@@ -17,7 +18,7 @@ async function readJson(req, maxBytes=65536) {
   }
   try { return JSON.parse(body || '{}'); } catch { throw new ApiError(400,'INVALID_JSON'); }
 }
-export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=createTts(),sigmet=createSigmetService(),dist=resolve('dist')}={}) {
+export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=createTts(),sigmet=createSigmetService(),nowcast=createNowcastService(),dist=resolve('dist')}={}) {
   return createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
@@ -44,6 +45,9 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
       if(url.pathname==='/api/health') return json(200,{status:'ok',source:api.mode});
       if(url.pathname==='/api/weather/sigmet') {
         return json(200,await sigmet());
+      }
+      if(url.pathname==='/api/weather/nowcast/times') {
+        return json(200,await nowcast());
       }
       if(url.pathname==='/api/flights/departures') {
         const airport=(url.searchParams.get('airport')||'RJTT').toUpperCase();
