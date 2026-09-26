@@ -551,7 +551,7 @@ export class FlightExperience {
   private async returnLive() {
     if(!this.selected)return;
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);cancelAnimationFrame(this.raf);this.raf=0;
-    this.animator.pause();this.syncPlayback();this.viewMode='LIVE';this.enablePlayback(false);this.interpolator.reset();this.lastPosition=null;this.aircraft.setVisible(false);
+    this.animator.pause();this.syncPlayback();this.viewMode='LIVE';this.enablePlayback(false);this.interpolator.reset();this.lastPosition=null;this.activeAnimationRoute=null;this.mapStatus.hidden=true;this.aircraft.setVisible(false);
     this.updateSource();element('live-view-mode').textContent=this.provider.source==='mock'?'MOCK':'LIVE';
     this.placeStationary();await this.pollSelection();
   }
