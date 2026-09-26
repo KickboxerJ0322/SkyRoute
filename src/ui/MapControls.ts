@@ -52,13 +52,15 @@ export class MapControls {
     if (select) select.value = this.currentAircraftModelUrl;
   }
 
-  public setSigmetState(enabled: boolean, status?: string): void {
+  public setSigmetState(enabled: boolean, status?: string, count?: number): void {
     this.sigmetEnabled = enabled;
     const button = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
     if (!button) return;
     button.classList.toggle('active', enabled);
     button.setAttribute('aria-pressed', String(enabled));
-    button.textContent = enabled ? 'SIGMET ON' : 'SIGMET OFF';
+    button.textContent = enabled
+      ? (count === undefined ? 'SIGMET ON' : `SIGMET ON · ${count}件`)
+      : 'SIGMET OFF';
     button.title = status || (enabled ? 'SIGMET表示をOFFにする' : '航路周辺のSIGMETを表示');
   }
 
