@@ -75,7 +75,7 @@ export class FlightExperience {
       onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:degrees=>this.camera.rotateOnce(degrees),
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
     });
-    this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW:AIRCRAFT_SCALE_NORMAL);});
+    this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
     new PanelVisibility();
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
