@@ -524,12 +524,46 @@ export class FlightExperience {
   private async startPreview(replay:boolean) {
     if(!this.selected||this.selected.status==='CANCELLED'||!this.route)return;
     const selected=this.selected;
-    let route=replay?chooseRoute(selected,null,this.track):this.route;
-    if(!replay&&selected.status==='ENROUTE'&&this.lastPosition&&selected.destination.latitude!==null&&selected.destination.longitude!==null) {
-      const origin={...selected.origin,latitude:this.lastPosition.latitude,longitude:this.lastPosition.longitude,altitudeMeters:this.lastPosition.altitudeMeters};
+    let route:SkyRouteRoute;
+
+    if(replay) {
+      // Replay is the only mode that intentionally prefers recorded ACTUAL track.
+      route=chooseRoute(selected,null,this.track);
+    } else if(this.filed?.waypoints.length>=2) {
+      // Preview must represent the planned route. For an en-route aircraft,
+      // start from its current position and continue through the remaining FILED waypoints.
+      route=this.filed;
+      if(selected.status==='ENROUTE'&&this.lastPosition?.altitudeMeters!==null) {
+        const current={
+          latitude:this.lastPosition.latitude,
+          longitude:this.lastPosition.longitude,
+          altitudeMeters:this.lastPosition.altitudeMeters,
+          altitudeEstimated:this.lastPosition.altitudeEstimated,
+        };
+        const nearest=this.filed.waypoints.reduce((best,p,i)=>{
+          const d=distanceBetween(
+            {lat:current.latitude,lng:current.longitude},
+            {lat:p.latitude,lng:p.longitude},
+          );
+          const bestD=distanceBetween(
+            {lat:current.latitude,lng:current.longitude},
+            {lat:this.filed!.waypoints[best].latitude,lng:this.filed!.waypoints[best].longitude},
+          );
+          return d<bestD?i:best;
+        },0);
+        const remaining=[current,...this.filed.waypoints.slice(nearest+1)];
+        route={type:'FILED',waypoints:remaining,altitudeEstimated:remaining.some(p=>p.altitudeEstimated)};
+      }
+    } else {
+      // No filed route is available: Preview uses a synthetic great-circle route,
+      // never the recorded ACTUAL track.
+      const origin=selected.status==='ENROUTE'&&this.lastPosition
+        ?{...selected.origin,latitude:this.lastPosition.latitude,longitude:this.lastPosition.longitude,altitudeMeters:this.lastPosition.altitudeMeters}
+        :selected.origin;
       const waypoints=greatCirclePoints(origin,selected.destination);
       route={type:'ESTIMATED',waypoints,altitudeEstimated:waypoints.some(p=>p.altitudeEstimated)};
     }
+
     if(route.waypoints.length<2)return;
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);cancelAnimationFrame(this.raf);this.raf=0;
     this.viewMode=replay?'REPLAY':'PREVIEW';this.updateSource();element('live-view-mode').textContent=this.viewMode;
