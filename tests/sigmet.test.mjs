@@ -73,12 +73,12 @@ const fallbackFetcher=async url=>{
       validTimeTo:Math.floor((now+60*60*1000)/1000),
       base:18000,
       top:38000,
-      coords:[
+      coords:JSON.stringify([
         {lat:34,lon:138},
         {lat:37,lon:138},
         {lat:37,lon:142},
         {lat:34,lon:142},
-      ],
+      ]),
     },
   ]),{status:200,headers:{'Content-Type':'application/json'}});
 };
@@ -89,3 +89,39 @@ assert.equal(fallback.features[0].properties.altitudeLowFeet,18000);
 assert.equal(fallback.features[0].properties.altitudeHighFeet,38000);
 assert.equal(fallback.sourceFormat,'json');
 assert.equal(fallbackCalls,2,'JSON endpoint is tried after GeoJSON failure');
+
+
+let hostCalls=0;
+const hostFallbackFetcher=async url=>{
+  hostCalls+=1;
+  const value=String(url);
+  if(value.startsWith('https://aviationweather.gov/')){
+    return new Response('blocked',{status:403});
+  }
+  if(value.includes('format=geojson')){
+    return new Response(JSON.stringify({
+      type:'FeatureCollection',
+      features:[{
+        type:'Feature',
+        properties:{
+          icaoId:'RJTD',
+          firId:'RJJJ',
+          firName:'FUKUOKA',
+          hazard:'TS',
+          validTimeFrom:Math.floor((now-5*60*1000)/1000),
+          validTimeTo:Math.floor((now+55*60*1000)/1000),
+        },
+        geometry:{
+          type:'Polygon',
+          coordinates:[[[139,34],[142,34],[142,37],[139,37],[139,34]]],
+        },
+      }],
+    }),{status:200,headers:{'Content-Type':'application/geo+json'}});
+  }
+  return new Response('unexpected',{status:500});
+};
+const hostFallbackService=createSigmetService({fetcher:hostFallbackFetcher,now:()=>now,logger:()=>{}});
+const hostFallback=await hostFallbackService();
+assert.equal(hostFallback.features.length,1,'connect host fallback returns SIGMET data');
+assert.ok(hostFallback.sourceEndpoint.includes('connect.aviationweather.gov'));
+assert.equal(hostCalls,3,'main host geojson/json are tried before connect host');
