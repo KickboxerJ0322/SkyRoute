@@ -1165,3 +1165,94 @@
   box-shadow: inset 0 0 0 1px rgba(255, 95, 95, .18), 0 0 10px rgba(255, 55, 55, .14) !important;
 }
 
+/* 2026-09-26: unify flight information typography and value colors. */
+#flight-info-root .live-info {
+  color: var(--text-main);
+}
+#flight-info-root .live-info .hud-route-text,
+#flight-info-root .live-info .live-airports {
+  color: var(--text-main) !important;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+#flight-info-root .live-info .live-metadata,
+#flight-info-root .live-info .live-time-details,
+#flight-info-root .live-info .demo-wind-line {
+  color: var(--text-muted) !important;
+  font-family: var(--font-mono);
+}
+#flight-info-root .live-info .metric-label {
+  color: var(--text-muted) !important;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+#flight-info-root .live-info .metric-value,
+#flight-info-root .live-info #hud-altitude,
+#flight-info-root .live-info #hud-speed,
+#flight-info-root .live-info #hud-heading,
+#flight-info-root .live-info #hud-phase,
+#flight-info-root .live-info #hud-remaining,
+#flight-info-root .live-info #live-altitude,
+#flight-info-root .live-info #live-speed,
+#flight-info-root .live-info #live-heading,
+#flight-info-root .live-info #live-phase,
+#flight-info-root .live-info #live-remaining {
+  color: var(--accent-cyan) !important;
+  font-family: var(--font-mono) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 8px rgba(0, 212, 255, .20);
+}
+#flight-info-root .live-info #live-flight-status,
+#flight-info-root .live-info .phase-pill {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+#flight-info-root .live-info #live-flight-status {
+  color: var(--accent-cyan) !important;
+}
+#flight-info-root .live-info .live-message {
+  color: var(--accent-cyan) !important;
+  font-family: var(--font-mono);
+}
+#flight-info-root .route-type-value {
+  font-family: var(--font-mono) !important;
+  font-weight: 700 !important;
+}
+#flight-info-root #live-route-type[data-route-kind="ACTUAL"] {
+  color: var(--accent-cyan) !important;
+}
+#flight-info-root #live-route-type[data-route-kind="FILED"] {
+  color: #5f8dff !important;
+}
+#flight-info-root #live-route-type[data-route-kind="ESTIMATED"] {
+  color: var(--accent-amber) !important;
+}
+#flight-info-root #demo-route-type[data-route-kind="DEMO"] {
+  color: var(--accent-cyan) !important;
+}
+
+/* SIGMET is a normal map-layer control: same font, padding and active treatment. */
+#map-controls-container #sigmet-toggle,
+#map-controls-container #sigmet-toggle:hover,
+#map-controls-container #sigmet-toggle:focus-visible {
+  font-family: var(--font-mono) !important;
+  font-size: .68rem !important;
+  font-weight: 600 !important;
+  padding: 4px 7px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+}
+#map-controls-container #sigmet-toggle:hover,
+#map-controls-container #sigmet-toggle:focus-visible {
+  color: #fff !important;
+}
+#map-controls-container #sigmet-toggle.active {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-cyan) 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 0 10px var(--accent-cyan-glow) !important;
+}
+
