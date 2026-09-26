@@ -299,11 +299,12 @@ export class FlightAnimator {
     if (segment.index < this.segments.length - 1) {
       const nextBearing = this.segments[segment.index + 1].bearing;
       const turnDelta = angleDifference(nextBearing, segment.bearing);
-      if (Math.abs(turnDelta) > 5) {
-        // If approaching turn (t > 0.6) or inside turn
-        const turnLead = t > 0.6 ? (t - 0.6) / 0.4 : 0;
-        // Right turn: positive roll, left turn: negative roll
-        targetRoll = clamp(turnDelta * 0.4 * turnLead, -18, 18);
+      if (Math.abs(turnDelta) > 2) {
+        // Start banking earlier so consecutive curved segments read as one broad turn.
+        const turnLead = t > 0.4 ? (t - 0.4) / 0.6 : 0;
+        // Right turn: positive roll, left turn: negative roll.
+        // Keep the bank within a comfortable airliner-like visual range.
+        targetRoll = clamp(turnDelta * 0.6 * turnLead, -24, 24);
       }
     }
 
