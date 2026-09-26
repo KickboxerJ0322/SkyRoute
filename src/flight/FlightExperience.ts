@@ -65,6 +65,7 @@ export class FlightExperience {
   private mapStatus:HTMLElement;
   private routeLegend:HTMLElement;
   private nowcastPanel:NowcastPanel;
+  private activeDemoRoute:FlightRoute|null=null;
   private activeAnimationRoute:FlightRoute|null=null;
 
   constructor(private aircraft:AircraftController,private camera:CameraController,private planned:RouteRenderer,private actual:RouteRenderer,private sigmet:SigmetLayer, map:any) {
@@ -199,7 +200,7 @@ export class FlightExperience {
   private cancelSelection() {
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';this.lastAiModel='';this.lastAiCreatedAt='';this.stopAiSpeech();cancelAnimationFrame(this.raf);this.raf=0;
     this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.currentTelemetry=null;this.activeAnimationRoute=null;
-    this.route=null;this.filed=null;this.track=[];this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
+    this.route=null;this.filed=null;this.track=[];this.activeDemoRoute=null;this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
     this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();this.nowcastPanel.clear();this.controls?.setNowcastState(false);
   }
   private stop() {this.cancelSelection();this.listAbort.abort();clearTimeout(this.listTimer);}
@@ -250,6 +251,7 @@ export class FlightExperience {
       departureWindDirectionDeg:winds.departure,
       arrivalWindDirectionDeg:winds.arrival,
     });
+    this.activeDemoRoute=route;
     this.activeAnimationRoute=previewRoute;
     this.nowcastPanel.setAirports(this.toNowcastAirport(route.origin),this.toNowcastAirport(route.destination));
     this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.demoInfo.setDemoWind(winds.departure,winds.arrival);
@@ -269,10 +271,7 @@ export class FlightExperience {
     const replay=()=>{this.animator.restart();this.animator.play();this.syncPlayback();};
     root.querySelector('#demo-preview')?.addEventListener('click',replay);
     root.querySelector('#demo-replay')?.addEventListener('click',replay);
-    root.querySelector('#demo-ai')?.addEventListener('click',()=>{
-      const panel=root.querySelector<HTMLElement>('#live-ai-commentary');
-      if(panel)panel.hidden=!panel.hidden;
-    });
+    root.querySelector('#demo-ai')?.addEventListener('click',()=>void this.requestDemoAiCommentary());
     root.querySelector('#live-speak')?.addEventListener('click',()=>void this.speakAiCommentary());
     root.querySelector('#live-stop-speak')?.addEventListener('click',()=>this.stopAiSpeech());
   }
@@ -393,6 +392,72 @@ export class FlightExperience {
     try {await this.pollSelection();}
     finally {const current=element('flight-info-root').querySelector<HTMLButtonElement>('#live-refresh-position');if(current){current.disabled=false;current.textContent='現在位置更新';}}
   }
+  private async requestDemoAiCommentary() {
+    const route=this.activeDemoRoute;
+    if(!route)return;
+    const root=element('flight-info-root');
+    const button=root.querySelector<HTMLButtonElement>('#demo-ai');
+    const panel=root.querySelector<HTMLElement>('#live-ai-commentary');
+    if(!button||!panel)return;
+    button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;
+    panel.textContent='DEMO航路と現在のSIGMET・NOWCASTをGeminiで解析しています…';
+    const [sigmetResult,nowcastResult]=await Promise.allSettled([
+      this.sigmet.getCommentaryContext(),
+      this.nowcastPanel.getCommentaryContext(),
+    ]);
+    const sigmet=sigmetResult.status==='fulfilled'?sigmetResult.value:null;
+    const nowcast=nowcastResult.status==='fulfilled'?nowcastResult.value:null;
+    const payload={
+      observedAt:new Date().toISOString(),
+      demo:true,
+      simulationNotice:'Flight route, position, altitude and speed are simulated. SIGMET and NOWCAST are current real-world data.',
+      flight:{
+        id:route.id,
+        flightNumber:route.flightNumber,
+        airline:route.airline,
+        aircraftType:route.aircraftType,
+        status:'DEMO',
+        origin:route.origin,
+        destination:route.destination,
+      },
+      currentPosition:this.currentTelemetry?{
+        latitude:this.currentTelemetry.lat,
+        longitude:this.currentTelemetry.lng,
+        altitudeMeters:this.currentTelemetry.altitude,
+        heading:this.currentTelemetry.heading,
+        groundSpeedKmh:this.currentTelemetry.speedKmh,
+      }:null,
+      currentDerived:this.currentTelemetry?{
+        distanceRemainingKm:this.currentTelemetry.distanceRemainingKm,
+        flightPhase:this.currentTelemetry.flightPhase,
+      }:null,
+      route:{
+        selectedType:'ESTIMATED',
+        filedRouteAvailable:false,
+        actualTrackPointCount:0,
+        simulatedWaypoints:route.waypoints,
+      },
+      weather:null,
+      sigmet,
+      nowcast,
+    };
+    try{
+      const response=await fetch('/api/ai/flight-commentary',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),
+      });
+      const body=await response.json();
+      if(!response.ok)throw new Error(body.error||'AI_UNAVAILABLE');
+      this.lastAiCommentary=String(body.text||'');
+      this.lastAiModel=String(body.model||'');
+      this.lastAiCreatedAt=new Date().toISOString();
+      this.restoreAiCommentary();
+    }catch{
+      panel.textContent='AI解説を取得できませんでした。';
+    }finally{
+      button.disabled=false;button.textContent='AI解説';
+    }
+  }
+
   private async requestAiCommentary() {
     if(!this.selected)return;
     const root=element('flight-info-root');
