@@ -551,8 +551,18 @@ export class FlightExperience {
     const selected=this.selected;
     const currentRoute=this.route;
     const filed=this.filed;
-    const lastPosition=this.lastPosition;
     if(!selected||selected.status==='CANCELLED'||!currentRoute)return;
+
+    // Preview starts from the freshest LIVE position, not from the departure airport.
+    let previewPosition=this.lastPosition;
+    if(!replay&&selected.status==='ENROUTE'){
+      try{
+        const latest=await this.provider.getPosition(selected.id,this.selectionAbort.signal);
+        if(latest.data)previewPosition=latest.data;
+      }catch{
+        // Fall back to the last successfully received position.
+      }
+    }
 
     let route:SkyRouteRoute;
 
@@ -560,15 +570,14 @@ export class FlightExperience {
       // Replay is the only mode that intentionally prefers recorded ACTUAL track.
       route=chooseRoute(selected,null,this.track);
     } else if(filed&&filed.waypoints.length>=2) {
-      // Preview must represent the planned route. For an en-route aircraft,
-      // start from its current position and continue through the remaining FILED waypoints.
+      // Preview uses current position + the remaining FILED waypoints.
       route=filed;
-      if(selected.status==='ENROUTE'&&lastPosition&&lastPosition.altitudeMeters!==null) {
+      if(previewPosition&&previewPosition.altitudeMeters!==null) {
         const current={
-          latitude:lastPosition.latitude,
-          longitude:lastPosition.longitude,
-          altitudeMeters:lastPosition.altitudeMeters,
-          altitudeEstimated:lastPosition.altitudeEstimated,
+          latitude:previewPosition.latitude,
+          longitude:previewPosition.longitude,
+          altitudeMeters:previewPosition.altitudeMeters,
+          altitudeEstimated:previewPosition.altitudeEstimated,
         };
         const nearest=filed.waypoints.reduce((best,p,i)=>{
           const d=distanceBetween(
@@ -587,8 +596,8 @@ export class FlightExperience {
     } else {
       // No filed route is available: Preview uses a synthetic great-circle route,
       // never the recorded ACTUAL track.
-      const origin=selected.status==='ENROUTE'&&lastPosition
-        ?{...selected.origin,latitude:lastPosition.latitude,longitude:lastPosition.longitude,altitudeMeters:lastPosition.altitudeMeters}
+      const origin=previewPosition
+        ?{...selected.origin,latitude:previewPosition.latitude,longitude:previewPosition.longitude,altitudeMeters:previewPosition.altitudeMeters}
         :selected.origin;
       const waypoints=greatCirclePoints(origin,selected.destination);
       route={type:'ESTIMATED',waypoints,altitudeEstimated:waypoints.some(p=>p.altitudeEstimated)};
@@ -612,7 +621,7 @@ export class FlightExperience {
     const animationRoute=route.type==='ACTUAL'
       ?animationBase
       :shapePreviewRoute(animationBase,{
-        departure:selected.status!=='ENROUTE',
+        departure:!previewPosition,
         arrival:true,
         departureWindDirectionDeg:departureWind,
         arrivalWindDirectionDeg:arrivalWind,
