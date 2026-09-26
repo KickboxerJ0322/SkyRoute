@@ -10,7 +10,7 @@
     "dev:client": "vite",
     "dev:server": "node --watch server/index.mjs",
     "start": "node server/index.mjs",
-    "test": "node tests/flight-regression.mjs && node tests/route-shaping.test.mjs && node tests/sigmet.test.mjs && node --test tests/phase2.test.mjs tests/plateau.test.mjs",
+    "test": "node tests/flight-regression.mjs && node tests/route-shaping.test.mjs && node tests/sigmet.test.mjs && node tests/nowcast.test.mjs && node --test tests/phase2.test.mjs tests/plateau.test.mjs",
     "test:browser": "playwright test",
     "capture:fixture": "node scripts/capture-fixture.mjs",
     "build:plateau": "node scripts/build-plateau-haneda.mjs"
