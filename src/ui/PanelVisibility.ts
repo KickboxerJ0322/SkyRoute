@@ -6,6 +6,7 @@ export class PanelVisibility {
     const toolbar = document.createElement('nav');
     toolbar.id = 'panel-visibility-controls';
     toolbar.setAttribute('aria-label', '表示パネルの切替');
+
     const mobileToggle = document.createElement('button');
     mobileToggle.type = 'button';
     mobileToggle.id = 'panel-visibility-menu-toggle';
@@ -23,32 +24,57 @@ export class PanelVisibility {
     panelButtons.className = 'panel-visibility-items';
     toolbar.append(panelButtons);
 
-    const panels = [
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const corePanels = [
       ['flight-panel-root', '便一覧'],
       ['flight-info-root', '飛行情報'],
       ['map-controls-container', 'カメラ'],
       ['playback-container', '再生バー'],
-    ];
-    panels.forEach(([id, label]) => {
+    ] as const;
+    const overlayPanels = [
+      ['flight-map-status', '高度・時間'],
+      ['route-legend', 'ルート色'],
+    ] as const;
+
+    const addButton = (id:string,label:string,isOverlay=false) => {
       const panel = document.getElementById(id)!;
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = label;
       button.setAttribute('aria-controls', id);
-      panel.hidden = true;
-      button.setAttribute('aria-pressed', 'false');
       button.title = `${label}の表示・非表示`;
+
+      const initiallyVisible = !isMobile;
+      panel.classList.toggle('panel-user-hidden', !initiallyVisible);
+      if (!isOverlay) panel.hidden = !initiallyVisible;
+      button.setAttribute('aria-pressed', String(initiallyVisible));
+
       button.addEventListener('click', () => {
-        panel.hidden = !panel.hidden;
-        button.setAttribute('aria-pressed', String(!panel.hidden));
-        app.classList.toggle('sidebar-hidden', panels.slice(0, 2).every(
+        const visible = button.getAttribute('aria-pressed') !== 'true';
+        button.setAttribute('aria-pressed', String(visible));
+        panel.classList.toggle('panel-user-hidden', !visible);
+
+        if (isOverlay) {
+          document.dispatchEvent(new CustomEvent('skyroute-panel-visibility', {
+            detail: { id, visible },
+          }));
+        } else {
+          panel.hidden = !visible;
+        }
+
+        app.classList.toggle('sidebar-hidden', corePanels.slice(0, 2).every(
           ([panelId]) => document.getElementById(panelId)!.hidden
         ));
       });
       panelButtons.append(button);
-    });
-    app.classList.add('sidebar-hidden');
+    };
+
+    corePanels.forEach(([id,label]) => addButton(id,label,false));
+    overlayPanels.forEach(([id,label]) => addButton(id,label,true));
+
+    app.classList.toggle('sidebar-hidden', isMobile);
     topBar.append(toolbar);
+
     const playback = document.getElementById('playback-container')!;
     new ResizeObserver(() => {
       app.style.setProperty('--playback-height', `${playback.getBoundingClientRect().height}px`);
