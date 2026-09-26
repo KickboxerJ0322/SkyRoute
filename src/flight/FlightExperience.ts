@@ -98,7 +98,7 @@ export class FlightExperience {
       onSigmetToggle:enabled=>void this.toggleSigmet(enabled),
     });
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
-    this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message));
+    this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message,status.count));
     new PanelVisibility();
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
@@ -150,7 +150,7 @@ export class FlightExperience {
   private setRouteLegendVisible(visible:boolean) {this.routeLegend.hidden=!visible;}
   private async toggleSigmet(enabled:boolean) {
     const status=await this.sigmet.setEnabled(enabled);
-    this.controls.setSigmetState(status.enabled,status.message);
+    this.controls.setSigmetState(status.enabled,status.message,status.count);
   }
   private enablePlayback(enabled:boolean) {
     const root=element('playback-container');root.classList.toggle('playback-live',!enabled);
