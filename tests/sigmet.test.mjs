@@ -56,3 +56,36 @@ assert.equal(second.cached,true,'second request uses five-minute cache');
 assert.equal(calls,1,'NOAA is called only once while cache is valid');
 
 console.log('Passed: current SIGMET filtering, normalization and cache.');
+
+
+let fallbackCalls=0;
+const fallbackFetcher=async url=>{
+  fallbackCalls+=1;
+  if(String(url).includes('format=geojson')) return new Response('upstream unavailable',{status:502});
+  return new Response(JSON.stringify([
+    {
+      icaoId:'RJTD',
+      firId:'RJJJ',
+      firName:'FUKUOKA',
+      seriesId:'TEST 2',
+      hazard:'TURB',
+      validTimeFrom:Math.floor((now-10*60*1000)/1000),
+      validTimeTo:Math.floor((now+60*60*1000)/1000),
+      base:18000,
+      top:38000,
+      coords:[
+        {lat:34,lon:138},
+        {lat:37,lon:138},
+        {lat:37,lon:142},
+        {lat:34,lon:142},
+      ],
+    },
+  ]),{status:200,headers:{'Content-Type':'application/json'}});
+};
+const fallbackService=createSigmetService({fetcher:fallbackFetcher,now:()=>now,logger:()=>{}});
+const fallback=await fallbackService();
+assert.equal(fallback.features.length,1,'JSON fallback is converted to GeoJSON');
+assert.equal(fallback.features[0].properties.altitudeLowFeet,18000);
+assert.equal(fallback.features[0].properties.altitudeHighFeet,38000);
+assert.equal(fallback.sourceFormat,'json');
+assert.equal(fallbackCalls,2,'JSON endpoint is tried after GeoJSON failure');
