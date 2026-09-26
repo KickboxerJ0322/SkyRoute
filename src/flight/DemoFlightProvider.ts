@@ -11,19 +11,28 @@ export class DemoFlightProvider implements FlightDataProvider {
   private routes: FlightRoute[] = DEMO_ROUTES;
 
   async getDepartures(): Promise<FlightDeparture[]> {
-    // Generate departure board entries for Haneda
-    return this.routes.map((route, idx) => ({
-      id: route.id,
-      flightNumber: route.flightNumber,
-      airline: route.airline,
-      aircraftType: route.aircraftType,
-      destinationCode: route.destination.code,
-      destinationName: route.destination.name,
-      destinationCity: route.destination.city,
-      scheduledTime: `1${idx + 1}:30`,
-      gate: `${60 + idx * 2}`,
-      status: 'On Time',
-    }));
+    // Keep demo times explicit so the board can be ordered like a real departure list.
+    const scheduledTimes: Record<string, string> = {
+      'hnd-itm': '09:30',
+      'hnd-cts': '11:30',
+      'hnd-fuk': '13:30',
+      'hnd-oka': '14:30',
+    };
+
+    return this.routes
+      .map((route, idx) => ({
+        id: route.id,
+        flightNumber: route.flightNumber,
+        airline: route.airline,
+        aircraftType: route.aircraftType,
+        destinationCode: route.destination.code,
+        destinationName: route.destination.name,
+        destinationCity: route.destination.city,
+        scheduledTime: scheduledTimes[route.id] ?? '12:30',
+        gate: `${60 + idx * 2}`,
+        status: 'On Time',
+      }))
+      .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
   }
 
   async getRoute(routeId: string): Promise<FlightRoute> {
