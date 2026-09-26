@@ -4,6 +4,7 @@ import { weatherWindDirection } from './weather';
 import { flightPhaseLabel, remainingTimeLabel } from './presentation';
 ﻿import { AircraftController } from '../map/AircraftController';
 import { RouteRenderer } from '../map/RouteRenderer';
+import { SigmetLayer } from '../map/SigmetLayer';
 import { CameraController } from '../map/CameraController';
 import { DemoFlightProvider } from './DemoFlightProvider';
 import { AeroApiFlightProvider, chooseRoute, toAnimationRoute } from './AeroApiFlightProvider';
@@ -64,7 +65,7 @@ export class FlightExperience {
   private routeLegend:HTMLElement;
   private activeAnimationRoute:FlightRoute|null=null;
 
-  constructor(private aircraft:AircraftController,private camera:CameraController,private planned:RouteRenderer,private actual:RouteRenderer, map:any) {
+  constructor(private aircraft:AircraftController,private camera:CameraController,private planned:RouteRenderer,private actual:RouteRenderer,private sigmet:SigmetLayer, map:any) {
     this.mapStatus=document.createElement('div');
     this.mapStatus.id='flight-map-status';
     this.mapStatus.hidden=true;
@@ -94,6 +95,7 @@ export class FlightExperience {
       onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},onAircraftModelChange:modelUrl=>this.setAircraftModel(modelUrl,true),
       onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:degrees=>this.camera.rotateOnce(degrees),
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
+      onSigmetToggle:enabled=>void this.toggleSigmet(enabled),
     });
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
     new PanelVisibility();
@@ -145,6 +147,10 @@ export class FlightExperience {
     this.mapStatus.textContent=`${destination} · ${t.distanceRemainingKm.toFixed(0)} km · ${remainingTimeLabel(t.distanceRemainingKm,t.speedKmh)} · ${flightPhaseLabel(t.flightPhase)}`;
   }
   private setRouteLegendVisible(visible:boolean) {this.routeLegend.hidden=!visible;}
+  private async toggleSigmet(enabled:boolean) {
+    const status=await this.sigmet.setEnabled(enabled);
+    this.controls.setSigmetState(status.enabled,status.message);
+  }
   private enablePlayback(enabled:boolean) {
     const root=element('playback-container');root.classList.toggle('playback-live',!enabled);
     root.querySelectorAll<HTMLButtonElement|HTMLInputElement>('button,input').forEach(el=>el.disabled=!enabled);
@@ -154,7 +160,7 @@ export class FlightExperience {
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';this.lastAiModel='';this.lastAiCreatedAt='';this.stopAiSpeech();cancelAnimationFrame(this.raf);this.raf=0;
     this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.currentTelemetry=null;this.activeAnimationRoute=null;
     this.route=null;this.filed=null;this.track=[];this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
-    this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);
+    this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();
   }
   private stop() {this.cancelSelection();this.listAbort.abort();clearTimeout(this.listTimer);}
   async setMode(mode:'LIVE'|'DEMO') {
@@ -206,7 +212,7 @@ export class FlightExperience {
     });
     this.activeAnimationRoute=previewRoute;
     this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.demoInfo.setDemoWind(winds.departure,winds.arrival);
-    this.planned.setRoute(previewRoute.waypoints,'ESTIMATED');this.camera.setRoute(previewRoute);
+    this.planned.setRoute(previewRoute.waypoints,'ESTIMATED');this.camera.setRoute(previewRoute);this.sigmet.setRoute(previewRoute.waypoints);
     this.playback.setRouteProfile(previewRoute.waypoints);this.setRouteLegendVisible(true);
     this.lastAiCommentary=demoCommentary[id]??'';
     this.bindDemoActions();
@@ -411,6 +417,7 @@ export class FlightExperience {
     this.actual.setRoute(this.track.filter(p=>p.altitudeMeters!==null).map(p=>({lat:p.latitude,lng:p.longitude,altitude:p.altitudeMeters!})),'ACTUAL');
     if(waypoints.length>=2&&!this.currentTelemetry)this.camera.setRoute(toAnimationRoute(this.selected,this.route));
     this.liveView.setRoute(waypoints.length>=2?this.route.type:null,this.track.length>=2);
+    if(waypoints.length>=2)this.sigmet.setRoute(waypoints);else this.sigmet.clearRoute();
     this.setRouteLegendVisible(waypoints.length>=2||this.track.length>=2);
     if(waypoints.length>=2)this.playback.setRouteProfile(toAnimationRoute(this.selected,this.route).waypoints);
     this.drawRemainingRoute();
@@ -546,6 +553,7 @@ export class FlightExperience {
         arrivalWindDirectionDeg:arrivalWind,
       });
     this.activeAnimationRoute=animationRoute;
+    this.sigmet.setRoute(animationRoute.waypoints);
     this.planned.setRoute(route.type==='ACTUAL'?[]:animationRoute.waypoints,route.type);
     this.playback.setRouteProfile(animationRoute.waypoints);this.setRouteLegendVisible(true);
     this.enablePlayback(true);this.camera.setRoute(animationRoute);
