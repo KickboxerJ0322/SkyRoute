@@ -123,7 +123,7 @@ export class PlaybackControls {
       cumulative.push(cumulative[i - 1] + distanceBetween(waypoints[i - 1], waypoints[i]));
     }
     const total = Math.max(1, cumulative.at(-1) ?? 1);
-    const maxAltitude = Math.max(1000, ...waypoints.map(point => point.altitude));
+    const maxAltitude = waypoints.reduce((max, point) => Math.max(max, point.altitude), 1000);
     const points = waypoints.map((point, index) => {
       const x = (cumulative[index] / total) * 100;
       const y = 38 - (Math.max(0, point.altitude) / maxAltitude) * 32;
