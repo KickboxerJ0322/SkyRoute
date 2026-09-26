@@ -201,9 +201,15 @@ export class SigmetLayer {
       this.render();
       this.scheduleRefresh();
       return this.status;
-    }catch{
+    }catch(error){
       this.clearPolygons();
-      this.updateStatus(0,'SIGMET 取得失敗',false);
+      const code=error instanceof Error?error.message:'SIGMET_UNAVAILABLE';
+      const message=code==='NOAA_SIGMET_RATE_LIMIT'
+        ?'SIGMET · NOAA制限中'
+        :code==='NOAA_SIGMET_UNAVAILABLE'
+          ?'SIGMET · NOAA接続失敗'
+          :'SIGMET 取得失敗';
+      this.updateStatus(0,message,false);
       this.scheduleRefresh();
       return this.status;
     }
