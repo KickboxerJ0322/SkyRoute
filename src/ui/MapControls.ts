@@ -141,7 +141,7 @@ export class MapControls {
         <div class="toolbar-group">
           <span class="group-label">WEATHER</span>
           <div class="segmented-control">
-            <button id="sigmet-toggle" class="sigmet-toggle-btn" type="button" aria-pressed="false" title="航路周辺のSIGMETを表示">
+            <button id="sigmet-toggle" class="map-layer-btn sigmet-toggle-btn" type="button" aria-pressed="false" title="航路周辺のSIGMETを表示">
               SIGMET OFF
             </button>
           </div>
