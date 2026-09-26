@@ -9,6 +9,8 @@ import {
   MIN_PLAYBACK_SPEED,
   MAX_PLAYBACK_SPEED,
 } from '../config';
+import type { Waypoint } from '../flight/types';
+import { distanceBetween } from '../utils/geo';
 
 export interface PlaybackHandlers {
   onTogglePlay: () => void;
@@ -25,6 +27,7 @@ export class PlaybackControls {
   private currentDirection: 1 | -1 = 1;
   private currentSpeed: number = DEFAULT_PLAYBACK_SPEED;
   private isDraggingSlider = false;
+  private profileWaypoints: Waypoint[] = [];
 
   constructor(container: HTMLElement, handlers: PlaybackHandlers) {
     this.container = container;
@@ -98,16 +101,61 @@ export class PlaybackControls {
     const slider = this.container.querySelector<HTMLInputElement>('#seek-slider');
     const fillBar = this.container.querySelector<HTMLElement>('#slider-fill-bar');
     const timeDisplay = this.container.querySelector('#playback-percentage');
+    const marker = this.container.querySelector<HTMLElement>('#altitude-profile-marker');
 
     const pct = Math.round(progress * 100);
     if (slider) slider.value = (progress * 100).toString();
     if (fillBar) fillBar.style.width = `${progress * 100}%`;
     if (timeDisplay) timeDisplay.textContent = `${pct}%`;
+    if (marker) marker.style.left = `${Math.min(100, Math.max(0, progress * 100))}%`;
+  }
+
+  public setRouteProfile(waypoints: Waypoint[]): void {
+    this.profileWaypoints = [...waypoints];
+    const root = this.container.querySelector<HTMLElement>('#altitude-profile');
+    const path = this.container.querySelector<SVGPolylineElement>('#altitude-profile-path');
+    const maxLabel = this.container.querySelector<HTMLElement>('#altitude-profile-max');
+    if (!root || !path || !maxLabel || waypoints.length < 2) {
+      if (root) root.hidden = true;
+      return;
+    }
+
+    const cumulative = [0];
+    for (let i = 1; i < waypoints.length; i += 1) {
+      cumulative.push(cumulative[i - 1] + distanceBetween(waypoints[i - 1], waypoints[i]));
+    }
+    const total = Math.max(1, cumulative.at(-1) ?? 1);
+    const maxAltitude = Math.max(1000, ...waypoints.map(point => point.altitude));
+    const points = waypoints.map((point, index) => {
+      const x = (cumulative[index] / total) * 100;
+      const y = 38 - (Math.max(0, point.altitude) / maxAltitude) * 32;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    }).join(' ');
+
+    path.setAttribute('points', points);
+    maxLabel.textContent = `${Math.round(maxAltitude / 100) * 100} m`;
+    root.hidden = false;
+    this.setProgress(0);
+  }
+
+  public clearRouteProfile(): void {
+    this.profileWaypoints = [];
+    const root = this.container.querySelector<HTMLElement>('#altitude-profile');
+    if (root) root.hidden = true;
   }
 
   private render(): void {
     this.container.innerHTML = `
       <div class="playback-bar-wrapper">
+        <div class="altitude-profile" id="altitude-profile" hidden>
+          <div class="altitude-profile-head"><span>ALTITUDE PROFILE</span><span id="altitude-profile-max">--</span></div>
+          <div class="altitude-profile-chart">
+            <svg viewBox="0 0 100 42" preserveAspectRatio="none" aria-label="航路高度プロファイル">
+              <polyline id="altitude-profile-path" points="" fill="none" vector-effect="non-scaling-stroke"></polyline>
+            </svg>
+            <span class="altitude-profile-marker" id="altitude-profile-marker"></span>
+          </div>
+        </div>
         <div class="seek-bar-container">
           <div class="slider-track-bg">
             <div class="slider-fill-bar" id="slider-fill-bar" style="width: 0%"></div>
