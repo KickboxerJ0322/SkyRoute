@@ -27,7 +27,6 @@ export class PlaybackControls {
   private currentDirection: 1 | -1 = 1;
   private currentSpeed: number = DEFAULT_PLAYBACK_SPEED;
   private isDraggingSlider = false;
-  private profileWaypoints: Waypoint[] = [];
 
   constructor(container: HTMLElement, handlers: PlaybackHandlers) {
     this.container = container;
@@ -111,7 +110,6 @@ export class PlaybackControls {
   }
 
   public setRouteProfile(waypoints: Waypoint[]): void {
-    this.profileWaypoints = [...waypoints];
     const root = this.container.querySelector<HTMLElement>('#altitude-profile');
     const path = this.container.querySelector<SVGPolylineElement>('#altitude-profile-path');
     const maxLabel = this.container.querySelector<HTMLElement>('#altitude-profile-max');
@@ -139,7 +137,6 @@ export class PlaybackControls {
   }
 
   public clearRouteProfile(): void {
-    this.profileWaypoints = [];
     const root = this.container.querySelector<HTMLElement>('#altitude-profile');
     if (root) root.hidden = true;
   }
@@ -274,7 +271,9 @@ export class PlaybackControls {
         const val = parseFloat(seekSlider.value) / 100;
         if (fillBar) fillBar.style.width = `${seekSlider.value}%`;
         const timeDisplay = this.container.querySelector('#playback-percentage');
+        const profileMarker = this.container.querySelector<HTMLElement>('#altitude-profile-marker');
         if (timeDisplay) timeDisplay.textContent = `${Math.round(val * 100)}%`;
+        if (profileMarker) profileMarker.style.left = `${val * 100}%`;
         this.handlers.onSeek(val);
       };
 
