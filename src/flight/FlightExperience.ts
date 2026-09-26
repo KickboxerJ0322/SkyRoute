@@ -95,7 +95,7 @@ export class FlightExperience {
   private showInitialHanedaScene() {
     // Startup is deliberately API-free. Pick a bundled aircraft and park it on Haneda's apron.
     // Do not call camera.update() here: CLOSE mode would zoom to chase-camera distance.
-    const parked:TelemetryData={lat:35.5447199,lng:139.7799157,altitude:10,speedKmh:0,heading:0,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
+    const parked:TelemetryData={lat:35.5463558,lng:139.7833912,altitude:10,speedKmh:0,heading:0,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
     this.currentTelemetry=parked;
     this.aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
     this.setAircraftModel(randomStartupAircraftModel());
