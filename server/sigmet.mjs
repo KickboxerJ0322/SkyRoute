@@ -39,6 +39,17 @@ const cleanRing=ring=>{
 
 const cleanGeometry=geometry=>{
   if(!geometry||typeof geometry!=='object')return null;
+  if(geometry.type==='Point'){
+    return finiteCoord(geometry.coordinates)
+      ?{type:'Point',coordinates:[Number(geometry.coordinates[0]),Number(geometry.coordinates[1])]}
+      :null;
+  }
+  if(geometry.type==='MultiPoint'){
+    const points=(geometry.coordinates||[])
+      .filter(finiteCoord)
+      .map(pair=>[Number(pair[0]),Number(pair[1])]);
+    return points.length?{type:'MultiPoint',coordinates:points}:null;
+  }
   if(geometry.type==='Polygon'){
     const coordinates=geometry.coordinates;
     // Normal GeoJSON is rings[], but tolerate a single ring from upstream.
@@ -62,10 +73,17 @@ const coordsGeometry=record=>{
     try{coords=JSON.parse(coords);}catch{return null;}
   }
   if(!Array.isArray(coords))return null;
-  const ring=cleanRing(coords.map(point=>[
-    Number(point?.lon??point?.lng??point?.longitude),
-    Number(point?.lat??point?.latitude),
-  ]));
+
+  const points=coords
+    .map(point=>[
+      Number(point?.lon??point?.lng??point?.longitude),
+      Number(point?.lat??point?.latitude),
+    ])
+    .filter(finiteCoord);
+
+  if(points.length===1)return {type:'Point',coordinates:points[0]};
+
+  const ring=cleanRing(points);
   if(ring.length<4)return null;
   return {type:'Polygon',coordinates:[ring]};
 };
