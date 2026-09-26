@@ -34,7 +34,7 @@ export class LiveFlightView {
     this.info.innerHTML=`<div class="flight-info-hud live-info"><div class="hud-top-bar"><span class="hud-route-text">${escapeHtml(f.ident)} · ${escapeHtml(f.origin.iata||f.origin.icao||'--')} → ${escapeHtml(f.destination.iata||f.destination.icao||'--')}</span><span class="phase-pill" id="live-view-mode">${escapeHtml(mode)}</span></div>
       <div class="live-airports">${escapeHtml(f.origin.name)} → ${escapeHtml(f.destination.name)}</div>
       <div class="live-metadata">Operated by ${escapeHtml(f.operator)} · <span id="live-flight-status">${escapeHtml(f.status)}</span><br>Actual aircraft: ${escapeHtml(f.aircraftType)} · 3D model: SkyRoute 787-10</div>
-      <div class="hud-grid"><div><div class="metric-label">ALTITUDE</div><div class="metric-value luminous" id="live-altitude">--</div></div><div><div class="metric-label">GROUND SPEED</div><div class="metric-value" id="live-speed">--</div></div><div><div class="metric-label">HEADING</div><div class="metric-value" id="live-heading">--</div></div><div><div class="metric-label">PHASE</div><div class="metric-value" id="live-phase">--</div></div><div><div class="metric-label">REMAINING</div><div class="metric-value" id="live-remaining">--</div></div><div><div class="metric-label">ROUTE</div><div id="live-route-type">--</div></div></div>
+      <div class="hud-grid"><div><div class="metric-label">ALTITUDE</div><div class="metric-value luminous" id="live-altitude">--</div></div><div><div class="metric-label">GROUND SPEED</div><div class="metric-value" id="live-speed">--</div></div><div><div class="metric-label">HEADING</div><div class="metric-value" id="live-heading">--</div></div><div><div class="metric-label">PHASE</div><div class="metric-value" id="live-phase">--</div></div><div><div class="metric-label">REMAINING</div><div class="metric-value" id="live-remaining">--</div></div><div><div class="metric-label">ROUTE</div><div class="metric-value route-type-value" id="live-route-type">--</div></div></div>
       <div class="live-flight-actions"><button id="live-return">LIVE</button><button id="live-refresh-position">現在位置更新</button><button id="live-preview" disabled>Preview Flight</button><button id="live-replay" disabled>Replay track</button><button id="live-ai">AI解説</button><button id="live-speak">🔊 音声</button><button id="live-stop-speak">■ 停止</button></div>
       <div class="live-ai-commentary" id="live-ai-commentary" hidden></div>
       <div class="live-ai-model-note" id="live-ai-model-note" hidden></div>
@@ -46,10 +46,14 @@ export class LiveFlightView {
   setAirport(icao:string) {this.airport=icao;}
   setMessage(message:string) {const node=this.info.querySelector('#live-message');if(node)node.textContent=message;}
   setRoute(type:RouteType|null,actual=false) {
-    const node=this.info.querySelector('#live-route-type');
-    if(node)node.textContent=type
-      ?(actual&&type!=='ACTUAL'?`実測 + ${routeTypeLabel(type)}`:routeTypeLabel(type))
-      :'--';
+    const node=this.info.querySelector<HTMLElement>('#live-route-type');
+    if(node){
+      node.textContent=type
+        ?(actual&&type!=='ACTUAL'?`実測 + ${routeTypeLabel(type)}`:routeTypeLabel(type))
+        :'--';
+      node.dataset.routeKind=type??'';
+      node.dataset.hasActual=String(actual);
+    }
   }
   updatePosition(position:SkyRoutePosition|null) {
     const set=(id:string,text:string)=>{const node=this.info.querySelector('#'+id);if(node)node.textContent=text;};
