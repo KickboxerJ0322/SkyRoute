@@ -109,6 +109,11 @@ export class FlightExperience {
     });
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
     this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message,status.count));
+    // Weather layers are ON by default. They wait for a selected route/airports,
+    // then fetch automatically as soon as the required context becomes available.
+    void this.sigmet.setEnabled(true);
+    this.controls.setNowcastState(true,'出発・到着空港を選択すると自動取得');
+    void this.nowcastPanel.setEnabled(true);
     new PanelVisibility();
     document.addEventListener('skyroute-panel-visibility',(event)=>{
       const detail=(event as CustomEvent<{id:string;visible:boolean}>).detail;
@@ -201,7 +206,7 @@ export class FlightExperience {
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';this.lastAiModel='';this.lastAiCreatedAt='';this.stopAiSpeech();cancelAnimationFrame(this.raf);this.raf=0;
     this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.currentTelemetry=null;this.activeAnimationRoute=null;
     this.route=null;this.filed=null;this.track=[];this.activeDemoRoute=null;this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
-    this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();this.nowcastPanel.clear();this.controls?.setNowcastState(false);
+    this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();this.nowcastPanel.clear();
   }
   private stop() {this.cancelSelection();this.listAbort.abort();clearTimeout(this.listTimer);}
   async setMode(mode:'LIVE'|'DEMO') {
