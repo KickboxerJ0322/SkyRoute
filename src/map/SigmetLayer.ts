@@ -52,6 +52,15 @@ const CORRIDOR_KM=250;
 const EARTH_KM=6371;
 const toRad=(value:number)=>value*Math.PI/180;
 
+const sigmetSourceLabel=(feature:SigmetFeature):string=>{
+  const fir=(feature.properties.firId||'').toUpperCase();
+  const firName=(feature.properties.firName||'').toUpperCase();
+  if(fir==='RJJJ'||firName.includes('FUKUOKA')){
+    return '発表: JMA (RJTD) / 対象: Fukuoka FIR (RJJJ) / 配信: NOAA Aviation Weather Center';
+  }
+  return '配信: NOAA Aviation Weather Center';
+};
+
 const hazardStyle=(hazard:string)=>{
   const value=hazard.toUpperCase();
   // Use the same 8-digit hex notation as the official Maps 3D polygon examples.
@@ -342,7 +351,7 @@ export class SigmetLayer {
         element.setAttribute('title',this.featureTitle(feature));
         element.addEventListener('gmp-click',()=>{
           this.map.dispatchEvent(new CustomEvent('skyroute-sigmet-click',{
-            detail:{...feature.properties,id:feature.id,geometryType:feature.geometry.type},
+            detail:{...feature.properties,id:feature.id,geometryType:feature.geometry.type,sourceLabel:sigmetSourceLabel(feature)},
             bubbles:true,
           }));
         });
@@ -448,7 +457,7 @@ export class SigmetLayer {
     const altitude=p.altitudeHighFeet!=null
       ?`${p.altitudeLowFeet!=null?`FL${Math.round(p.altitudeLowFeet/100)}`:'SFC'}–FL${Math.round(p.altitudeHighFeet/100)}`
       :'高度不明';
-    return [p.hazard||'SIGMET',area,p.seriesId,altitude].filter(Boolean).join(' · ');
+    return [p.hazard||'SIGMET',area,p.seriesId,altitude,sigmetSourceLabel(feature)].filter(Boolean).join(' · ');
   }
 
   private clearPolygons():void{
