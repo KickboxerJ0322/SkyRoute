@@ -1622,3 +1622,76 @@
   }
 }
 
+/* 2026-09-27: harden the mobile stack against legacy absolute/flex sizing.
+   Each core panel reserves the measured height of its real content, so the
+   following card can never overlap it. */
+@media (max-width: 768px) {
+  #mobile-panel-stack > #flight-panel-root { order: 1; }
+  #mobile-panel-stack > #flight-info-root { order: 2; }
+  #mobile-panel-stack > #map-controls-container { order: 3; }
+  #mobile-panel-stack > #playback-container { order: 4; }
+  #mobile-panel-stack > #flight-map-status { order: 5; }
+  #mobile-panel-stack > #route-legend { order: 6; }
+  #mobile-panel-stack > #nowcast-panel { order: 7; }
+
+  #mobile-panel-stack > #flight-panel-root,
+  #mobile-panel-stack > #flight-info-root,
+  #mobile-panel-stack > #map-controls-container,
+  #mobile-panel-stack > #playback-container {
+    display: block !important;
+    box-sizing: border-box !important;
+    min-height: var(--mobile-stack-content-height, auto) !important;
+    height: auto !important;
+    overflow: visible !important;
+    contain: none !important;
+    clear: both !important;
+    align-self: stretch !important;
+  }
+
+  #mobile-panel-stack > #flight-panel-root > .flight-panel,
+  #mobile-panel-stack > #flight-panel-root > .live-panel,
+  #mobile-panel-stack > #flight-info-root > .flight-info-hud,
+  #mobile-panel-stack > #map-controls-container > .map-controls-toolbar,
+  #mobile-panel-stack > #playback-container > .playback-bar-wrapper {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    float: none !important;
+    clear: both !important;
+  }
+
+  /* Camera body remains a grid inside its own card. */
+  #mobile-panel-stack > #map-controls-container > .map-controls-toolbar > .map-controls-body {
+    display: grid !important;
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Information text can never paint outside the flight-info card. */
+  #mobile-panel-stack > #flight-info-root {
+    isolation: isolate;
+  }
+  #mobile-panel-stack > #flight-info-root > .flight-info-hud {
+    overflow: visible !important;
+  }
+
+  /* Keep an explicit visual gap between every visible card. */
+  #mobile-panel-stack > :not([hidden]):not(.panel-user-hidden) {
+    margin-bottom: 2px !important;
+  }
+}
+
