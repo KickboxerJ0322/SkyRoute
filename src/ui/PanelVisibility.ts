@@ -65,6 +65,7 @@ export class PanelVisibility {
         app.classList.toggle('sidebar-hidden', corePanels.slice(0, 2).every(
           ([panelId]) => document.getElementById(panelId)!.hidden
         ));
+        requestAnimationFrame(()=>syncMobilePanelHeights());
       });
       panelButtons.append(button);
     };
@@ -103,6 +104,30 @@ export class PanelVisibility {
       }
     });
 
+    let sizeSyncFrame=0;
+    const syncMobilePanelHeights = () => {
+      cancelAnimationFrame(sizeSyncFrame);
+      sizeSyncFrame=requestAnimationFrame(()=>{
+        if(!media.matches)return;
+        const measuredIds=['flight-panel-root','flight-info-root','map-controls-container','playback-container'] as const;
+        measuredIds.forEach(id=>{
+          const node=document.getElementById(id) as HTMLElement|null;
+          if(!node||node.hidden||node.classList.contains('panel-user-hidden')){
+            node?.style.removeProperty('--mobile-stack-content-height');
+            return;
+          }
+          const content=node.firstElementChild as HTMLElement|null;
+          if(!content){
+            node.style.removeProperty('--mobile-stack-content-height');
+            return;
+          }
+          const rect=content.getBoundingClientRect();
+          const height=Math.ceil(Math.max(rect.height,content.offsetHeight,1));
+          node.style.setProperty('--mobile-stack-content-height',`${height}px`);
+        });
+      });
+    };
+
     const media = window.matchMedia('(max-width: 768px)');
     const applyResponsiveLayout = (mobile:boolean) => {
       if (mobile) {
@@ -112,6 +137,7 @@ export class PanelVisibility {
           if (node && node.parentNode !== stack) stack.append(node);
         });
         app.classList.add('mobile-stacked-panels');
+        syncMobilePanelHeights();
       } else {
         stackIds.forEach(id => {
           const node = document.getElementById(id);
@@ -125,10 +151,25 @@ export class PanelVisibility {
         });
         stack.hidden = true;
         app.classList.remove('mobile-stacked-panels');
+        stackIds.forEach(id=>document.getElementById(id)?.style.removeProperty('--mobile-stack-content-height'));
       }
     };
     applyResponsiveLayout(media.matches);
     media.addEventListener('change', event => applyResponsiveLayout(event.matches));
+
+    const contentObserver=new MutationObserver(()=>syncMobilePanelHeights());
+    stackIds.forEach(id=>{
+      const node=document.getElementById(id);
+      if(node)contentObserver.observe(node,{
+        childList:true,
+        subtree:true,
+        characterData:true,
+        attributes:true,
+        attributeFilter:['hidden','class'],
+      });
+    });
+    window.addEventListener('resize',syncMobilePanelHeights,{passive:true});
+    window.setTimeout(syncMobilePanelHeights,0);
 
     const playback = document.getElementById('playback-container')!;
     new ResizeObserver(() => {
