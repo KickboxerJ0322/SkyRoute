@@ -1443,3 +1443,182 @@
   }
 }
 
+/* 2026-09-27: mobile lower-half scroll sheet.
+   The actual panels are moved into #mobile-panel-stack by PanelVisibility. */
+#mobile-panel-stack {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  #app.mobile-stacked-panels {
+    overflow: hidden !important;
+  }
+
+  #app.mobile-stacked-panels #left-panel-container {
+    display: none !important;
+  }
+
+  #mobile-panel-stack:not([hidden]) {
+    position: absolute !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 50vh !important;
+    bottom: 0 !important;
+    z-index: 32 !important;
+    padding: 10px 12px calc(22px + env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    pointer-events: auto !important;
+    background: linear-gradient(
+      180deg,
+      rgba(0,0,0,.08) 0%,
+      rgba(0,0,0,.28) 18%,
+      rgba(0,0,0,.42) 100%
+    );
+  }
+
+  /* A hidden control must always win over historical ID-level display rules. */
+  #mobile-panel-stack > [hidden],
+  #mobile-panel-stack > .panel-user-hidden {
+    display: none !important;
+  }
+
+  /* Every mobile panel participates in normal document flow. */
+  #mobile-panel-stack > #flight-panel-root,
+  #mobile-panel-stack > #flight-info-root,
+  #mobile-panel-stack > #map-controls-container,
+  #mobile-panel-stack > #playback-container,
+  #mobile-panel-stack > #flight-map-status,
+  #mobile-panel-stack > #route-legend,
+  #mobile-panel-stack > #nowcast-panel {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    flex: 0 0 auto !important;
+    pointer-events: auto !important;
+  }
+
+  /* Departures and flight information become content-height cards. */
+  #mobile-panel-stack > #flight-panel-root {
+    display: block !important;
+    min-height: 0 !important;
+  }
+  #mobile-panel-stack #flight-panel-root .flight-panel,
+  #mobile-panel-stack #flight-panel-root .live-panel,
+  #mobile-panel-stack #flight-info-root .flight-info-hud,
+  #mobile-panel-stack #flight-info-root .live-info {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  #mobile-panel-stack #flight-panel-root .departures-section,
+  #mobile-panel-stack #flight-panel-root .live-routes,
+  #mobile-panel-stack #flight-info-root {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Keep very long flight lists usable without making the whole sheet enormous. */
+  #mobile-panel-stack #flight-panel-root .live-routes,
+  #mobile-panel-stack #flight-panel-root .departures-section {
+    max-height: 46vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Camera becomes a self-contained card instead of an absolute HUD. */
+  #mobile-panel-stack > #map-controls-container {
+    display: block !important;
+  }
+  #mobile-panel-stack #map-controls-container .map-controls-toolbar {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: auto !important;
+  }
+  #mobile-panel-stack #map-controls-container .mobile-control-row {
+    display: none !important;
+  }
+  #mobile-panel-stack #map-controls-container .map-controls-body {
+    display: grid !important;
+    position: relative !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    background: rgba(0,0,0,.62) !important;
+  }
+
+  /* Playback is another normal card in the stack. */
+  #mobile-panel-stack > #playback-container {
+    display: block !important;
+  }
+  #mobile-panel-stack #playback-container .playback-bar-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  /* Compact info cards should no longer float over the map on mobile. */
+  #mobile-panel-stack > #flight-map-status,
+  #mobile-panel-stack > #route-legend {
+    display: flex;
+    box-sizing: border-box;
+  }
+  #mobile-panel-stack > #flight-map-status {
+    justify-content: center;
+    text-align: center;
+  }
+  #mobile-panel-stack > #route-legend {
+    justify-content: center;
+  }
+
+  /* NOWCAST joins the same flow when WEATHER/NOWCAST is enabled. */
+  #mobile-panel-stack > #nowcast-panel {
+    box-sizing: border-box;
+    overflow: visible !important;
+  }
+
+  /* Keep only title + 操作 fixed above the map. The opened menu remains usable. */
+  #top-app-bar {
+    z-index: 50 !important;
+  }
+  #top-app-bar #panel-visibility-controls {
+    z-index: 51 !important;
+  }
+}
+
