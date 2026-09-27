@@ -24,7 +24,6 @@ export class PanelVisibility {
     panelButtons.className = 'panel-visibility-items';
     toolbar.append(panelButtons);
 
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const corePanels = [
       ['flight-panel-root', '便一覧'],
       ['flight-info-root', '飛行情報'],
@@ -44,10 +43,11 @@ export class PanelVisibility {
       button.setAttribute('aria-controls', id);
       button.title = `${label}の表示・非表示`;
 
-      const initiallyVisible = !isMobile;
-      panel.classList.toggle('panel-user-hidden', !initiallyVisible);
-      if (!isOverlay) panel.hidden = !initiallyVisible;
-      button.setAttribute('aria-pressed', String(initiallyVisible));
+      // All available panels start enabled. Content-driven overlays may remain
+      // hidden until a flight/route gives them something meaningful to show.
+      panel.classList.remove('panel-user-hidden');
+      if (!isOverlay) panel.hidden = false;
+      button.setAttribute('aria-pressed', 'true');
 
       button.addEventListener('click', () => {
         const visible = button.getAttribute('aria-pressed') !== 'true';
@@ -72,8 +72,63 @@ export class PanelVisibility {
     corePanels.forEach(([id,label]) => addButton(id,label,false));
     overlayPanels.forEach(([id,label]) => addButton(id,label,true));
 
-    app.classList.toggle('sidebar-hidden', isMobile);
+    app.classList.remove('sidebar-hidden');
     topBar.append(toolbar);
+
+    // Mobile uses one scrollable panel stack in the lower half of the screen.
+    // Moving the real panel nodes prevents the many historic absolute-position
+    // rules from competing with one another. Desktop restores their original
+    // DOM parents and keeps the existing layout unchanged.
+    const stack = document.createElement('section');
+    stack.id = 'mobile-panel-stack';
+    stack.setAttribute('aria-label', 'SkyRoute information panels');
+    stack.hidden = true;
+    app.append(stack);
+
+    const stackIds = [
+      'flight-panel-root',
+      'flight-info-root',
+      'map-controls-container',
+      'playback-container',
+      'flight-map-status',
+      'route-legend',
+      'nowcast-panel',
+    ] as const;
+
+    const originalLocations = new Map<string,{parent:Node;next:Node|null}>();
+    stackIds.forEach(id => {
+      const node = document.getElementById(id);
+      if (node?.parentNode) {
+        originalLocations.set(id,{parent:node.parentNode,next:node.nextSibling});
+      }
+    });
+
+    const media = window.matchMedia('(max-width: 768px)');
+    const applyResponsiveLayout = (mobile:boolean) => {
+      if (mobile) {
+        stack.hidden = false;
+        stackIds.forEach(id => {
+          const node = document.getElementById(id);
+          if (node && node.parentNode !== stack) stack.append(node);
+        });
+        app.classList.add('mobile-stacked-panels');
+      } else {
+        stackIds.forEach(id => {
+          const node = document.getElementById(id);
+          const location = originalLocations.get(id);
+          if (!node || !location || node.parentNode !== stack) return;
+          if (location.next && location.next.parentNode === location.parent) {
+            location.parent.insertBefore(node,location.next);
+          } else {
+            location.parent.appendChild(node);
+          }
+        });
+        stack.hidden = true;
+        app.classList.remove('mobile-stacked-panels');
+      }
+    };
+    applyResponsiveLayout(media.matches);
+    media.addEventListener('change', event => applyResponsiveLayout(event.matches));
 
     const playback = document.getElementById('playback-container')!;
     new ResizeObserver(() => {
