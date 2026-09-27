@@ -1902,3 +1902,19 @@
   }
 }
 
+/* 2026-09-28: clarify SIGMET issuer versus distribution source. */
+#map-controls-container .sigmet-source-note {
+  width: 100%;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font: 500 9px/1.35 var(--font-mono);
+  letter-spacing: .01em;
+}
+@media (max-width: 768px) {
+  #map-controls-container .sigmet-source-note {
+    padding: 2px 0 0;
+    font-size: 9px;
+    white-space: normal;
+  }
+}
+
