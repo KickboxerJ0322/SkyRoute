@@ -26,8 +26,8 @@ export class MapControls {
   private currentMapMode: 'HYBRID' | 'SATELLITE' = 'HYBRID';
   private currentCameraMode: CameraMode = 'CLOSE';
   private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
-  private sigmetEnabled = false;
-  private nowcastEnabled = false;
+  private sigmetEnabled = true;
+  private nowcastEnabled = true;
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -155,12 +155,15 @@ export class MapControls {
         <div class="toolbar-group">
           <span class="group-label">WEATHER</span>
           <div class="segmented-control">
-            <button id="sigmet-toggle" class="map-layer-btn sigmet-toggle-btn" type="button" aria-pressed="false" title="航路周辺のSIGMETを表示">
-              SIGMET OFF
+            <button id="sigmet-toggle" class="map-layer-btn sigmet-toggle-btn active" type="button" aria-pressed="true" title="航路周辺のSIGMETを表示中">
+              SIGMET ON
             </button>
-            <button id="nowcast-toggle" class="map-layer-btn nowcast-toggle-btn" type="button" aria-pressed="false" title="出発・到着空港のナウキャストを表示">
-              NOWCAST OFF
+            <button id="nowcast-toggle" class="map-layer-btn nowcast-toggle-btn active" type="button" aria-pressed="true" title="出発・到着空港のナウキャストを表示中">
+              NOWCAST ON
             </button>
+          </div>
+          <div class="sigmet-source-note">
+            日本(RJJJ): 発表 JMA(RJTD) / 配信 NOAA Aviation Weather Center
           </div>
         </div>
 
