@@ -1695,3 +1695,210 @@
   }
 }
 
+/* 2026-09-27: definitive mobile card stack.
+   Wrapper cards own layout/visibility; legacy panel selectors only style content. */
+@media (max-width: 768px) {
+  #mobile-panel-stack:not([hidden]) {
+    position: absolute !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 50vh !important;
+    bottom: 0 !important;
+    z-index: 32 !important;
+    padding: 10px 12px calc(24px + env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    pointer-events: auto !important;
+    background: linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.34));
+  }
+
+  #mobile-panel-stack > .mobile-panel-card {
+    position: relative !important;
+    display: block !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(0,212,255,.24);
+    border-radius: 14px;
+    background: rgba(0,0,0,.62);
+    box-shadow: 0 8px 24px rgba(0,0,0,.16);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  #mobile-panel-stack > .mobile-panel-card[hidden] {
+    display: none !important;
+  }
+
+  .mobile-panel-card-title {
+    position: relative !important;
+    display: block !important;
+    padding: 8px 12px 6px;
+    color: var(--accent-cyan);
+    font: 700 11px/1.2 var(--font-mono);
+    letter-spacing: .06em;
+    border-bottom: 1px solid rgba(0,212,255,.14);
+    background: rgba(0,0,0,.20);
+  }
+
+  .mobile-panel-card-body {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-panel-placeholder {
+    display: none;
+    padding: 10px 8px;
+    color: var(--text-muted);
+    font: 500 10px/1.5 var(--font-mono);
+  }
+
+  .mobile-panel-card[data-content-hidden="true"] .mobile-panel-placeholder {
+    display: block !important;
+  }
+
+  .mobile-panel-card[data-content-hidden="true"] .mobile-panel-card-body > [hidden] {
+    display: none !important;
+  }
+
+  /* Actual panel roots become ordinary block content inside the card. */
+  .mobile-panel-card-body > #flight-panel-root,
+  .mobile-panel-card-body > #flight-info-root,
+  .mobile-panel-card-body > #map-controls-container,
+  .mobile-panel-card-body > #playback-container,
+  .mobile-panel-card-body > #flight-map-status,
+  .mobile-panel-card-body > #route-legend,
+  .mobile-panel-card-body > #nowcast-panel {
+    position: static !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    float: none !important;
+    clear: both !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: auto !important;
+  }
+
+  /* Hidden content-driven panels remain hidden; the wrapper shows its placeholder. */
+  .mobile-panel-card-body > #flight-map-status[hidden],
+  .mobile-panel-card-body > #route-legend[hidden],
+  .mobile-panel-card-body > #nowcast-panel[hidden] {
+    display: none !important;
+  }
+
+  /* Normalize the first real surface of every card. */
+  .mobile-panel-card #flight-panel-root > .flight-panel,
+  .mobile-panel-card #flight-panel-root > .live-panel,
+  .mobile-panel-card #flight-info-root > .flight-info-hud,
+  .mobile-panel-card #map-controls-container > .map-controls-toolbar,
+  .mobile-panel-card #playback-container > .playback-bar-wrapper {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    float: none !important;
+    clear: both !important;
+    background: rgba(0,0,0,.16) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .mobile-panel-card #flight-panel-root .live-routes,
+  .mobile-panel-card #flight-panel-root .departures-section {
+    position: static !important;
+    max-height: 42vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .mobile-panel-card #flight-info-root {
+    overflow: visible !important;
+  }
+
+  .mobile-panel-card #map-controls-container .mobile-control-row {
+    display: none !important;
+  }
+
+  .mobile-panel-card #map-controls-container .map-controls-body {
+    position: static !important;
+    display: grid !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .mobile-panel-card #playback-container .playback-bar-wrapper {
+    padding: 10px !important;
+  }
+
+  .mobile-panel-card #flight-map-status,
+  .mobile-panel-card #route-legend {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px 10px !important;
+    text-align: center;
+  }
+
+  .mobile-panel-card #nowcast-panel {
+    padding: 8px !important;
+  }
+
+  /* Visibility is controlled by the wrapper card on phones. */
+  .mobile-panel-card[hidden] * {
+    pointer-events: none !important;
+  }
+}
+
