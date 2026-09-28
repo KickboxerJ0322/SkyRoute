@@ -1964,3 +1964,43 @@
   }
 }
 
+/* 2026-09-28: desktop panel opacity aligned with the darker mobile cards. */
+@media (min-width: 769px) {
+  :root {
+    --panel-bg: rgba(0, 0, 0, .68);
+    --panel-bg-hover: rgba(0, 0, 0, .76);
+  }
+
+  #flight-panel-root,
+  #flight-info-root .flight-info-hud,
+  #map-controls-container .map-controls-toolbar,
+  #playback-container .playback-bar-wrapper,
+  #nowcast-panel,
+  #flight-map-status,
+  #route-legend,
+  .info-panel {
+    background: rgba(0, 0, 0, .68) !important;
+    background-color: rgba(0, 0, 0, .68) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+
+  /* Keep only one dark surface per panel so text stays readable. */
+  #flight-panel-root .flight-panel,
+  #flight-panel-root .live-panel,
+  #flight-panel-root .live-routes,
+  #flight-panel-root .departures-section,
+  #map-controls-container .map-controls-body,
+  #map-controls-container .toolbar-group {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  /* Top 操作 -> NOWCAST is a pure panel visibility toggle. */
+  #nowcast-panel.panel-user-hidden,
+  #flight-map-status.panel-user-hidden,
+  #route-legend.panel-user-hidden {
+    display: none !important;
+  }
+}
+
