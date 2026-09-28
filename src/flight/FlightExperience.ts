@@ -469,21 +469,31 @@ export class FlightExperience {
     const button=root.querySelector<HTMLButtonElement>('#live-ai');
     const panel=root.querySelector<HTMLElement>('#live-ai-commentary');
     if(!button||!panel)return;
-    button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;panel.textContent='運航・METAR・SIGMET・NOWCASTをGeminiで解析しています…';
+    button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;panel.textContent='運航・METAR・TAF・SIGMET・NOWCASTをGeminiで解析しています…';
     const sample=<T>(items:T[],max=28)=>items.length<=max?items:Array.from({length:max},(_,i)=>items[Math.round(i*(items.length-1)/(max-1))]);
     let weather:{origin:unknown;destination:unknown}={origin:null,destination:null};
     try {
       const originCode=this.selected.origin.icao;
       const destinationCode=this.selected.destination.icao;
-      const [originWeather,destinationWeather]=await Promise.allSettled([
+      const [originWeather,destinationWeather,originForecast,destinationForecast]=await Promise.allSettled([
         originCode?this.provider.getWeather(originCode):Promise.resolve(null),
         destinationCode?this.provider.getWeather(destinationCode):Promise.resolve(null),
+        originCode?this.provider.getForecast(originCode):Promise.resolve(null),
+        destinationCode?this.provider.getForecast(destinationCode):Promise.resolve(null),
       ]);
       const originObservation=originWeather.status==='fulfilled'&&originWeather.value?originWeather.value.data:null;
       const destinationObservation=destinationWeather.status==='fulfilled'&&destinationWeather.value?destinationWeather.value.data:null;
+      const originTaf=originForecast.status==='fulfilled'&&originForecast.value?originForecast.value.data:null;
+      const destinationTaf=destinationForecast.status==='fulfilled'&&destinationForecast.value?destinationForecast.value.data:null;
       weather={
-        origin:originObservation?{...originObservation,windDirectionDeg:weatherWindDirection(originObservation)}:null,
-        destination:destinationObservation?{...destinationObservation,windDirectionDeg:weatherWindDirection(destinationObservation)}:null,
+        origin:{
+          metar:originObservation?{...originObservation,windDirectionDeg:weatherWindDirection(originObservation)}:null,
+          taf:originTaf,
+        },
+        destination:{
+          metar:destinationObservation?{...destinationObservation,windDirectionDeg:weatherWindDirection(destinationObservation)}:null,
+          taf:destinationTaf,
+        },
       };
     } catch {}
     const [sigmetResult,nowcastResult]=await Promise.allSettled([
