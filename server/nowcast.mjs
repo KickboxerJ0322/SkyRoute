@@ -3,13 +3,16 @@ import { ApiError } from './cache.mjs';
 
 const CURRENT_URL='https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json';
 const FORECAST_URL='https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N2.json';
-const TILE_TEMPLATE='https://www.jma.go.jp/bosai/jmatile/data/nowc/{basetime}/none/{validtime}/surf/hrpns/{z}/{x}/{y}.png';
+const HAZARD_URL='https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N3.json';
+const TILE_ROOT='https://www.jma.go.jp/bosai/jmatile/data/nowc';
+const RAIN_ELEMENT='hrpns';
+const THUNDER_ELEMENT='thns';
+const TORNADO_ELEMENT='trns';
+const RAIN_TILE_TEMPLATE=`${TILE_ROOT}/{basetime}/none/{validtime}/surf/hrpns/{z}/{x}/{y}.png`;
 const TTL_MS=60*1000;
 const ANALYSIS_RADIUS_KM=10;
 const ZOOMS=[8,7,6];
 
-// Current JMA precipitation display palette. Values are bucket lower bounds;
-// the tiles encode categories rather than exact rainfall rates.
 const RAIN_BUCKETS=[
   {min:80,max:null,rgb:[180,0,104],label:'猛烈な雨'},
   {min:50,max:80,rgb:[255,40,0],label:'非常に激しい雨'},
@@ -37,6 +40,23 @@ const normalize=list=>(Array.isArray(list)?list:[])
     validtime:String(item.validtime),
     elements:Array.isArray(item.elements)?item.elements.map(String):[],
   }));
+
+const selectElementTimes=(list,element)=>{
+  const relevant=list.filter(item=>item.elements.includes(element));
+  if(!relevant.length)return {current:null,forecast60:null};
+  const latestBase=[...new Set(relevant.map(item=>item.basetime))]
+    .sort((a,b)=>parseUtc(b)-parseUtc(a))[0];
+  const run=relevant.filter(item=>item.basetime===latestBase);
+  const baseMs=parseUtc(latestBase);
+  const current=[...run].sort((a,b)=>
+    Math.abs(parseUtc(a.validtime)-baseMs)-Math.abs(parseUtc(b.validtime)-baseMs)
+  )[0]??null;
+  const targetMs=baseMs+60*60*1000;
+  const forecast60=[...run].sort((a,b)=>
+    Math.abs(parseUtc(a.validtime)-targetMs)-Math.abs(parseUtc(b.validtime)-targetMs)
+  )[0]??current;
+  return {current,forecast60};
+};
 
 const paeth=(a,b,c)=>{
   const p=a+b-c,pa=Math.abs(p-a),pb=Math.abs(p-b),pc=Math.abs(p-c);
@@ -130,12 +150,10 @@ const tilePosition=(lat,lng,z)=>{
   };
 };
 
-const tileUrl=(time,z,x,y)=>TILE_TEMPLATE
-  .replace('{basetime}',time.basetime)
-  .replace('{validtime}',time.validtime)
-  .replace('{z}',String(z)).replace('{x}',String(x)).replace('{y}',String(y));
+const layerTileUrl=(time,element,z,x,y)=>
+  `${TILE_ROOT}/${time.basetime}/none/${time.validtime}/surf/${element}/${z}/${x}/${y}.png`;
 
-const classify=rgba=>{
+const classifyRain=rgba=>{
   const [r,g,b,a]=rgba;
   if(a===0&&r===255&&g===255&&b===255)return {status:'available',minMmPerHour:0,maxMmPerHour:.1,label:'降水域なし'};
   if(a===0)return {status:'unpainted',minMmPerHour:null,maxMmPerHour:null,label:'判定不能'};
@@ -147,6 +165,35 @@ const classify=rgba=>{
   }
   if(!best||bestDistance>75**2)return {status:'unknown-color',minMmPerHour:null,maxMmPerHour:null,label:'判定不能'};
   return {status:'available',minMmPerHour:best.min,maxMmPerHour:best.max,label:best.label};
+};
+
+const emptyThreat=(kind,status='available')=>({
+  status,level:0,
+  label:kind==='thunder'?'雷活動なし':'竜巻発生確度なし',
+  zoom:null,
+});
+
+const classifyThreat=(rgba,kind)=>{
+  const [r,g,b,a]=rgba;
+  if(a<20)return emptyThreat(kind);
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  if(max-min<28&&max>180)return emptyThreat(kind);
+  if(kind==='thunder'){
+    if((b>150&&r>100&&b>g*1.35)||(r>160&&b>130&&g<120))
+      return {status:'available',level:4,label:'活動度4 · 激しい雷',zoom:null};
+    if(r>185&&g<105&&b<140)
+      return {status:'available',level:3,label:'活動度3 · やや激しい雷',zoom:null};
+    if(r>185&&g>=80&&g<200&&b<130)
+      return {status:'available',level:2,label:'活動度2 · 雷あり',zoom:null};
+    if(r>170&&g>160&&b<150)
+      return {status:'available',level:1,label:'活動度1 · 雷可能性あり',zoom:null};
+  }else{
+    if(r>180&&g<150&&b<170)
+      return {status:'available',level:2,label:'発生確度2 · 激しい突風に注意',zoom:null};
+    if(r>170&&g>150&&b<160)
+      return {status:'available',level:1,label:'発生確度1 · 激しい突風の可能性',zoom:null};
+  }
+  return {status:'unknown-color',level:null,label:'判定不能',zoom:null};
 };
 
 const sampleLocations=(lat,lng)=>{
@@ -164,7 +211,8 @@ const sampleLocations=(lat,lng)=>{
   return points;
 };
 
-const severity=value=>value?.minMmPerHour??-1;
+const rainSeverity=value=>value?.minMmPerHour??-1;
+const threatSeverity=value=>value?.level??-1;
 
 export function createNowcastService({fetcher=fetch,now=Date.now}={}){
   let cache=null,expires=0;
@@ -179,13 +227,21 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
     return response.json();
   };
 
+  const readOptional=async url=>{
+    try{return await read(url);}
+    catch{return [];}
+  };
+
   const getTimes=async()=>{
     const currentTime=now();
     if(cache&&currentTime<expires)return {...cache,cached:true};
 
-    const [currentRaw,forecastRaw]=await Promise.all([read(CURRENT_URL),read(FORECAST_URL)]);
+    const [currentRaw,forecastRaw,hazardRaw]=await Promise.all([
+      read(CURRENT_URL),read(FORECAST_URL),readOptional(HAZARD_URL),
+    ]);
     const currentList=normalize(currentRaw);
     const forecastList=normalize(forecastRaw);
+    const hazardList=normalize(hazardRaw);
     if(!currentList.length)throw new ApiError(502,'JMA_NOWCAST_UNAVAILABLE');
 
     const current=[...currentList].sort((a,b)=>parseUtc(b.validtime)-parseUtc(a.validtime))[0];
@@ -200,16 +256,19 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
     cache={
       current,
       forecast60,
+      thunder:selectElementTimes(hazardList,THUNDER_ELEMENT),
+      tornado:selectElementTimes(hazardList,TORNADO_ELEMENT),
       fetchedAt:new Date(currentTime).toISOString(),
-      source:'Japan Meteorological Agency High-resolution Precipitation Nowcast',
-      tileTemplate:TILE_TEMPLATE,
+      source:'Japan Meteorological Agency Nowcast',
+      tileTemplate:RAIN_TILE_TEMPLATE,
     };
     expires=currentTime+TTL_MS;
     return {...cache,cached:false};
   };
 
-  const getDecodedTile=async(time,z,x,y)=>{
-    const url=tileUrl(time,z,x,y);
+  const getDecodedTile=async(time,element,z,x,y)=>{
+    if(!time)return null;
+    const url=layerTileUrl(time,element,z,x,y);
     if(tileCache.has(url))return tileCache.get(url);
     const promise=(async()=>{
       const response=await fetcher(url,{
@@ -221,38 +280,66 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
       catch{return null;}
     })();
     tileCache.set(url,promise);
-    if(tileCache.size>96)tileCache.delete(tileCache.keys().next().value);
+    if(tileCache.size>160)tileCache.delete(tileCache.keys().next().value);
     return promise;
   };
 
-  const sampleAt=async(time,lat,lng)=>{
+  const sampleRainAt=async(time,lat,lng)=>{
     for(const z of ZOOMS){
       const pos=tilePosition(lat,lng,z);
-      const decoded=await getDecodedTile(time,z,pos.x,pos.y);
+      const decoded=await getDecodedTile(time,RAIN_ELEMENT,z,pos.x,pos.y);
       if(!decoded)continue;
-      const value=classify(decoded.pixel(pos.px,pos.py));
+      const value=classifyRain(decoded.pixel(pos.px,pos.py));
       if(value.status==='available')return {...value,zoom:z};
       if(value.status!=='unpainted')return {...value,zoom:z};
     }
     return {status:'unavailable',minMmPerHour:null,maxMmPerHour:null,label:'判定不能',zoom:null};
   };
 
-  const analyzeFrame=async(time,lat,lng)=>{
+  const sampleThreatAt=async(time,element,kind,lat,lng)=>{
+    if(!time)return {...emptyThreat(kind,'unavailable'),level:null,label:'データなし'};
+    for(const z of ZOOMS){
+      const pos=tilePosition(lat,lng,z);
+      const decoded=await getDecodedTile(time,element,z,pos.x,pos.y);
+      if(!decoded)continue;
+      const value=classifyThreat(decoded.pixel(pos.px,pos.py),kind);
+      if(value.status==='available')return {...value,zoom:z};
+      if(value.status!=='unpainted')return {...value,zoom:z};
+    }
+    return {...emptyThreat(kind,'unavailable'),level:null,label:'判定不能'};
+  };
+
+  const analyzeRainFrame=async(time,lat,lng)=>{
     const points=sampleLocations(lat,lng);
-    const samples=await Promise.all(points.map(point=>sampleAt(time,point.lat,point.lng)));
+    const samples=await Promise.all(points.map(point=>sampleRainAt(time,point.lat,point.lng)));
     const center=samples[points.findIndex(point=>point.center)]??samples[0];
     const available=samples.filter(value=>value.status==='available');
     const nearbyMax=available.length
-      ?available.reduce((max,value)=>severity(value)>severity(max)?value:max,available[0])
+      ?available.reduce((max,value)=>rainSeverity(value)>rainSeverity(max)?value:max,available[0])
       :{status:'unavailable',minMmPerHour:null,maxMmPerHour:null,label:'判定不能',zoom:null};
     return {
-      basetime:time.basetime,
-      validtime:time.validtime,
-      radiusKm:ANALYSIS_RADIUS_KM,
-      center,
-      nearbyMax,
-      availableSamples:available.length,
-      totalSamples:samples.length,
+      basetime:time.basetime,validtime:time.validtime,radiusKm:ANALYSIS_RADIUS_KM,
+      center,nearbyMax,availableSamples:available.length,totalSamples:samples.length,
+    };
+  };
+
+  const analyzeThreatFrame=async(time,element,kind,lat,lng)=>{
+    if(!time)return {
+      basetime:null,validtime:null,radiusKm:ANALYSIS_RADIUS_KM,
+      center:{...emptyThreat(kind,'unavailable'),level:null,label:'データなし'},
+      nearbyMax:{...emptyThreat(kind,'unavailable'),level:null,label:'データなし'},
+      availableSamples:0,totalSamples:0,
+    };
+    const points=sampleLocations(lat,lng);
+    const samples=await Promise.all(points.map(point=>sampleThreatAt(time,element,kind,point.lat,point.lng)));
+    const center=samples[points.findIndex(point=>point.center)]??samples[0];
+    const available=samples.filter(value=>value.status==='available');
+    const nearbyMax=available.length
+      ?available.reduce((max,value)=>threatSeverity(value)>threatSeverity(max)?value:max,available[0])
+      :{...emptyThreat(kind,'unavailable'),level:null,label:'判定不能'};
+    return {
+      basetime:time.basetime,validtime:time.validtime,radiusKm:ANALYSIS_RADIUS_KM,
+      center,nearbyMax,availableSamples:available.length,totalSamples:samples.length,
     };
   };
 
@@ -260,12 +347,18 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
     if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<-90||lat>90||lng<-180||lng>180)
       throw new ApiError(400,'INVALID_COORDINATES');
     const times=await getTimes();
-    const [current,forecast60]=await Promise.all([
-      analyzeFrame(times.current,lat,lng),
-      analyzeFrame(times.forecast60,lat,lng),
+    const [current,forecast60,thCurrent,th60,trCurrent,tr60]=await Promise.all([
+      analyzeRainFrame(times.current,lat,lng),
+      analyzeRainFrame(times.forecast60,lat,lng),
+      analyzeThreatFrame(times.thunder.current,THUNDER_ELEMENT,'thunder',lat,lng),
+      analyzeThreatFrame(times.thunder.forecast60,THUNDER_ELEMENT,'thunder',lat,lng),
+      analyzeThreatFrame(times.tornado.current,TORNADO_ELEMENT,'tornado',lat,lng),
+      analyzeThreatFrame(times.tornado.forecast60,TORNADO_ELEMENT,'tornado',lat,lng),
     ]);
     return {
       lat,lng,current,forecast60,
+      thunder:{current:thCurrent,forecast60:th60},
+      tornado:{current:trCurrent,forecast60:tr60},
       fetchedAt:times.fetchedAt,
       source:times.source,
     };
