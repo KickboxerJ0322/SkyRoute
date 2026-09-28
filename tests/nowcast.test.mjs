@@ -12,10 +12,16 @@ const fetcher=async url=>{
       {basetime:'20260926085000',validtime:'20260926085000',elements:['hrpns']},
     ]),{status:200,headers:{'Content-Type':'application/json'}});
   }
+  if(String(url).includes('targetTimes_N2.json')){
+    return new Response(JSON.stringify([
+      {basetime:'20260926085500',validtime:'20260926095500',elements:['hrpns']},
+      {basetime:'20260926085500',validtime:'20260926092500',elements:['hrpns']},
+      {basetime:'20260926085500',validtime:'20260926090000',elements:['hrpns']},
+    ]),{status:200,headers:{'Content-Type':'application/json'}});
+  }
   return new Response(JSON.stringify([
-    {basetime:'20260926085500',validtime:'20260926095500',elements:['hrpns']},
-    {basetime:'20260926085500',validtime:'20260926092500',elements:['hrpns']},
-    {basetime:'20260926085500',validtime:'20260926090000',elements:['hrpns']},
+    {basetime:'20260926085000',validtime:'20260926085000',elements:['thns','trns']},
+    {basetime:'20260926085000',validtime:'20260926095000',elements:['thns','trns']},
   ]),{status:200,headers:{'Content-Type':'application/json'}});
 };
 
@@ -28,7 +34,7 @@ assert.equal(first.cached,false);
 
 const second=await service();
 assert.equal(second.cached,true);
-assert.equal(calls,2,'current and forecast indexes are cached together');
+assert.equal(calls,3,'rain and hazard target-time indexes are cached together');
 
 console.log('Passed: JMA nowcast current/+60 minute selection and cache.');
 
@@ -62,6 +68,8 @@ const solidRgbaPng=rgba=>{
 };
 
 const heavyRainPng=solidRgbaPng([255,153,0,255]);
+const thunderPng=solidRgbaPng([255,0,0,255]);
+const tornadoPng=solidRgbaPng([255,0,0,255]);
 const analysisFetcher=async url=>{
   const value=String(url);
   if(value.includes('targetTimes_N1.json')){
@@ -73,6 +81,18 @@ const analysisFetcher=async url=>{
     return new Response(JSON.stringify([
       {basetime:'20260926085500',validtime:'20260926095500',elements:['hrpns']},
     ]),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  if(value.includes('targetTimes_N3.json')){
+    return new Response(JSON.stringify([
+      {basetime:'20260926085000',validtime:'20260926085000',elements:['thns','trns']},
+      {basetime:'20260926085000',validtime:'20260926095000',elements:['thns','trns']},
+    ]),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  if(value.includes('/surf/thns/')){
+    return new Response(thunderPng,{status:200,headers:{'Content-Type':'image/png'}});
+  }
+  if(value.includes('/surf/trns/')){
+    return new Response(tornadoPng,{status:200,headers:{'Content-Type':'image/png'}});
   }
   if(value.endsWith('.png')){
     return new Response(heavyRainPng,{status:200,headers:{'Content-Type':'image/png'}});
@@ -87,5 +107,9 @@ assert.equal(analysis.current.center.minMmPerHour,30);
 assert.equal(analysis.current.center.maxMmPerHour,50);
 assert.equal(analysis.current.nearbyMax.label,'激しい雨');
 assert.equal(analysis.forecast60.center.minMmPerHour,30);
+assert.equal(analysis.thunder.current.center.level,3);
+assert.equal(analysis.thunder.forecast60.nearbyMax.level,3);
+assert.equal(analysis.tornado.current.center.level,2);
+assert.equal(analysis.tornado.forecast60.nearbyMax.level,2);
 
-console.log('Passed: structured JMA nowcast PNG intensity analysis.');
+console.log('Passed: structured JMA rain/thunder/tornado nowcast analysis.');
