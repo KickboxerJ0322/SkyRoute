@@ -1918,3 +1918,49 @@
   }
 }
 
+/* 2026-09-28: SIGMET hazard color legend. */
+#map-controls-container .sigmet-color-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  width: 100%;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font: 500 9px/1.35 var(--font-mono);
+}
+#map-controls-container .sigmet-color-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+#map-controls-container .sigmet-color {
+  display: inline-block;
+  width: 11px;
+  height: 7px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,.28);
+}
+#map-controls-container .sigmet-color.turb { background: #ffaa28; }
+#map-controls-container .sigmet-color.ice { background: #739bff; }
+#map-controls-container .sigmet-color.ash { background: #bea0dc; }
+#map-controls-container .sigmet-color.tc { background: #ff69be; }
+#map-controls-container .sigmet-color.mtw { background: #e1b455; }
+#map-controls-container .sigmet-color.other { background: #ff5f5f; }
+
+@media (max-width: 768px) {
+  #map-controls-container .sigmet-color-legend {
+    gap: 5px 9px;
+    font-size: 9px;
+  }
+}
+
+/* Expanded NOWCAST structured hazards. */
+.nowcast-structured-row {
+  grid-template-columns: minmax(76px,.7fr) repeat(2,minmax(0,1fr));
+}
+@media (max-width: 768px) {
+  .nowcast-structured-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
