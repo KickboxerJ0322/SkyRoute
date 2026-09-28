@@ -127,6 +127,9 @@ export class FlightExperience {
           this.activeAnimationRoute||this.route?.waypoints.length||this.track.length
         ));
       }
+      if(detail.id==='nowcast-panel') {
+        this.nowcastPanel.setPanelVisible(detail.visible);
+      }
     });
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
