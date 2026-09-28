@@ -78,6 +78,8 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
       }
       const airportWeather=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})\/weather$/);
       if(airportWeather) return json(200,await api.weather(airportWeather[1].toUpperCase()));
+      const airportForecast=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})\/forecast$/);
+      if(airportForecast) return json(200,await api.forecast(airportForecast[1].toUpperCase()));
       const airport=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})$/);
       if(airport) return json(200,await api.airport(airport[1].toUpperCase()));
       if(url.pathname.startsWith('/api/')) return json(404,{error:'NOT_FOUND'});
