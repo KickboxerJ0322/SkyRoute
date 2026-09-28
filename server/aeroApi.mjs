@@ -3,7 +3,7 @@ import { loadRecordedFixture } from './recordedFixture.mjs';
 import { createMock } from './mock.mjs';
 import { HND, flight, airport, position, track, filedRoute } from './normalize.mjs';
 const SUPPORTED_AIRPORTS=new Set(['RJTT','RJAA','RJBB','RJOO','RJCC','RJFF','ROAH']);
-export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000, weather:300000 };
+export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000, weather:300000, forecast:300000 };
 export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=process.env.AEROAPI_KEY, fetcher=fetch, now=Date.now,
   maxCalls=Number(process.env.AEROAPI_MAX_CALLS_PER_MINUTE)||20, logger=console.log}={}) {
   if(!['mock','live'].includes(mode)) throw new Error('SKYROUTE_DATA_MODE must be mock or live');
@@ -100,6 +100,10 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
     weather:id=>cached('weather:'+id,TTL.weather,`/airports/${encodeURIComponent(id)}/weather/observations`,raw=>({
       airport:id,
       raw:Array.isArray(raw.observations)&&raw.observations.length?raw.observations[0]:null,
+    })),
+    forecast:id=>cached('forecast:'+id,TTL.forecast,`/airports/${encodeURIComponent(id)}/weather/forecast`,raw=>({
+      airport:id,
+      raw:raw&&typeof raw==='object'?raw:null,
     })),
     usage:()=>mode==='mock'?Promise.resolve({data:{total_calls:0,total_pages:0,total_cost:0,total_discount_cost:0,total_successful_calls:0,total_failed_calls:0,resource_details:[]},source:'mock',fetchedAt:new Date(now()).toISOString(),stale:false}):cached('usage:current',600000,'/account/usage',raw=>raw),
   };
