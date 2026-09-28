@@ -35,11 +35,28 @@ export interface NowcastFrameAnalysis {
   totalSamples:number;
 }
 
+export interface NowcastThreatValue {
+  status:string;
+  level:number|null;
+  label:string;
+  zoom:number|null;
+}
+export interface NowcastThreatFrame {
+  basetime:string|null;
+  validtime:string|null;
+  radiusKm:number;
+  center:NowcastThreatValue;
+  nearbyMax:NowcastThreatValue;
+  availableSamples:number;
+  totalSamples:number;
+}
 export interface NowcastPointAnalysis {
   lat:number;
   lng:number;
   current:NowcastFrameAnalysis;
   forecast60:NowcastFrameAnalysis;
+  thunder:{current:NowcastThreatFrame;forecast60:NowcastThreatFrame};
+  tornado:{current:NowcastThreatFrame;forecast60:NowcastThreatFrame};
   fetchedAt:string;
   source:string;
 }
@@ -120,11 +137,24 @@ const radarFrame=(airport:NowcastAirport,time:NowcastTime,label:string,template:
     </div>`;
 };
 
-const structuredFrame=(label:string,frame:NowcastFrameAnalysis)=>`
+const threatText=(value:NowcastThreatValue)=>value.status==='available'
+  ? value.label
+  : (value.label||'判定不能');
+
+const structuredFrame=(
+  label:string,
+  frame:NowcastFrameAnalysis,
+  thunder:NowcastThreatFrame,
+  tornado:NowcastThreatFrame,
+)=>`
   <div class="nowcast-structured-row">
     <span class="nowcast-structured-time">${esc(label)} · ${esc(formatJst(frame.validtime))}</span>
-    <span><b>空港直上</b> ${esc(intensityText(frame.center))}</span>
-    <span><b>周辺${frame.radiusKm}km最大</b> ${esc(intensityText(frame.nearbyMax))}</span>
+    <span><b>雨・空港直上</b> ${esc(intensityText(frame.center))}</span>
+    <span><b>雨・周辺${frame.radiusKm}km最大</b> ${esc(intensityText(frame.nearbyMax))}</span>
+    <span><b>雷・空港直上</b> ${esc(threatText(thunder.center))}</span>
+    <span><b>雷・周辺${thunder.radiusKm}km最大</b> ${esc(threatText(thunder.nearbyMax))}</span>
+    <span><b>竜巻・空港直上</b> ${esc(threatText(tornado.center))}</span>
+    <span><b>竜巻・周辺${tornado.radiusKm}km最大</b> ${esc(threatText(tornado.nearbyMax))}</span>
   </div>`;
 
 export class NowcastPanel {
@@ -142,7 +172,10 @@ export class NowcastPanel {
     this.origin=origin;
     this.destination=destination;
     this.structured=null;
-    if(this.enabled)void this.refresh();
+    if(this.enabled){
+      this.container.hidden=false;
+      void this.refresh();
+    }
   }
 
   public clear():void{
@@ -231,8 +264,8 @@ export class NowcastPanel {
           <section class="nowcast-airport-card">
             <div class="nowcast-airport-title">${esc(airport.code)} · ${esc(airport.name)}</div>
             <div class="nowcast-structured">
-              ${structuredFrame('現在',context.analysis.current)}
-              ${structuredFrame('約60分後',context.analysis.forecast60)}
+              ${structuredFrame('現在',context.analysis.current,context.analysis.thunder.current,context.analysis.tornado.current)}
+              ${structuredFrame('約60分後',context.analysis.forecast60,context.analysis.thunder.forecast60,context.analysis.tornado.forecast60)}
             </div>
             <div class="nowcast-frame-row">
               ${radarFrame(airport,data.current,'現在',data.tileTemplate)}
@@ -241,7 +274,7 @@ export class NowcastPanel {
           </section>
         `).join('')}
       </div>
-      <div class="nowcast-foot">出典: 気象庁 高解像度降水ナウキャスト · 構造化値はPNGの降水強度階級を空港直上/周辺10kmで解析 · 中央十字＝空港位置</div>`;
+      <div class="nowcast-foot">出典: 気象庁 · 高解像度降水ナウキャスト / 雷ナウキャスト / 竜巻発生確度ナウキャスト · 空港直上/周辺10kmを構造化 · 中央十字＝空港位置</div>`;
     this.container.querySelector<HTMLButtonElement>('#nowcast-panel-close')?.addEventListener('click',()=>{
       this.enabled=false;
       this.container.hidden=true;
