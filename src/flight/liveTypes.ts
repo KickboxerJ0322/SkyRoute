@@ -23,6 +23,10 @@ export interface SkyRouteWeatherObservation {
   airport: string;
   raw: Record<string, unknown> | null;
 }
+export interface SkyRouteWeatherForecast {
+  airport: string;
+  raw: Record<string, unknown> | null;
+}
 export interface SkyRoutePosition {
   latitude: number; longitude: number; altitudeMeters: number | null;
   groundSpeedKmh: number | null; heading: number | null; timestamp: string;
