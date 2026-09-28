@@ -165,6 +165,14 @@ export class MapControls {
           <div class="sigmet-source-note">
             日本(RJJJ): 発表 JMA(RJTD) / 配信 NOAA Aviation Weather Center
           </div>
+          <div class="sigmet-color-legend" aria-label="SIGMET色凡例">
+            <span><i class="sigmet-color turb"></i>乱気流</span>
+            <span><i class="sigmet-color ice"></i>着氷</span>
+            <span><i class="sigmet-color ash"></i>火山灰</span>
+            <span><i class="sigmet-color tc"></i>台風/熱帯低気圧</span>
+            <span><i class="sigmet-color mtw"></i>山岳波</span>
+            <span><i class="sigmet-color other"></i>その他/雷雨等</span>
+          </div>
         </div>
 
         <!-- Camera Orientation -->
