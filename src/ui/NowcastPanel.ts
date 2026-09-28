@@ -161,6 +161,7 @@ export class NowcastPanel {
   private origin:NowcastAirport|null=null;
   private destination:NowcastAirport|null=null;
   private enabled=false;
+  private panelVisible=true;
   private requestId=0;
   private structured:NowcastCommentaryContext|null=null;
 
@@ -172,28 +173,36 @@ export class NowcastPanel {
     this.origin=origin;
     this.destination=destination;
     this.structured=null;
-    if(this.enabled){
-      this.container.hidden=false;
+    this.syncVisibility();
+    if(this.enabled)void this.refresh();
+  }
+
+  public setPanelVisible(visible:boolean):void{
+    this.panelVisible=visible;
+    this.syncVisibility();
+    if(visible&&this.enabled&&this.origin&&this.destination&&!this.container.childElementCount){
       void this.refresh();
     }
+  }
+
+  private syncVisibility():void{
+    this.container.hidden=!this.enabled||!this.panelVisible||!this.origin||!this.destination;
   }
 
   public clear():void{
     this.origin=null;
     this.destination=null;
     this.structured=null;
-    this.container.hidden=true;
     this.container.replaceChildren();
+    this.syncVisibility();
   }
 
   public async setEnabled(enabled:boolean):Promise<void>{
     this.enabled=enabled;
-    if(!enabled){
-      this.container.hidden=true;
-      return;
-    }
-    this.container.hidden=false;
+    this.syncVisibility();
+    if(!enabled)return;
     await this.refresh();
+    this.syncVisibility();
   }
 
   public async getCommentaryContext():Promise<NowcastCommentaryContext>{
@@ -277,7 +286,7 @@ export class NowcastPanel {
       <div class="nowcast-foot">出典: 気象庁 · 高解像度降水ナウキャスト / 雷ナウキャスト / 竜巻発生確度ナウキャスト · 空港直上/周辺10kmを構造化 · 中央十字＝空港位置</div>`;
     this.container.querySelector<HTMLButtonElement>('#nowcast-panel-close')?.addEventListener('click',()=>{
       this.enabled=false;
-      this.container.hidden=true;
+      this.syncVisibility();
       this.container.dispatchEvent(new CustomEvent('skyroute-nowcast-close',{bubbles:true}));
     });
   }
