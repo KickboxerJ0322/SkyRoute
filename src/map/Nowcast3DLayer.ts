@@ -123,11 +123,11 @@ export class Nowcast3DLayer {
       if(result.status!=='fulfilled')continue;
       const {airport,data}=result.value;
       const frame=data[this.timeMode];
-      for(const cell of frame.cells)this.renderCell(airport,cell,frame);
+      for(const cell of frame.cells)this.renderCell(airport,cell);
     }
   }
 
-  private renderCell(airport:Nowcast3DAirport,cell:RainCell,frame:RainFrame):void{
+  private renderCell(airport:Nowcast3DAirport,cell:RainCell):void{
     const halfKm=cell.sizeKm/2;
     const halfLat=halfKm/111;
     const cosLat=Math.max(.25,Math.cos(cell.lat*Math.PI/180));
