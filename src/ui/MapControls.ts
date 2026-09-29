@@ -18,6 +18,7 @@ export interface MapControlsHandlers {
   onRotateView?: (degrees: number) => void;
   onSigmetToggle?: (enabled: boolean) => void;
   onNowcastToggle?: (enabled: boolean) => void;
+  onNowcast3DTimeChange?: (mode: 'current' | 'forecast60') => void;
 }
 
 export class MapControls {
@@ -28,6 +29,7 @@ export class MapControls {
   private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
   private sigmetEnabled = true;
   private nowcastEnabled = true;
+  private nowcast3DTime: 'current' | 'forecast60' = 'current';
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -74,6 +76,9 @@ export class MapControls {
     button.setAttribute('aria-pressed', String(enabled));
     button.textContent = enabled ? 'NOWCAST ON' : 'NOWCAST OFF';
     button.title = status || (enabled ? '空港ナウキャストを閉じる' : '出発・到着空港のナウキャストを表示');
+    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-time-btn').forEach(btn=>{
+      btn.disabled=!enabled;
+    });
   }
 
   public setMapMode(mode: 'HYBRID' | 'SATELLITE'): void {
@@ -161,6 +166,22 @@ export class MapControls {
             <button id="nowcast-toggle" class="map-layer-btn nowcast-toggle-btn active" type="button" aria-pressed="true" title="出発・到着空港のナウキャストを表示中">
               NOWCAST ON
             </button>
+          </div>
+          <div class="nowcast-3d-control">
+            <span class="nowcast-3d-label">3D降水</span>
+            <div class="segmented-control">
+              <button class="map-layer-btn nowcast-3d-time-btn active" data-nowcast-time="current" type="button" title="現在の降水を3D表示">NOW</button>
+              <button class="map-layer-btn nowcast-3d-time-btn" data-nowcast-time="forecast60" type="button" title="約60分後の降水を3D表示">+60分</button>
+            </div>
+            <span class="nowcast-3d-note">出発・到着空港の周辺30kmのみ · 高さ=降水強度の視覚表現（雲頂高度ではありません）</span>
+          </div>
+          <div class="nowcast-rain-legend" aria-label="NOWCAST 3D降水凡例">
+            <span><i class="rain3d weak"></i>1–5</span>
+            <span><i class="rain3d rain"></i>5–10</span>
+            <span><i class="rain3d moderate"></i>10–20</span>
+            <span><i class="rain3d strong"></i>20–30</span>
+            <span><i class="rain3d heavy"></i>30–50</span>
+            <span><i class="rain3d severe"></i>50+ mm/h</span>
           </div>
           <div class="sigmet-source-note">
             日本(RJJJ): 発表 JMA(RJTD) / 配信 NOAA Aviation Weather Center
@@ -266,6 +287,16 @@ export class MapControls {
         this.handlers.onNowcastToggle?.(this.nowcastEnabled);
       });
     }
+
+    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-time-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        if(!this.nowcastEnabled)return;
+        const mode=btn.dataset.nowcastTime==='forecast60'?'forecast60':'current';
+        this.nowcast3DTime=mode;
+        this.container.querySelectorAll('.nowcast-3d-time-btn').forEach(other=>other.classList.toggle('active',other===btn));
+        this.handlers.onNowcast3DTimeChange?.(mode);
+      });
+    });
 
     const mobileControlsBtn = this.container.querySelector<HTMLButtonElement>('#mobile-map-controls-btn');
     const toolbar = this.container.querySelector('.map-controls-toolbar');
