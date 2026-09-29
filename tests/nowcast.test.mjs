@@ -113,3 +113,13 @@ assert.equal(analysis.tornado.current.center.level,2);
 assert.equal(analysis.tornado.forecast60.nearbyMax.level,2);
 
 console.log('Passed: structured JMA rain/thunder/tornado nowcast analysis.');
+
+const area=await analysisService.analyzeArea(35.5494,139.7798,30);
+assert.equal(area.current.radiusKm,30);
+assert.equal(area.current.stepKm,5);
+assert.ok(area.current.cells.length>0);
+assert.equal(area.current.cells[0].minMmPerHour,30);
+assert.equal(area.forecast60.cells[0].maxMmPerHour,50);
+assert.match(area.note,/not cloud-top altitude/);
+
+console.log('Passed: local 30 km NOWCAST grid for 3D precipitation.');
