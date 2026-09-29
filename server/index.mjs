@@ -54,6 +54,12 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
         const lng=Number(url.searchParams.get('lng'));
         return json(200,await nowcast.analyzePoint(lat,lng));
       }
+      if(url.pathname==='/api/weather/nowcast/area') {
+        const lat=Number(url.searchParams.get('lat'));
+        const lng=Number(url.searchParams.get('lng'));
+        const radiusKm=Number(url.searchParams.get('radius')||30);
+        return json(200,await nowcast.analyzeArea(lat,lng,radiusKm));
+      }
       if(url.pathname==='/api/flights/departures') {
         const airport=(url.searchParams.get('airport')||'RJTT').toUpperCase();
         if(!/^(RJTT|RJAA|RJBB|RJOO|RJCC|RJFF|ROAH)$/.test(airport)) throw new ApiError(400,'INVALID_AIRPORT');
