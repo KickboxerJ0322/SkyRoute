@@ -108,6 +108,7 @@ export class FlightExperience {
       onSigmetToggle:enabled=>void this.toggleSigmet(enabled),
       onNowcastToggle:enabled=>void this.toggleNowcast(enabled),
       onNowcast3DTimeChange:mode=>this.nowcast3D.setTimeMode(mode),
+      onNowcast3DLayerToggle:(layer,enabled)=>this.nowcast3D.setLayerEnabled(layer,enabled),
     });
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
     this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message,status.count));
@@ -191,7 +192,7 @@ export class FlightExperience {
   private async toggleNowcast(enabled:boolean) {
     this.nowcast3D.setEnabled(enabled);
     await this.nowcastPanel.setEnabled(enabled);
-    this.controls.setNowcastState(enabled,enabled?'出発・到着空港の現在/約60分後 + 3D降水':'NOWCAST OFF');
+    this.controls.setNowcastState(enabled,enabled?'出発・到着空港の現在/約60分後 + 3D雨/雷/竜巻':'NOWCAST OFF');
   }
   private toNowcastAirport(value:{code?:string;iata?:string|null;icao?:string;name?:string|null;lat?:number;lng?:number;latitude?:number|null;longitude?:number|null}):NowcastAirport|null {
     const lat=value.lat??value.latitude;
