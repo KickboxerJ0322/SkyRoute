@@ -343,6 +343,58 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
     };
   };
 
+  const analyzeAreaFrame=async(time,lat,lng,radiusKm=30,stepKm=5)=>{
+    const cells=[];
+    const half=stepKm/2;
+    const cosLat=Math.max(.25,Math.cos(lat*Math.PI/180));
+    const tasks=[];
+    for(let north=-radiusKm+half;north<=radiusKm-half+1e-6;north+=stepKm){
+      for(let east=-radiusKm+half;east<=radiusKm-half+1e-6;east+=stepKm){
+        if(Math.hypot(north,east)>radiusKm)continue;
+        const cellLat=lat+north/111;
+        const cellLng=lng+east/(111*cosLat);
+        tasks.push({lat:cellLat,lng:cellLng});
+      }
+    }
+    const values=await Promise.all(tasks.map(point=>sampleRainAt(time,point.lat,point.lng)));
+    values.forEach((value,index)=>{
+      if(value.status!=='available'||value.minMmPerHour===null||value.minMmPerHour<1)return;
+      const point=tasks[index];
+      cells.push({
+        lat:point.lat,
+        lng:point.lng,
+        sizeKm:stepKm,
+        minMmPerHour:value.minMmPerHour,
+        maxMmPerHour:value.maxMmPerHour,
+        label:value.label,
+      });
+    });
+    return {
+      basetime:time.basetime,
+      validtime:time.validtime,
+      radiusKm,
+      stepKm,
+      cells,
+    };
+  };
+
+  const analyzeArea=async(lat,lng,radiusKm=30)=>{
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<-90||lat>90||lng<-180||lng>180)
+      throw new ApiError(400,'INVALID_COORDINATES');
+    const radius=Math.max(5,Math.min(40,Number(radiusKm)||30));
+    const times=await getTimes();
+    const [current,forecast60]=await Promise.all([
+      analyzeAreaFrame(times.current,lat,lng,radius,5),
+      analyzeAreaFrame(times.forecast60,lat,lng,radius,5),
+    ]);
+    return {
+      lat,lng,current,forecast60,
+      fetchedAt:times.fetchedAt,
+      source:times.source,
+      note:'3D height is a visualization of precipitation intensity, not cloud-top altitude.',
+    };
+  };
+
   const analyzePoint=async(lat,lng)=>{
     if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<-90||lat>90||lng<-180||lng>180)
       throw new ApiError(400,'INVALID_COORDINATES');
@@ -366,5 +418,6 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
 
   const service=async()=>getTimes();
   service.analyzePoint=analyzePoint;
+  service.analyzeArea=analyzeArea;
   return service;
 }
