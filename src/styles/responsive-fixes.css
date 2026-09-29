@@ -2004,3 +2004,61 @@
   }
 }
 
+/* 2026-09-30: local 3D precipitation NOWCAST controls and legend. */
+#map-controls-container .nowcast-3d-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  width: 100%;
+  margin-top: 6px;
+}
+#map-controls-container .nowcast-3d-label {
+  color: var(--accent-cyan);
+  font: 700 9px/1.2 var(--font-mono);
+  letter-spacing: .05em;
+}
+#map-controls-container .nowcast-3d-note {
+  flex: 1 1 100%;
+  color: var(--text-muted);
+  font: 500 8px/1.35 var(--font-mono);
+}
+#map-controls-container .nowcast-3d-time-btn:disabled {
+  opacity: .38 !important;
+  cursor: default;
+}
+#map-controls-container .nowcast-rain-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  width: 100%;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font: 500 8px/1.3 var(--font-mono);
+}
+#map-controls-container .nowcast-rain-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+#map-controls-container .rain3d {
+  display: inline-block;
+  width: 11px;
+  height: 7px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 2px;
+}
+#map-controls-container .rain3d.weak { background:#A0D2FF; }
+#map-controls-container .rain3d.rain { background:#218CFF; }
+#map-controls-container .rain3d.moderate { background:#0041FF; }
+#map-controls-container .rain3d.strong { background:#FAF500; }
+#map-controls-container .rain3d.heavy { background:#FF9900; }
+#map-controls-container .rain3d.severe { background:#FF2800; }
+
+@media (max-width: 768px) {
+  #map-controls-container .nowcast-3d-note,
+  #map-controls-container .nowcast-rain-legend {
+    font-size: 8px;
+  }
+}
+
