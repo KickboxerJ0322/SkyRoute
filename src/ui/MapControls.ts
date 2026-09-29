@@ -19,6 +19,7 @@ export interface MapControlsHandlers {
   onSigmetToggle?: (enabled: boolean) => void;
   onNowcastToggle?: (enabled: boolean) => void;
   onNowcast3DTimeChange?: (mode: 'current' | 'forecast60') => void;
+  onNowcast3DLayerToggle?: (layer: 'rain' | 'thunder' | 'tornado', enabled: boolean) => void;
 }
 
 export class MapControls {
@@ -29,6 +30,11 @@ export class MapControls {
   private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
   private sigmetEnabled = true;
   private nowcastEnabled = true;
+  private nowcast3DLayers: Record<'rain'|'thunder'|'tornado',boolean> = {
+    rain:true,
+    thunder:true,
+    tornado:true,
+  };
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -75,7 +81,7 @@ export class MapControls {
     button.setAttribute('aria-pressed', String(enabled));
     button.textContent = enabled ? 'NOWCAST ON' : 'NOWCAST OFF';
     button.title = status || (enabled ? '空港ナウキャストを閉じる' : '出発・到着空港のナウキャストを表示');
-    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-time-btn').forEach(btn=>{
+    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-time-btn,.nowcast-3d-layer-btn').forEach(btn=>{
       btn.disabled=!enabled;
     });
   }
@@ -167,20 +173,27 @@ export class MapControls {
             </button>
           </div>
           <div class="nowcast-3d-control">
-            <span class="nowcast-3d-label">3D降水</span>
-            <div class="segmented-control">
-              <button class="map-layer-btn nowcast-3d-time-btn active" data-nowcast-time="current" type="button" title="現在の降水を3D表示">NOW</button>
-              <button class="map-layer-btn nowcast-3d-time-btn" data-nowcast-time="forecast60" type="button" title="約60分後の降水を3D表示">+60分</button>
+            <span class="nowcast-3d-label">3D気象</span>
+            <div class="segmented-control nowcast-3d-layer-group" aria-label="3D気象レイヤー">
+              <button class="map-layer-btn nowcast-3d-layer-btn active" data-nowcast-layer="rain" type="button" aria-pressed="true" title="3D降水の表示・非表示">雨</button>
+              <button class="map-layer-btn nowcast-3d-layer-btn active" data-nowcast-layer="thunder" type="button" aria-pressed="true" title="3D雷活動度の表示・非表示">雷</button>
+              <button class="map-layer-btn nowcast-3d-layer-btn active" data-nowcast-layer="tornado" type="button" aria-pressed="true" title="3D竜巻発生確度の表示・非表示">竜巻</button>
             </div>
-            <span class="nowcast-3d-note">出発・到着空港の周辺30kmのみ · 高さ=降水強度の視覚表現（雲頂高度ではありません）</span>
+            <div class="segmented-control">
+              <button class="map-layer-btn nowcast-3d-time-btn active" data-nowcast-time="current" type="button" title="現在の3D気象を表示">NOW</button>
+              <button class="map-layer-btn nowcast-3d-time-btn" data-nowcast-time="forecast60" type="button" title="約60分後の3D気象を表示">+60分</button>
+            </div>
+            <span class="nowcast-3d-note">出発・到着空港の周辺30kmのみ · 高さ=降水強度/危険度の視覚表現（実際の雲・雷・竜巻の高さではありません）</span>
           </div>
-          <div class="nowcast-rain-legend" aria-label="NOWCAST 3D降水凡例">
-            <span><i class="rain3d weak"></i>1–5</span>
+          <div class="nowcast-rain-legend" aria-label="NOWCAST 3D気象凡例">
+            <span><i class="rain3d weak"></i>雨 1–5</span>
             <span><i class="rain3d rain"></i>5–10</span>
             <span><i class="rain3d moderate"></i>10–20</span>
             <span><i class="rain3d strong"></i>20–30</span>
             <span><i class="rain3d heavy"></i>30–50</span>
             <span><i class="rain3d severe"></i>50+ mm/h</span>
+            <span><i class="weather3d thunder"></i>雷 活動度1–4</span>
+            <span><i class="weather3d tornado"></i>竜巻 発生確度1–2</span>
           </div>
           <div class="sigmet-source-note">
             日本(RJJJ): 発表 JMA(RJTD) / 配信 NOAA Aviation Weather Center
@@ -286,6 +299,19 @@ export class MapControls {
         this.handlers.onNowcastToggle?.(this.nowcastEnabled);
       });
     }
+
+    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-layer-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        if(!this.nowcastEnabled)return;
+        const layer=btn.dataset.nowcastLayer as 'rain'|'thunder'|'tornado'|undefined;
+        if(!layer)return;
+        const enabled=!this.nowcast3DLayers[layer];
+        this.nowcast3DLayers[layer]=enabled;
+        btn.classList.toggle('active',enabled);
+        btn.setAttribute('aria-pressed',String(enabled));
+        this.handlers.onNowcast3DLayerToggle?.(layer,enabled);
+      });
+    });
 
     this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-time-btn').forEach(btn=>{
       btn.addEventListener('click',()=>{
