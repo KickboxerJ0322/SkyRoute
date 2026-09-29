@@ -120,6 +120,10 @@ assert.equal(area.current.stepKm,5);
 assert.ok(area.current.cells.length>0);
 assert.equal(area.current.cells[0].minMmPerHour,30);
 assert.equal(area.forecast60.cells[0].maxMmPerHour,50);
-assert.match(area.note,/not cloud-top altitude/);
+assert.ok(area.thunder.current.cells.length>0);
+assert.equal(area.thunder.current.cells[0].level,3);
+assert.ok(area.tornado.current.cells.length>0);
+assert.equal(area.tornado.current.cells[0].level,2);
+assert.match(area.note,/not cloud-top, lightning, or tornado height/);
 
-console.log('Passed: local 30 km NOWCAST grid for 3D precipitation.');
+console.log('Passed: local 30 km NOWCAST grids for 3D rain/thunder/tornado.');
