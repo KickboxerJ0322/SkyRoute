@@ -26,6 +26,7 @@ https://skyroute-331230486346.asia-northeast1.run.app/
 - TAFによる空港気象予報
 - SIGMETの3D空域表示
 - 気象庁NOWCASTによる降水・雷・竜巻発生確度の表示
+- 出発・到着空港周辺30kmの3D気象表示（雨・雷・竜巻）
 - Geminiによる飛行状況・気象情報のAI解説
 - AI解説の音声読み上げ
 - PC / スマートフォン対応UI
@@ -318,6 +319,20 @@ NOWCASTでは、出発空港と到着空港について気象庁の情報を表�
 
 NOWCASTの構造化データはAI解説にも渡します。
 
+### 3D気象表示
+
+出発空港・到着空港それぞれの周辺30kmについて、NOWCASTを3Dマップ上にも表示します。
+
+- 雨: 降水強度に応じた青～黄～赤系の3Dボックス
+- 雷: 活動度1～4に応じた黄～オレンジ系の細い3D柱
+- 竜巻: 発生確度1～2に応じた赤紫系のダイヤ形3D柱
+
+WEATHERパネルから「雨」「雷」「竜巻」を個別にON/OFFできます。また、`NOW` と `+60分` を切り替えると、現在と約60分後の3D気象を比較できます。
+
+3D表示の高さは、降水強度や雷活動度・竜巻発生確度を見やすくするための**視覚表現**です。実際の雲頂高度、落雷高度、竜巻の高さを表すものではありません。
+
+竜巻表示は竜巻の実発生を示すものではなく、竜巻やダウンバーストなど激しい突風の発生しやすさを示す「竜巻発生確度ナウキャスト」を可視化したものです。
+
 ---
 
 # AI飛行解説
@@ -458,7 +473,8 @@ NOAA Aviation Weather Center
 Google Photorealistic 3D Maps
  ├─ 航空機GLB
  ├─ 3Dルート
- └─ 3D SIGMET空域
+ ├─ 3D SIGMET空域
+ └─ 3D NOWCAST（雨・雷・竜巻）
 
              ↓
 
@@ -484,6 +500,7 @@ Google Cloud Text-to-Speech
 | `GET /api/weather/sigmet` | International SIGMET |
 | `GET /api/weather/nowcast/times` | JMA NOWCAST時刻情報 |
 | `GET /api/weather/nowcast/point` | 空港周辺NOWCAST構造化データ |
+| `GET /api/weather/nowcast/area` | 出発・到着空港周辺30kmの3D気象用格子データ |
 | `GET /api/account/usage` | AeroAPI利用状況 |
 | `POST /api/ai/flight-commentary` | Gemini AI解説 |
 | `POST /api/tts` | AI解説音声生成 |
