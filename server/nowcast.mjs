@@ -343,20 +343,26 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
     };
   };
 
-  const analyzeAreaFrame=async(time,lat,lng,radiusKm=30,stepKm=5)=>{
-    const cells=[];
+  const areaTasks=(lat,lng,radiusKm,stepKm)=>{
+    const tasks=[];
     const half=stepKm/2;
     const cosLat=Math.max(.25,Math.cos(lat*Math.PI/180));
-    const tasks=[];
     for(let north=-radiusKm+half;north<=radiusKm-half+1e-6;north+=stepKm){
       for(let east=-radiusKm+half;east<=radiusKm-half+1e-6;east+=stepKm){
         if(Math.hypot(north,east)>radiusKm)continue;
-        const cellLat=lat+north/111;
-        const cellLng=lng+east/(111*cosLat);
-        tasks.push({lat:cellLat,lng:cellLng});
+        tasks.push({
+          lat:lat+north/111,
+          lng:lng+east/(111*cosLat),
+        });
       }
     }
+    return tasks;
+  };
+
+  const analyzeAreaFrame=async(time,lat,lng,radiusKm=30,stepKm=5)=>{
+    const tasks=areaTasks(lat,lng,radiusKm,stepKm);
     const values=await Promise.all(tasks.map(point=>sampleRainAt(time,point.lat,point.lng)));
+    const cells=[];
     values.forEach((value,index)=>{
       if(value.status!=='available'||value.minMmPerHour===null||value.minMmPerHour<1)return;
       const point=tasks[index];
@@ -378,20 +384,57 @@ export function createNowcastService({fetcher=fetch,now=Date.now}={}){
     };
   };
 
+  const analyzeThreatAreaFrame=async(time,element,kind,lat,lng,radiusKm=30,stepKm=5)=>{
+    if(!time)return {
+      basetime:null,validtime:null,radiusKm,stepKm,cells:[],
+    };
+    const tasks=areaTasks(lat,lng,radiusKm,stepKm);
+    const values=await Promise.all(tasks.map(point=>sampleThreatAt(time,element,kind,point.lat,point.lng)));
+    const cells=[];
+    values.forEach((value,index)=>{
+      if(value.status!=='available'||value.level===null||value.level<1)return;
+      const point=tasks[index];
+      cells.push({
+        lat:point.lat,
+        lng:point.lng,
+        sizeKm:stepKm,
+        level:value.level,
+        label:value.label,
+      });
+    });
+    return {
+      basetime:time.basetime,
+      validtime:time.validtime,
+      radiusKm,
+      stepKm,
+      cells,
+    };
+  };
+
   const analyzeArea=async(lat,lng,radiusKm=30)=>{
     if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<-90||lat>90||lng<-180||lng>180)
       throw new ApiError(400,'INVALID_COORDINATES');
     const radius=Math.max(5,Math.min(40,Number(radiusKm)||30));
     const times=await getTimes();
-    const [current,forecast60]=await Promise.all([
+    const [
+      current,forecast60,
+      thunderCurrent,thunderForecast60,
+      tornadoCurrent,tornadoForecast60,
+    ]=await Promise.all([
       analyzeAreaFrame(times.current,lat,lng,radius,5),
       analyzeAreaFrame(times.forecast60,lat,lng,radius,5),
+      analyzeThreatAreaFrame(times.thunder.current,THUNDER_ELEMENT,'thunder',lat,lng,radius,5),
+      analyzeThreatAreaFrame(times.thunder.forecast60,THUNDER_ELEMENT,'thunder',lat,lng,radius,5),
+      analyzeThreatAreaFrame(times.tornado.current,TORNADO_ELEMENT,'tornado',lat,lng,radius,10),
+      analyzeThreatAreaFrame(times.tornado.forecast60,TORNADO_ELEMENT,'tornado',lat,lng,radius,10),
     ]);
     return {
       lat,lng,current,forecast60,
+      thunder:{current:thunderCurrent,forecast60:thunderForecast60},
+      tornado:{current:tornadoCurrent,forecast60:tornadoForecast60},
       fetchedAt:times.fetchedAt,
       source:times.source,
-      note:'3D height is a visualization of precipitation intensity, not cloud-top altitude.',
+      note:'3D height visualizes precipitation intensity or hazard level; it is not cloud-top, lightning, or tornado height.',
     };
   };
 
