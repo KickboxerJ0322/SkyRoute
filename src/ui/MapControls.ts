@@ -29,7 +29,6 @@ export class MapControls {
   private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
   private sigmetEnabled = true;
   private nowcastEnabled = true;
-  private nowcast3DTime: 'current' | 'forecast60' = 'current';
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -292,7 +291,6 @@ export class MapControls {
       btn.addEventListener('click',()=>{
         if(!this.nowcastEnabled)return;
         const mode=btn.dataset.nowcastTime==='forecast60'?'forecast60':'current';
-        this.nowcast3DTime=mode;
         this.container.querySelectorAll('.nowcast-3d-time-btn').forEach(other=>other.classList.toggle('active',other===btn));
         this.handlers.onNowcast3DTimeChange?.(mode);
       });
