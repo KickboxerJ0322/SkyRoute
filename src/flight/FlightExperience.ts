@@ -5,6 +5,7 @@ import { flightPhaseLabel, remainingTimeLabel } from './presentation';
 ﻿import { AircraftController } from '../map/AircraftController';
 import { RouteRenderer } from '../map/RouteRenderer';
 import { SigmetLayer } from '../map/SigmetLayer';
+import { Nowcast3DLayer } from '../map/Nowcast3DLayer';
 import { CameraController } from '../map/CameraController';
 import { DemoFlightProvider } from './DemoFlightProvider';
 import { AeroApiFlightProvider, chooseRoute, toAnimationRoute } from './AeroApiFlightProvider';
@@ -68,7 +69,7 @@ export class FlightExperience {
   private activeDemoRoute:FlightRoute|null=null;
   private activeAnimationRoute:FlightRoute|null=null;
 
-  constructor(private aircraft:AircraftController,private camera:CameraController,private planned:RouteRenderer,private actual:RouteRenderer,private sigmet:SigmetLayer, map:any) {
+  constructor(private aircraft:AircraftController,private camera:CameraController,private planned:RouteRenderer,private actual:RouteRenderer,private sigmet:SigmetLayer,private nowcast3D:Nowcast3DLayer, map:any) {
     this.mapStatus=document.createElement('div');
     this.mapStatus.id='flight-map-status';
     this.mapStatus.hidden=true;
@@ -84,7 +85,7 @@ export class FlightExperience {
     nowcastRoot.id='nowcast-panel';
     element('app').append(nowcastRoot);
     this.nowcastPanel=new NowcastPanel(nowcastRoot);
-    nowcastRoot.addEventListener('skyroute-nowcast-close',()=>this.controls?.setNowcastState(false));
+    nowcastRoot.addEventListener('skyroute-nowcast-close',()=>void this.toggleNowcast(false));
 
     this.animator=new FlightAnimator(t=>{
       if(this.dataMode==='LIVE'&&this.viewMode==='LIVE')return;
@@ -106,6 +107,7 @@ export class FlightExperience {
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
       onSigmetToggle:enabled=>void this.toggleSigmet(enabled),
       onNowcastToggle:enabled=>void this.toggleNowcast(enabled),
+      onNowcast3DTimeChange:mode=>this.nowcast3D.setTimeMode(mode),
     });
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
     this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message,status.count));
@@ -114,6 +116,7 @@ export class FlightExperience {
     void this.sigmet.setEnabled(true);
     this.controls.setNowcastState(true,'出発・到着空港を選択すると自動取得');
     void this.nowcastPanel.setEnabled(true);
+    this.nowcast3D.setEnabled(true);
     new PanelVisibility();
     document.addEventListener('skyroute-panel-visibility',(event)=>{
       const detail=(event as CustomEvent<{id:string;visible:boolean}>).detail;
@@ -186,8 +189,9 @@ export class FlightExperience {
     this.controls.setSigmetState(status.enabled,status.message,status.count);
   }
   private async toggleNowcast(enabled:boolean) {
+    this.nowcast3D.setEnabled(enabled);
     await this.nowcastPanel.setEnabled(enabled);
-    this.controls.setNowcastState(enabled,enabled?'出発・到着空港の現在/約60分後':'NOWCAST OFF');
+    this.controls.setNowcastState(enabled,enabled?'出発・到着空港の現在/約60分後 + 3D降水':'NOWCAST OFF');
   }
   private toNowcastAirport(value:{code?:string;iata?:string|null;icao?:string;name?:string|null;lat?:number;lng?:number;latitude?:number|null;longitude?:number|null}):NowcastAirport|null {
     const lat=value.lat??value.latitude;
@@ -209,7 +213,7 @@ export class FlightExperience {
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';this.lastAiModel='';this.lastAiCreatedAt='';this.stopAiSpeech();cancelAnimationFrame(this.raf);this.raf=0;
     this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.currentTelemetry=null;this.activeAnimationRoute=null;
     this.route=null;this.filed=null;this.track=[];this.activeDemoRoute=null;this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
-    this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();this.nowcastPanel.clear();
+    this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();this.nowcastPanel.clear();this.nowcast3D.clear();
   }
   private stop() {this.cancelSelection();this.listAbort.abort();clearTimeout(this.listTimer);}
   async setMode(mode:'LIVE'|'DEMO') {
@@ -261,7 +265,10 @@ export class FlightExperience {
     });
     this.activeDemoRoute=route;
     this.activeAnimationRoute=previewRoute;
-    this.nowcastPanel.setAirports(this.toNowcastAirport(route.origin),this.toNowcastAirport(route.destination));
+    const demoOriginNowcast=this.toNowcastAirport(route.origin);
+    const demoDestinationNowcast=this.toNowcastAirport(route.destination);
+    this.nowcastPanel.setAirports(demoOriginNowcast,demoDestinationNowcast);
+    this.nowcast3D.setAirports(demoOriginNowcast,demoDestinationNowcast);
     this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.demoInfo.setDemoWind(winds.departure,winds.arrival);
     this.planned.setRoute(previewRoute.waypoints,'ESTIMATED');this.camera.setRoute(previewRoute);this.sigmet.setRoute(previewRoute.waypoints);
     this.playback.setRouteProfile(previewRoute.waypoints);this.setRouteLegendVisible(true);
@@ -312,7 +319,10 @@ export class FlightExperience {
       catch(error) {if(signal.aborted)return;this.liveView.setMessage(errorText(error));}
       const [origin,destination]=await Promise.all([this.provider.resolveAirport(this.selected.origin,signal),this.provider.resolveAirport(this.selected.destination,signal)]);
       if(signal.aborted)return;this.selected={...this.selected,origin,destination};
-      this.nowcastPanel.setAirports(this.toNowcastAirport(this.selected.origin),this.toNowcastAirport(this.selected.destination));
+      const liveOriginNowcast=this.toNowcastAirport(this.selected.origin);
+      const liveDestinationNowcast=this.toNowcastAirport(this.selected.destination);
+      this.nowcastPanel.setAirports(liveOriginNowcast,liveDestinationNowcast);
+      this.nowcast3D.setAirports(liveOriginNowcast,liveDestinationNowcast);
       this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();
       const [filed,track]=await Promise.allSettled([this.provider.getFiledRoute(id,signal),this.provider.getTrack(id,signal)]);
       if(signal.aborted)return;
