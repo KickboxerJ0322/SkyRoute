@@ -2062,3 +2062,25 @@
   }
 }
 
+/* 2026-09-30: 3D thunder / tornado NOWCAST controls. */
+#map-controls-container .nowcast-3d-layer-group {
+  display: inline-flex;
+}
+#map-controls-container .nowcast-3d-layer-btn.active {
+  color: #fff !important;
+  box-shadow: 0 0 8px rgba(0,212,255,.24);
+}
+#map-controls-container .weather3d {
+  display: inline-block;
+  width: 11px;
+  height: 7px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 2px;
+}
+#map-controls-container .weather3d.thunder {
+  background: linear-gradient(90deg,#FFF04A,#FF9800,#FF6A00);
+}
+#map-controls-container .weather3d.tornado {
+  background: linear-gradient(90deg,#9C27BE,#D0007F);
+}
+
