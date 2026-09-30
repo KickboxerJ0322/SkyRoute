@@ -1,4 +1,4 @@
-/** Independent controls remain available even when every panel is hidden. */
+/** Shared stacked-panel layout for desktop and mobile. */
 export class PanelVisibility {
   constructor() {
     const app = document.getElementById('app')!;
@@ -31,7 +31,7 @@ export class PanelVisibility {
       {id:'playback-container',label:'再生バー',contentDriven:false,placeholder:'Preview / Replay の再生操作を表示します'},
       {id:'flight-map-status',label:'高度・時間',contentDriven:true,placeholder:'便を選択すると高度・残距離・残時間を表示します'},
       {id:'route-legend',label:'ルート色',contentDriven:true,placeholder:'ルート表示時に ACTUAL / FILED / ESTIMATED の凡例を表示します'},
-      {id:'nowcast-panel',label:'NOWCAST',contentDriven:true,placeholder:'カメラの NOWCAST ON で出発・到着空港の雨雲情報を表示します'},
+      {id:'nowcast-panel',label:'NOWCAST',contentDriven:true,placeholder:'NOWCAST ONで出発・到着空港の気象情報を表示します'},
     ] as const;
 
     const visibleById = new Map<string,boolean>(panelDefs.map(def=>[def.id,true]));
@@ -41,14 +41,8 @@ export class PanelVisibility {
     const stack = document.createElement('section');
     stack.id = 'mobile-panel-stack';
     stack.setAttribute('aria-label', 'SkyRoute information panels');
-    stack.hidden = true;
+    stack.hidden = false;
     app.append(stack);
-
-    const originalLocations = new Map<string,{parent:Node;next:Node|null}>();
-    panelDefs.forEach(def => {
-      const node = document.getElementById(def.id);
-      if (node?.parentNode) originalLocations.set(def.id,{parent:node.parentNode,next:node.nextSibling});
-    });
 
     const media = window.matchMedia('(max-width: 768px)');
 
@@ -69,15 +63,11 @@ export class PanelVisibility {
 
       button?.setAttribute('aria-pressed',String(visible));
       node.classList.toggle('panel-user-hidden',!visible);
+      if(card)card.hidden=!visible;
 
-      if(media.matches){
-        if(card)card.hidden=!visible;
-        // On mobile the wrapper is the source of truth. Core panel content
-        // remains mounted so old !important display rules cannot defeat hiding.
-        if(!def.contentDriven)node.hidden=false;
-      }else{
-        if(!def.contentDriven)node.hidden=!visible;
-      }
+      // Wrapper cards own visibility. Keep core panel roots mounted so old
+      // display!important declarations cannot defeat user hide/show controls.
+      if(!def.contentDriven)node.hidden=false;
 
       if(def.contentDriven){
         document.dispatchEvent(new CustomEvent('skyroute-panel-visibility',{
@@ -109,11 +99,12 @@ export class PanelVisibility {
       panelButtons.append(button);
     });
 
-    const buildMobileCards=()=>{
+    const buildCards=()=>{
       if(cardById.size)return;
       panelDefs.forEach((def,index)=>{
         const node=document.getElementById(def.id);
         if(!node)return;
+
         const card=document.createElement('section');
         card.className='mobile-panel-card';
         card.dataset.panelId=def.id;
@@ -139,36 +130,13 @@ export class PanelVisibility {
       });
     };
 
-    const restoreDesktopNodes=()=>{
-      panelDefs.forEach(def=>{
-        const node=document.getElementById(def.id);
-        const location=originalLocations.get(def.id);
-        if(!node||!location)return;
-        if(location.next&&location.next.parentNode===location.parent){
-          location.parent.insertBefore(node,location.next);
-        }else{
-          location.parent.appendChild(node);
-        }
-        const visible=visibleById.get(def.id)!==false;
-        node.classList.toggle('panel-user-hidden',!visible);
-        if(!def.contentDriven)node.hidden=!visible;
-      });
-      stack.replaceChildren();
-      cardById.clear();
-    };
-
     const applyResponsiveLayout=(mobile:boolean)=>{
-      if(mobile){
-        buildMobileCards();
-        stack.hidden=false;
-        app.classList.add('mobile-stacked-panels');
-        panelDefs.forEach(def=>applyVisibility(def.id,visibleById.get(def.id)!==false));
-      }else{
-        restoreDesktopNodes();
-        stack.hidden=true;
-        app.classList.remove('mobile-stacked-panels');
-        panelDefs.forEach(def=>applyVisibility(def.id,visibleById.get(def.id)!==false));
-      }
+      buildCards();
+      stack.hidden=false;
+      app.classList.add('panel-stack-layout');
+      app.classList.toggle('mobile-stacked-panels',mobile);
+      app.classList.toggle('desktop-stacked-panels',!mobile);
+      panelDefs.forEach(def=>applyVisibility(def.id,visibleById.get(def.id)!==false));
     };
 
     applyResponsiveLayout(media.matches);
@@ -183,12 +151,17 @@ export class PanelVisibility {
       });
       ids.forEach(id=>syncCardContentState(id));
     });
+
     panelDefs.forEach(def=>{
       const node=document.getElementById(def.id);
-      if(node)observer.observe(node,{attributes:true,attributeFilter:['hidden','class'],subtree:true,childList:true});
+      if(node)observer.observe(node,{
+        attributes:true,
+        attributeFilter:['hidden','class'],
+        subtree:true,
+        childList:true,
+      });
     });
 
-    app.classList.remove('sidebar-hidden');
     topBar.append(toolbar);
 
     const playback = document.getElementById('playback-container')!;
