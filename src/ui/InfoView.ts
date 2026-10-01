@@ -52,7 +52,7 @@ export class InfoView {
           <div class="info-card-title">航空気象データ</div>
           <div class="info-card-body">
             <div class="info-source-list">
-              <div><strong>METAR / TAF</strong><span>FlightAware AeroAPI</span></div>
+              <div><strong>METAR / TAF</strong><span>NOAA Aviation Weather Center</span></div>
               <div><strong>SIGMET</strong><span>NOAA Aviation Weather Center（日本RJJJはJMA発表）</span></div>
               <div><strong>NOWCAST</strong><span>気象庁（降水・雷・竜巻発生確度）</span></div>
             </div>
