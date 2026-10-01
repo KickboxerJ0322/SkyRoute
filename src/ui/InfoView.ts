@@ -82,7 +82,7 @@ export class InfoView {
     try {
       const response = await fetch('/api/account/usage');
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error || 'USAGE_UNAVAILABLE');
+      if (!response.ok) throw new Error(`HTTP ${response.status} / ${body.error || 'USAGE_UNAVAILABLE'}`);
       const usage = ((body.data && typeof body.data === 'object') ? body.data : body) as UsagePayload;
       const cost = Number(usage.total_cost || 0);
       const discounted = Number(usage.total_discount_cost || cost);
@@ -106,8 +106,13 @@ export class InfoView {
         <div class="usage-free">Personalプランの月$5無料枠を目安にすると、残りは <strong>$${freeRemaining.toFixed(2)}</strong> です。</div>
         ${top.length ? '<details><summary>利用額が大きいAPI</summary><div class="usage-breakdown">' + top.map(item=>'<div><span>'+escapeHtml(item.operation||'API')+'</span><span>'+Number(item.total_resource_calls||0)+'回 / $'+Number(item.resource_cost||0).toFixed(3)+'</span></div>').join('') + '</div></details>' : ''}
       `;
-    } catch {
-      node.textContent = 'AeroAPIの利用状況を取得できませんでした。時間をおいてINFOを開き直してください。';
+    } catch (error) {
+      const message=error instanceof Error?error.message:'USAGE_UNAVAILABLE';
+      node.innerHTML = `
+        <div class="usage-error-title">AeroAPIの利用状況を取得できませんでした。</div>
+        <div class="usage-error-code">${escapeHtml(message)}</div>
+        <div class="usage-error-help">Cloud Runログの <code>aeroapi-upstream</code> を確認すると、FlightAware側のHTTPステータスと理由を確認できます。</div>
+      `;
     }
   }
 }
