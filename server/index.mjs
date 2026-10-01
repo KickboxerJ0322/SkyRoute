@@ -8,6 +8,7 @@ import { createFlightCommentator } from './gemini.mjs';
 import { createTts } from './tts.mjs';
 import { createSigmetService } from './sigmet.mjs';
 import { createNowcastService } from './nowcast.mjs';
+import { createAviationWeatherService } from './aviationWeather.mjs';
 try { process.loadEnvFile('.env.local'); } catch(error) { if(error.code!=='ENOENT') throw error; }
 async function readJson(req, maxBytes=65536) {
   let size=0, body='';
@@ -18,7 +19,7 @@ async function readJson(req, maxBytes=65536) {
   }
   try { return JSON.parse(body || '{}'); } catch { throw new ApiError(400,'INVALID_JSON'); }
 }
-export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=createTts(),sigmet=createSigmetService(),nowcast=createNowcastService(),dist=resolve('dist')}={}) {
+export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=createTts(),sigmet=createSigmetService(),nowcast=createNowcastService(),aviationWeather=createAviationWeatherService(),dist=resolve('dist')}={}) {
   return createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
@@ -83,9 +84,9 @@ export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=
         return json(200,await api[match[2]||'detail'](id));
       }
       const airportWeather=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})\/weather$/);
-      if(airportWeather) return json(200,await api.weather(airportWeather[1].toUpperCase()));
+      if(airportWeather) return json(200,await aviationWeather.weather(airportWeather[1].toUpperCase()));
       const airportForecast=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})\/forecast$/);
-      if(airportForecast) return json(200,await api.forecast(airportForecast[1].toUpperCase()));
+      if(airportForecast) return json(200,await aviationWeather.forecast(airportForecast[1].toUpperCase()));
       const airport=url.pathname.match(/^\/api\/airports\/([A-Za-z0-9]{3,4})$/);
       if(airport) return json(200,await api.airport(airport[1].toUpperCase()));
       if(url.pathname.startsWith('/api/')) return json(404,{error:'NOT_FOUND'});
