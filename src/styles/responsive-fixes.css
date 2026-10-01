@@ -2312,3 +2312,163 @@
   }
 }
 
+/* 2026-10-01: INFO uses the same stacked-card language as ROUTE. */
+#app.info-mode #panel-visibility-controls {
+  display: none !important;
+}
+
+#info-root[hidden] {
+  display: none !important;
+}
+
+#info-root .info-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+#info-root .info-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(0,212,255,.22);
+  border-radius: 12px;
+  background: rgba(0,0,0,.72);
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+#info-root .info-card-title {
+  padding: 8px 12px 6px;
+  color: var(--accent-cyan);
+  font: 700 11px/1.2 var(--font-mono);
+  letter-spacing: .06em;
+  border-bottom: 1px solid rgba(0,212,255,.14);
+  background: rgba(0,0,0,.20);
+}
+
+#info-root .info-card-body {
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+#info-root .info-card h2 {
+  margin: 4px 0 8px;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+#info-root .info-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: .78rem;
+  line-height: 1.65;
+}
+
+#info-root .info-grid {
+  display: grid;
+  gap: 7px;
+}
+
+#info-root .info-grid > div,
+#info-root .info-source-list > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0,1fr);
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+}
+
+#info-root .info-grid strong,
+#info-root .info-source-list strong {
+  color: var(--accent-cyan);
+  font: 700 .70rem var(--font-mono);
+}
+
+#info-root .info-grid span,
+#info-root .info-source-list span {
+  color: var(--text-muted);
+  font-size: .73rem;
+  line-height: 1.5;
+}
+
+#info-root .info-source-list {
+  display: grid;
+  gap: 7px;
+}
+
+#info-root .aero-usage-card {
+  padding: 12px;
+  border: 1px solid rgba(0,212,255,.24);
+  border-radius: 9px;
+  background: rgba(0,10,24,.46);
+}
+
+#info-root .usage-period {
+  margin-bottom: 5px;
+  color: var(--accent-cyan);
+  font: 700 10px/1.3 var(--font-mono);
+}
+
+#info-root .info-note {
+  margin-top: 8px !important;
+  font-size: .67rem !important;
+}
+
+@media (min-width: 769px) {
+  #info-root:not([hidden]) {
+    position: absolute !important;
+    display: block !important;
+    top: calc(24px + var(--top-controls-height, 48px)) !important;
+    left: 18px !important;
+    right: auto !important;
+    bottom: 18px !important;
+    width: 380px !important;
+    max-width: 380px !important;
+    z-index: 31 !important;
+    padding: 0 8px 18px 0 !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    pointer-events: auto !important;
+    background: transparent !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #info-root:not([hidden]) {
+    position: absolute !important;
+    display: block !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 50vh !important;
+    bottom: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 32 !important;
+    padding: 10px 12px calc(24px + env(safe-area-inset-bottom)) !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    pointer-events: auto !important;
+    background: linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.34)) !important;
+  }
+
+  #info-root .info-card {
+    border-radius: 14px;
+    background: rgba(0,0,0,.72);
+  }
+
+  #info-root .info-grid > div,
+  #info-root .info-source-list > div {
+    grid-template-columns: 86px minmax(0,1fr);
+  }
+}
+
