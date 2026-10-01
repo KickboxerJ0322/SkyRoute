@@ -105,7 +105,30 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       airport:id,
       raw:raw&&typeof raw==='object'?raw:null,
     })),
-    usage:()=>mode==='mock'?Promise.resolve({data:{total_calls:0,total_pages:0,total_cost:0,total_discount_cost:0,total_successful_calls:0,total_failed_calls:0,resource_details:[]},source:'mock',fetchedAt:new Date(now()).toISOString(),stale:false}):cached('usage:current',600000,'/account/usage',raw=>raw),
+    usage:()=>{
+      const instant=now();
+      const jst=new Date(instant+9*3600000);
+      const year=jst.getUTCFullYear();
+      const month=String(jst.getUTCMonth()+1).padStart(2,'0');
+      const periodKey=`${year}-${month}`;
+      const start=`${periodKey}-01T00:00:00+09:00`;
+      const end=new Date(instant).toISOString();
+      const period={timezone:'Asia/Tokyo',start,end,label:`${year}年${Number(month)}月`};
+      if(mode==='mock') return Promise.resolve({
+        data:{
+          total_calls:0,total_pages:0,total_cost:0,total_discount_cost:0,
+          total_successful_calls:0,total_failed_calls:0,resource_details:[],
+          skyroute_period:period,
+        },
+        source:'mock',fetchedAt:new Date(instant).toISOString(),stale:false,
+      });
+      return cached(
+        `usage:${periodKey}`,
+        600000,
+        ()=>`/account/usage?${new URLSearchParams({start,end,all_keys:'true'})}`,
+        raw=>({...raw,skyroute_period:period}),
+      );
+    },
   };
   return api;
 }
