@@ -155,6 +155,29 @@ test('combined list includes airborne past departures, excludes landed and other
   assert.equal(result.data[0].status,'ENROUTE');assert.equal(result.stale,false);await api.departures();assert.equal(calls,2);
 });
 
+test('AeroAPI usage is scoped to the current JST calendar month and rolls over at month start',async()=>{
+  let clock=Date.parse('2026-09-30T14:59:00Z');
+  const urls=[];
+  const api=createAeroApi({mode:'live',key:'test',now:()=>clock,logger:silent,fetcher:async url=>{
+    urls.push(new URL(url));
+    return Response.json({total_calls:2,total_pages:2,total_cost:.02,resource_details:[]});
+  }});
+
+  const september=await api.usage();
+  assert.equal(urls.length,1);
+  assert.equal(urls[0].pathname,'/aeroapi/account/usage');
+  assert.equal(urls[0].searchParams.get('start'),'2026-09-01T00:00:00+09:00');
+  assert.equal(urls[0].searchParams.get('all_keys'),'true');
+  assert.equal(september.data.skyroute_period.label,'2026年9月');
+
+  clock=Date.parse('2026-09-30T15:01:00Z');
+  const october=await api.usage();
+  assert.equal(urls.length,2,'month rollover must not reuse the previous month cache entry');
+  assert.equal(urls[1].searchParams.get('start'),'2026-10-01T00:00:00+09:00');
+  assert.equal(urls[1].searchParams.get('end'),new Date(clock).toISOString());
+  assert.equal(october.data.skyroute_period.label,'2026年10月');
+});
+
 test('one unavailable list preserves the other list with an explicit partial warning',async()=>{
   const api=createAeroApi({mode:'live',key:'test',now:()=>now,logger:silent,fetcher:async url=>url.includes('scheduled_departures')?Response.json({scheduled_departures:[rawFlight]}):new Response('',{status:404})});
   const result=await api.departures();assert.equal(result.data.length,1);assert.equal(result.stale,true);assert.ok(result.warning);
