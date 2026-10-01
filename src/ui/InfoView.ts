@@ -11,6 +11,12 @@ type UsagePayload = {
     num_pages?: number;
     resource_cost?: number;
   }>;
+  skyroute_period?: {
+    timezone?: string;
+    start?: string;
+    end?: string;
+    label?: string;
+  };
 };
 
 export class InfoView {
@@ -19,22 +25,49 @@ export class InfoView {
   public async show(): Promise<void> {
     this.root.hidden = false;
     this.root.innerHTML = `
-      <section class="info-panel">
-        <div class="info-kicker">INFO</div>
-        <h2>SkyRouteについて</h2>
-        <p>SkyRouteは、航空機の現在位置・高度・速度・航跡などを、Google Photorealistic 3D Maps上で確認できる個人開発の航空可視化アプリです。</p>
+      <div class="info-stack" aria-label="SkyRoute information">
+        <section class="info-card">
+          <div class="info-card-title">SkyRouteについて</div>
+          <div class="info-card-body">
+            <div class="info-kicker">INFO</div>
+            <h2>航空情報を3Dで見る</h2>
+            <p>SkyRouteは、航空機の現在位置・高度・速度・航跡と航空気象情報を、Google Photorealistic 3D Maps上で分かりやすく確認する個人開発アプリです。</p>
+          </div>
+        </section>
 
-        <h3>使い方</h3>
-        <div class="info-grid">
-          <div><strong>ROUTE</strong><span>主要空港を選び、飛行中便と今後3時間の出発予定便を確認します。</span></div>
-          <div><strong>飛行情報</strong><span>便を選ぶと現在位置、航跡、AI解説、音声読み上げを利用できます。</span></div>
-          <div><strong>更新</strong><span>AeroAPIの利用料を抑えるため、便一覧と位置情報は原則として手動更新です。</span></div>
-        </div>
+        <section class="info-card">
+          <div class="info-card-title">使い方</div>
+          <div class="info-card-body">
+            <div class="info-grid">
+              <div><strong>ROUTE</strong><span>主要空港を選び、飛行中便と今後3時間の出発予定便を確認します。</span></div>
+              <div><strong>飛行情報</strong><span>便を選ぶと現在位置、高度、速度、航跡、残距離などを表示します。</span></div>
+              <div><strong>3D気象</strong><span>SIGMETと、出発・到着空港周辺の雨・雷・竜巻発生確度NOWCASTを表示します。</span></div>
+              <div><strong>AI解説</strong><span>METAR、TAF、SIGMET、NOWCASTを含め、現在の飛行状況を日本語で解説します。</span></div>
+              <div><strong>更新</strong><span>AeroAPIの利用料を抑えるため、便一覧と位置情報は原則として手動更新です。</span></div>
+            </div>
+          </div>
+        </section>
 
-        <h3>AeroAPI 今月の利用状況</h3>
-        <div id="aero-usage" class="aero-usage-card">利用状況を取得しています…</div>
-        <p class="info-note">FlightAwareの利用統計は約10分ごとに更新されます。表示額は参考値で、最終請求額とは異なる場合があります。</p>
-      </section>
+        <section class="info-card">
+          <div class="info-card-title">航空気象データ</div>
+          <div class="info-card-body">
+            <div class="info-source-list">
+              <div><strong>METAR / TAF</strong><span>FlightAware AeroAPI</span></div>
+              <div><strong>SIGMET</strong><span>NOAA Aviation Weather Center（日本RJJJはJMA発表）</span></div>
+              <div><strong>NOWCAST</strong><span>気象庁（降水・雷・竜巻発生確度）</span></div>
+            </div>
+            <p class="info-note">気象表示は可視化・学習用途です。実際の航空運航判断には使用しないでください。</p>
+          </div>
+        </section>
+
+        <section class="info-card">
+          <div class="info-card-title">AeroAPI 今月の利用状況</div>
+          <div class="info-card-body">
+            <div id="aero-usage" class="aero-usage-card">利用状況を取得しています…</div>
+            <p class="info-note">SkyRouteは日本時間の月初から現在までを指定して取得します。FlightAware側の利用統計は約10分ごとに更新されます。</p>
+          </div>
+        </section>
+      </div>
     `;
     await this.loadUsage();
   }
@@ -56,18 +89,21 @@ export class InfoView {
       const calls = Number(usage.total_calls || 0);
       const pages = Number(usage.total_pages || 0);
       const freeRemaining = Math.max(0, 5 - cost);
+      const periodLabel = usage.skyroute_period?.label || '今月';
       const top = (usage.resource_details || [])
         .slice()
         .sort((a,b)=>Number(b.resource_cost||0)-Number(a.resource_cost||0))
         .slice(0,5);
+
       node.innerHTML = `
+        <div class="usage-period">${escapeHtml(periodLabel)}・日本時間</div>
         <div class="usage-total"><span>参考利用額</span><strong>$${cost.toFixed(3)}</strong></div>
         <div class="usage-stats">
           <span>API呼出 ${calls.toLocaleString()} 回</span>
           <span>Result pages ${pages.toLocaleString()}</span>
           ${discounted !== cost ? '<span>割引後 $' + discounted.toFixed(3) + '</span>' : ''}
         </div>
-        <div class="usage-free">Personalプランの月$5無料枠を前提にすると、残り目安は <strong>$${freeRemaining.toFixed(2)}</strong> です。</div>
+        <div class="usage-free">Personalプランの月$5無料枠を目安にすると、残りは <strong>$${freeRemaining.toFixed(2)}</strong> です。</div>
         ${top.length ? '<details><summary>利用額が大きいAPI</summary><div class="usage-breakdown">' + top.map(item=>'<div><span>'+escapeHtml(item.operation||'API')+'</span><span>'+Number(item.total_resource_calls||0)+'回 / $'+Number(item.resource_cost||0).toFixed(3)+'</span></div>').join('') + '</div></details>' : ''}
       `;
     } catch {
