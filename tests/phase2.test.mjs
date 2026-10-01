@@ -166,15 +166,17 @@ test('AeroAPI usage is scoped to the current JST calendar month and rolls over a
   const september=await api.usage();
   assert.equal(urls.length,1);
   assert.equal(urls[0].pathname,'/aeroapi/account/usage');
-  assert.equal(urls[0].searchParams.get('start'),'2026-09-01T00:00:00+09:00');
-  assert.equal(urls[0].searchParams.get('all_keys'),'true');
+  assert.equal(urls[0].searchParams.get('start'),'2026-08-31T15:00:00Z');
+  assert.equal(urls[0].searchParams.has('end'),false);
+  assert.equal(urls[0].searchParams.has('all_keys'),false);
   assert.equal(september.data.skyroute_period.label,'2026年9月');
 
   clock=Date.parse('2026-09-30T15:01:00Z');
   const october=await api.usage();
   assert.equal(urls.length,2,'month rollover must not reuse the previous month cache entry');
-  assert.equal(urls[1].searchParams.get('start'),'2026-10-01T00:00:00+09:00');
-  assert.equal(urls[1].searchParams.get('end'),new Date(clock).toISOString());
+  assert.equal(urls[1].searchParams.get('start'),'2026-09-30T15:00:00Z');
+  assert.equal(urls[1].searchParams.has('end'),false);
+  assert.equal(urls[1].searchParams.has('all_keys'),false);
   assert.equal(october.data.skyroute_period.label,'2026年10月');
 });
 
