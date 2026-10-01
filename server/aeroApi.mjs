@@ -20,7 +20,31 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
     catch { cooldownUntil=now()+60000; throw new ApiError(504,'API_UNAVAILABLE'); }
     if(!response.ok) {
       cooldownUntil=now()+([401,403,429].includes(response.status)?60000:response.status>=500?30000:0);
-      throw new ApiError(response.status,[401,403].includes(response.status)?'API_KEY_OR_PLAN_ERROR':response.status===404?'DATA_UNAVAILABLE':response.status===429?'RATE_LIMIT':'API_UNAVAILABLE');
+      let upstreamReason='';
+      try {
+        const body=await response.text();
+        if(body) {
+          try {
+            const parsed=JSON.parse(body);
+            upstreamReason=String(parsed.error||parsed.message||parsed.title||body);
+          } catch {
+            upstreamReason=body;
+          }
+        }
+      } catch {}
+      logger(JSON.stringify({
+        endpoint:'aeroapi-upstream',
+        path:String(path).split('?')[0],
+        status:response.status,
+        reason:upstreamReason.slice(0,300)||'no response body',
+      }));
+      throw new ApiError(
+        response.status,
+        [401,403].includes(response.status)?'API_KEY_OR_PLAN_ERROR':
+          response.status===400?'INVALID_API_REQUEST':
+          response.status===404?'DATA_UNAVAILABLE':
+          response.status===429?'RATE_LIMIT':'API_UNAVAILABLE'
+      );
     }
     try { return await response.json(); } catch { throw new ApiError(502,'INVALID_API_RESPONSE'); }
   }
@@ -109,11 +133,18 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       const instant=now();
       const jst=new Date(instant+9*3600000);
       const year=jst.getUTCFullYear();
-      const month=String(jst.getUTCMonth()+1).padStart(2,'0');
+      const monthIndex=jst.getUTCMonth();
+      const month=String(monthIndex+1).padStart(2,'0');
       const periodKey=`${year}-${month}`;
-      const start=`${periodKey}-01T00:00:00+09:00`;
-      const end=new Date(instant).toISOString();
-      const period={timezone:'Asia/Tokyo',start,end,label:`${year}年${Number(month)}月`};
+      // Decide the calendar month in JST, then send FlightAware a simple UTC
+      // ISO-8601 start bound. 2026-10-01 00:00 JST => 2026-09-30T15:00:00Z.
+      const monthStartUtcMs=Date.UTC(year,monthIndex,1,0,0,0)-9*3600000;
+      const start=new Date(monthStartUtcMs).toISOString().replace('.000Z','Z');
+      const period={
+        timezone:'Asia/Tokyo',
+        start,
+        label:`${year}年${monthIndex+1}月`,
+      };
       if(mode==='mock') return Promise.resolve({
         data:{
           total_calls:0,total_pages:0,total_cost:0,total_discount_cost:0,
@@ -125,7 +156,7 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       return cached(
         `usage:${periodKey}`,
         600000,
-        ()=>`/account/usage?${new URLSearchParams({start,end,all_keys:'true'})}`,
+        ()=>`/account/usage?${new URLSearchParams({start})}`,
         raw=>({...raw,skyroute_period:period}),
       );
     },
