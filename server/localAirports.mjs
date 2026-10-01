@@ -52,7 +52,6 @@ const rows=[
   ['RJDB','IKI','壱岐空港',33.7490,129.7854,41],
   ['RJDT','TSJ','対馬空港',34.2849,129.3306,213],
   ['RJDO','OKI','隠岐世界ジオパーク空港',36.1811,133.3248,311],
-  ['RJFZ','FUK','福岡空港',33.5859,130.4507,32],
 ];
 
 const airports=new Map(rows.map(([icao,iata,name,latitude,longitude,elevationFt])=>[
