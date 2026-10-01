@@ -37,7 +37,7 @@ const findByKeys = (value: unknown, keys: Set<string>, depth = 0): number | null
 const findMetarText = (value: unknown, depth = 0): string | null => {
   if (!value || typeof value !== 'object' || depth > 4) return null;
   const record = value as Record<string, unknown>;
-  for (const key of ['raw_text', 'rawtext', 'metar', 'raw', 'report']) {
+  for (const key of ['raw_text', 'rawtext', 'rawob', 'metar', 'raw', 'report']) {
     const candidate = record[key];
     if (typeof candidate === 'string' && candidate.length >= 8) return candidate;
   }
@@ -50,7 +50,7 @@ const findMetarText = (value: unknown, depth = 0): string | null => {
 
 /**
  * Extracts meteorological wind direction (the direction the wind comes FROM)
- * from AeroAPI's observation payload. The parser accepts common field names
+ * from the aviation-weather observation payload. The parser accepts common field names
  * and falls back to the METAR token, e.g. "34012KT".
  */
 export const weatherWindDirection = (
@@ -69,6 +69,7 @@ export const weatherWindDirection = (
       'winddirdegrees',
       'wind_degrees',
       'winddegrees',
+      'wdir',
     ]),
   );
   if (direct !== null) return normalizeDegrees(direct);
