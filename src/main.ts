@@ -88,16 +88,22 @@ async function initSkyRoute(): Promise<void> {
     const info = mode === 'INFO';
     routeButton?.classList.toggle('active', mode === 'ROUTE');
     infoButton?.classList.toggle('active', info);
+    document.getElementById('app')?.classList.toggle('info-mode', info);
 
     if (leftPanel) leftPanel.hidden = info;
     if (playback) playback.hidden = info;
     if (mapControls) mapControls.hidden = info;
     aircraft.setVisible(mode === 'ROUTE');
+
+    const routeStack = document.getElementById('mobile-panel-stack');
+    if (routeStack) routeStack.hidden = info;
+
     if (info) void infoView.show(); else infoView.hide();
 
     const flightPanel = document.getElementById('flight-panel-root');
     const flightInfo = document.getElementById('flight-info-root');
     if (mode === 'ROUTE') {
+      if (routeStack) routeStack.hidden = false;
       if (flightPanel) flightPanel.hidden = false;
       if (flightInfo) flightInfo.hidden = false;
     }
