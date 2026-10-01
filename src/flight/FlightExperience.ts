@@ -313,14 +313,20 @@ export class FlightExperience {
   }
   private async selectLive(id:string,seed?:SkyRouteFlight) {
     this.cancelSelection();this.viewMode='LIVE';this.enablePlayback(false);this.updateSource();
-    this.selected=seed||this.provider.lastDepartures?.data.find(f=>f.id===id)||null;
+    const listSeed=seed||this.provider.lastDepartures?.data.find(f=>f.id===id)||null;
+    this.selected=listSeed;
     if(!this.selected)return;
     this.setAutomaticAircraftModel(aircraftModelUrlForFlight(this.selected));
     this.liveView.showFlight(this.selected,this.provider.source==='mock'?'MOCK':'LIVE');this.bindFlightActions();
     const signal=this.selectionAbort.signal;
     try {
-      try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;this.setAutomaticAircraftModel(aircraftModelUrlForFlight(this.selected));}
-      catch(error) {if(signal.aborted)return;this.liveView.setMessage(errorText(error));}
+      // The departures list already contains the fields needed for the normal
+      // selection flow. Avoid a second paid flight-detail call unless this
+      // flight was opened without a list/seed record.
+      if(!listSeed){
+        try {const detail=await this.provider.getFlight(id,signal);if(signal.aborted)return;this.selected=detail.data;this.setAutomaticAircraftModel(aircraftModelUrlForFlight(this.selected));}
+        catch(error) {if(signal.aborted)return;this.liveView.setMessage(errorText(error));}
+      }
       const [origin,destination]=await Promise.all([this.provider.resolveAirport(this.selected.origin,signal),this.provider.resolveAirport(this.selected.destination,signal)]);
       if(signal.aborted)return;this.selected={...this.selected,origin,destination};
       const liveOriginNowcast=this.toNowcastAirport(this.selected.origin);
