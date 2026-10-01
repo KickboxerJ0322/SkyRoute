@@ -49,6 +49,9 @@ export class FlightExperience {
   private lastFrame=0;
   private lastTrackFetch=0;
   private lastPosition:SkyRoutePosition|null=null;
+  // Fixed at the moment an ENROUTE flight is selected. Preview/Replay reuse
+  // this point and never fetch a newer position.
+  private selectionPositionAnchor:SkyRoutePosition|null=null;
   private currentTelemetry:TelemetryData|null=null;
   private autoPositionRefresh=false;
   private lastAiCommentary='';
@@ -212,7 +215,7 @@ export class FlightExperience {
   }
   private cancelSelection() {
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';this.lastAiModel='';this.lastAiCreatedAt='';this.stopAiSpeech();cancelAnimationFrame(this.raf);this.raf=0;
-    this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.currentTelemetry=null;this.activeAnimationRoute=null;
+    this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.selectionPositionAnchor=null;this.currentTelemetry=null;this.activeAnimationRoute=null;
     this.route=null;this.filed=null;this.track=[];this.activeDemoRoute=null;this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
     this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();this.nowcastPanel.clear();this.nowcast3D.clear();
   }
@@ -333,7 +336,7 @@ export class FlightExperience {
         // Selecting a flying aircraft should immediately move the 3D scene to
         // its latest known position. This is a one-shot fetch; continued
         // updates remain manual to keep AeroAPI usage under control.
-        await this.fetchPosition(signal,true);
+        await this.fetchPosition(signal,true,true);
         if(signal.aborted)return;
       } else {
         this.liveView.setMessage((this.route!.waypoints.length<2?'Route unavailable. ':'')+(this.selected.status==='CANCELLED'?'Cancelled · 飛行アニメーションは停止しています。':this.selected.status==='ARRIVED'?'Arrived':'Scheduled · Position not available yet.'));
@@ -344,7 +347,12 @@ export class FlightExperience {
   private bindFlightActions() {
     const root=element('flight-info-root');
     root.querySelector('#live-return')!.addEventListener('click',()=>void this.returnLive());
-    root.querySelector('#live-refresh-position')?.addEventListener('click',()=>void this.refreshSelectedNow());
+    const positionButton=root.querySelector<HTMLButtonElement>('#live-refresh-position');
+    if(positionButton){
+      positionButton.disabled=true;
+      positionButton.textContent='選択時位置';
+      positionButton.title='現在位置は便一覧から便を選択した時に1回だけ取得します';
+    }
     const autoButton=root.querySelector<HTMLButtonElement>('#live-auto-refresh');if(autoButton){autoButton.disabled=true;autoButton.title='AeroAPI節約のため自動更新は無効です';}
     root.querySelector('#live-preview')!.addEventListener('click',()=>void this.startPreview(false));
     root.querySelector('#live-replay')!.addEventListener('click',()=>void this.startPreview(true));
@@ -410,13 +418,6 @@ export class FlightExperience {
     if(this.speechUtterance){window.speechSynthesis.cancel();this.speechUtterance=null;}
     if(this.ttsObjectUrl){URL.revokeObjectURL(this.ttsObjectUrl);this.ttsObjectUrl='';}
     if(resetMessage&&this.lastAiCommentary)this.liveView.setMessage('音声を停止しました。');
-  }
-  private async refreshSelectedNow() {
-    if(!this.selected||this.viewMode!=='LIVE')return;
-    const button=element('flight-info-root').querySelector<HTMLButtonElement>('#live-refresh-position');
-    if(button){button.disabled=true;button.textContent='更新中…';}
-    try {await this.pollSelection();}
-    finally {const current=element('flight-info-root').querySelector<HTMLButtonElement>('#live-refresh-position');if(current){current.disabled=false;current.textContent='現在位置更新';}}
   }
   private async requestDemoAiCommentary() {
     const route=this.activeDemoRoute;
@@ -602,14 +603,14 @@ export class FlightExperience {
     } else this.aircraft.setVisible(false);
     this.liveView.updatePosition(null);
   }
-  private async fetchPosition(signal:AbortSignal,focusImmediately=false) {
+  private async fetchPosition(signal:AbortSignal,focusImmediately=false,captureSelectionAnchor=false) {
     if(!this.selected||this.selected.status!=='ENROUTE'||this.viewMode!=='LIVE')return;
     if(!this.lastPosition)this.liveView.setMessage('現在位置を取得しています…');
     try {
       const result=await this.provider.getPosition(this.selected.id,signal);if(signal.aborted)return;
       const fallback=this.track.length?this.track.at(-1)??null:null;
       if(!result.data&&!fallback) {
-        this.liveView.setMessage('現在位置を取得できませんでした。しばらくして「現在位置更新」を押してください。');
+        this.liveView.setMessage('現在位置を取得できませんでした。便一覧からこの便を選び直すと再取得します。');
         return;
       }
       let next=result.data??fallback!;
@@ -621,6 +622,7 @@ export class FlightExperience {
       const accepted=this.interpolator.push(next);
       if(accepted){
         this.lastPosition=next;
+        if(captureSelectionAnchor)this.selectionPositionAnchor={...next};
         // On first selection, do not wait for the animation frame before
         // repositioning the aircraft/camera. This makes ENROUTE selection
         // visibly jump to the live aircraft just like scheduled flights jump
@@ -632,14 +634,14 @@ export class FlightExperience {
       const fallbackUsed=!result.data&&Boolean(fallback);
       this.liveView.setMessage(
         fallbackUsed
-          ?'最新の航跡位置を表示しています · 「現在位置更新」で再取得できます。'
+          ?'最新の航跡位置を便選択時の基準位置として表示しています。'
           :result.stale
             ?'LIVE DATA TEMPORARILY UNAVAILABLE · showing last position'
             :age>120000
               ?'Position is older than 2 minutes.'
               :this.autoPositionRefresh
                 ?'Live position · 自動更新 ON（1分ごと）'
-                :'Live position · 自動更新 OFF（手動取得）'
+                :'Live position · 便選択時の固定位置'
       );
       this.updateSource(result.stale?' · cached position':'');
       if(!this.raf)this.animateLive();
@@ -650,11 +652,12 @@ export class FlightExperience {
       if(fallback){
         if(this.interpolator.push(fallback)){
           this.lastPosition=fallback;
+          if(captureSelectionAnchor)this.selectionPositionAnchor={...fallback};
           if(focusImmediately)this.applyPosition(fallback,true);
         }
         this.drawRemainingRoute();
         if(!this.raf)this.animateLive();
-        this.liveView.setMessage('現在位置APIを取得できないため、最新の航跡位置を表示しています。');
+        this.liveView.setMessage('現在位置APIを取得できないため、最新の航跡位置を便選択時の基準位置として表示しています。');
         this.debug();
         return;
       }
@@ -717,22 +720,50 @@ export class FlightExperience {
     const filed=this.filed;
     if(!selected||selected.status==='CANCELLED'||!currentRoute)return;
 
-    // Preview starts from the freshest LIVE position, not from the departure airport.
-    let previewPosition=this.lastPosition;
-    if(!replay&&selected.status==='ENROUTE'){
-      try{
-        const latest=await this.provider.getPosition(selected.id,this.selectionAbort.signal);
-        if(latest.data)previewPosition=latest.data;
-      }catch{
-        // Fall back to the last successfully received position.
-      }
-    }
+    // The flight-selection position is the immutable boundary for both
+    // directions: Preview starts here, Replay ends here. No position API call
+    // occurs when either playback button is pressed.
+    const previewPosition=this.selectionPositionAnchor??this.lastPosition;
 
     let route:SkyRouteRoute;
 
     if(replay) {
-      // Replay is the only mode that intentionally prefers recorded ACTUAL track.
-      route=chooseRoute(selected,null,this.track);
+      const anchor=previewPosition;
+      let replayTrack=this.track.filter(point=>point.altitudeMeters!==null);
+      if(anchor){
+        const anchorMs=Date.parse(anchor.timestamp);
+        if(Number.isFinite(anchorMs)){
+          replayTrack=replayTrack.filter(point=>Date.parse(point.timestamp)<=anchorMs);
+        }
+        if(anchor.altitudeMeters!==null){
+          const tail=replayTrack.at(-1);
+          const tailDistance=tail
+            ?distanceBetween(
+              {lat:tail.latitude,lng:tail.longitude},
+              {lat:anchor.latitude,lng:anchor.longitude},
+            )
+            :Infinity;
+          if(!tail||tailDistance>20||Date.parse(tail.timestamp)!==anchorMs){
+            replayTrack=[...replayTrack,{...anchor}];
+          }else{
+            replayTrack=[...replayTrack.slice(0,-1),{...anchor}];
+          }
+        }
+      }
+      if(replayTrack.length<2){
+        this.liveView.setMessage('便選択時点までのReplay trackが不足しています。');
+        return;
+      }
+      route={
+        type:'ACTUAL',
+        altitudeEstimated:replayTrack.some(point=>point.altitudeEstimated),
+        waypoints:replayTrack.map(point=>({
+          latitude:point.latitude,
+          longitude:point.longitude,
+          altitudeMeters:point.altitudeMeters!,
+          altitudeEstimated:point.altitudeEstimated,
+        })),
+      };
     } else if(filed&&filed.waypoints.length>=2) {
       // Preview uses current position + the remaining FILED waypoints.
       route=filed;
@@ -801,9 +832,22 @@ export class FlightExperience {
   private async returnLive() {
     if(!this.selected)return;
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);cancelAnimationFrame(this.raf);this.raf=0;
-    this.animator.pause();this.syncPlayback();this.viewMode='LIVE';this.enablePlayback(false);this.interpolator.reset();this.lastPosition=null;this.activeAnimationRoute=null;this.mapStatus.hidden=true;this.aircraft.setVisible(false);
+    this.animator.pause();this.syncPlayback();this.viewMode='LIVE';this.enablePlayback(false);this.interpolator.reset();this.activeAnimationRoute=null;this.mapStatus.hidden=true;this.aircraft.setVisible(false);
+    this.currentTelemetry=null;
+    this.lastPosition=this.selectionPositionAnchor?{...this.selectionPositionAnchor}:null;
     this.updateSource();element('live-view-mode').textContent=this.provider.source==='mock'?'MOCK':'LIVE';
-    this.placeStationary();await this.pollSelection();
+    this.rebuildRoutes();
+    if(this.selected.status==='ENROUTE'&&this.selectionPositionAnchor){
+      const anchor={...this.selectionPositionAnchor};
+      this.interpolator.push(anchor);
+      this.lastPosition=anchor;
+      this.applyPosition(anchor,true);
+      this.drawRemainingRoute();
+      this.liveView.setMessage('便選択時の位置を表示しています。位置を再取得する場合は便一覧から選び直してください。');
+      if(!this.raf)this.animateLive();
+    }else{
+      this.placeStationary();
+    }
   }
   private debug() {this.liveView.debug({source:this.provider.source,flightId:this.selected?.id,routeType:this.route?.type,trackPoints:this.track.length,
     positionAgeSeconds:this.lastPosition?Math.round((Date.now()-Date.parse(this.lastPosition.timestamp))/1000):null,
