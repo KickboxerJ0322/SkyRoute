@@ -6,6 +6,8 @@ import { Cache, ApiError } from '../server/cache.mjs';
 import { flight, position, track, status } from '../server/normalize.mjs';
 import { createApp } from '../server/index.mjs';
 import { createFlightCommentator, DEFAULT_GEMINI_MODEL } from '../server/gemini.mjs';
+import { localAirport } from '../server/localAirports.mjs';
+import { createAviationWeatherService } from '../server/aviationWeather.mjs';
 const compiled=await build({stdin:{contents:`export {chooseRoute, formatJst} from './src/flight/AeroApiFlightProvider'; export {greatCirclePoints} from './src/flight/liveGeometry'; export {LiveFlightInterpolator} from './src/flight/LiveFlightInterpolator'; export {durationForDistance} from './src/flight/FlightAnimator';`,resolveDir:process.cwd()},bundle:true,write:false,format:'esm',platform:'node'});
 const {chooseRoute,formatJst,greatCirclePoints,LiveFlightInterpolator,durationForDistance}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
 const now=Date.parse('2026-09-06T00:00:00Z');
@@ -121,8 +123,37 @@ test('mock scheduled flight transitions into airborne position without external 
   const list=await api.departures();assert.equal(list.data.length,12);const id=list.data[0].id;
   assert.equal((await api.position(id)).data,null);clock+=121000;
   assert.equal((await api.detail(id)).data.status,'ENROUTE');assert.ok((await api.position(id)).data);assert.ok((await api.track(id)).data.length>=2);
-  assert.equal(TTL.route,1800000);assert.equal(TTL.airport,86400000);
+  assert.equal(TTL.route,1800000);assert.equal('airport' in TTL,false);
 });
+test('local airport master resolves common Japanese destinations without AeroAPI',()=>{
+  const hnd=localAirport('RJTT');
+  const axt=localAirport('RJSK');
+  assert.equal(hnd.iata,'HND');
+  assert.equal(axt.iata,'AXT');
+  assert.ok(Number.isFinite(axt.latitude));
+  assert.equal(localAirport('ZZZZ'),null);
+});
+
+test('NOAA Aviation Weather supplies METAR and TAF without AeroAPI credentials',async()=>{
+  const urls=[];
+  const service=createAviationWeatherService({now:()=>now,fetcher:async(url,options)=>{
+    urls.push(new URL(url));
+    assert.match(options.headers['User-Agent'],/SkyRoute/);
+    const product=new URL(url).pathname.split('/').at(-1);
+    return Response.json(product==='metar'
+      ?[{icaoId:'RJTT',rawOb:'RJTT 010000Z 34012KT 9999 FEW020 20/10 Q1013',wdir:340}]
+      :[{icaoId:'RJTT',rawTAF:'TAF RJTT 010000Z 0100/0206 34012KT 9999 FEW020'}]);
+  }});
+  const metar=await service.weather('RJTT');
+  const taf=await service.forecast('RJTT');
+  assert.equal(urls[0].hostname,'aviationweather.gov');
+  assert.equal(urls[0].pathname,'/api/data/metar');
+  assert.equal(urls[0].searchParams.get('ids'),'RJTT');
+  assert.equal(urls[1].pathname,'/api/data/taf');
+  assert.equal(metar.data.raw.wdir,340);
+  assert.match(taf.data.raw.rawTAF,/TAF RJTT/);
+});
+
 test('HTTP API and static server reject unknown and traversal paths; no secret leaks',async()=>{
   const app=createApp({api:createAeroApi({mode:'mock',logger:silent}),ai:async()=>({text:'AI OK',model:'test-model'})});await new Promise(r=>app.listen(0,'127.0.0.1',r));
   try {const base=`http://127.0.0.1:${app.address().port}`;
