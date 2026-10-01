@@ -1,9 +1,10 @@
 import { loadRecordedFixture } from './recordedFixture.mjs';
 ﻿import { Cache, ApiError } from './cache.mjs';
 import { createMock } from './mock.mjs';
-import { HND, flight, airport, position, track, filedRoute } from './normalize.mjs';
+import { HND, flight, position, track, filedRoute } from './normalize.mjs';
+import { localAirport, mergeLocalAirport } from './localAirports.mjs';
 const SUPPORTED_AIRPORTS=new Set(['RJTT','RJAA','RJBB','RJOO','RJCC','RJFF','ROAH']);
-export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000, airport:86400000, weather:300000, forecast:300000 };
+export const TTL = { departures:180000, nearby:180000, detail:60000, position:45000, track:180000, route:1800000 };
 export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=process.env.AEROAPI_KEY, fetcher=fetch, now=Date.now,
   maxCalls=Number(process.env.AEROAPI_MAX_CALLS_PER_MINUTE)||20, logger=console.log}={}) {
   if(!['mock','live'].includes(mode)) throw new Error('SKYROUTE_DATA_MODE must be mock or live');
@@ -55,6 +56,11 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       return {...result,source:mode};
     } catch(error) {logger(JSON.stringify({endpoint:key.split(':')[0],status:error.status||500,cache:'miss',duration:now()-start})); throw error;}
   }
+  const localizeFlight=value=>value?{
+    ...value,
+    origin:mergeLocalAirport(value.origin),
+    destination:mergeLocalAirport(value.destination),
+  }:value;
   const api = {
     mode,
     scheduledDepartures:(airportIcao=HND.icao)=>{
@@ -65,7 +71,7 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       return `/airports/${icao}/flights/scheduled_departures?${query}`;
     },raw=>{
       if(!Array.isArray(raw.scheduled_departures)) throw new ApiError(502,'INVALID_API_RESPONSE');
-      return raw.scheduled_departures.map(flight).filter(f=>f&&f.origin.icao===icao&&Date.parse(f.scheduledDeparture)>=now()&&Date.parse(f.scheduledDeparture)<=now()+3*3600000&&!['DEPARTED','ENROUTE','ARRIVED'].includes(f.status))
+      return raw.scheduled_departures.map(item=>localizeFlight(flight(item))).filter(f=>f&&f.origin.icao===icao&&Date.parse(f.scheduledDeparture)>=now()&&Date.parse(f.scheduledDeparture)<=now()+3*3600000&&!['DEPARTED','ENROUTE','ARRIVED'].includes(f.status))
         .sort((a,b)=>Date.parse(a.scheduledDeparture)-Date.parse(b.scheduledDeparture)).filter((f,i,all)=>all.findIndex(x=>x.id===f.id)===i).slice(0,20);
     });
     },
@@ -76,7 +82,7 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       return `/airports/${icao}/flights/departures?${new URLSearchParams({start:formatBound(now()-24*3600000),end:formatBound(now()),max_pages:'1'})}`;
     },raw=>{
       if(!Array.isArray(raw.departures)) throw new ApiError(502,'INVALID_API_RESPONSE');
-      return raw.departures.map(flight).filter(f=>f&&f.origin.icao===icao&&f.status==='ENROUTE')
+      return raw.departures.map(item=>localizeFlight(flight(item))).filter(f=>f&&f.origin.icao===icao&&f.status==='ENROUTE')
         .sort((a,b)=>Date.parse(b.actualDeparture)-Date.parse(a.actualDeparture))
         .filter((f,i,all)=>all.findIndex(x=>x.id===f.id)===i).slice(0,20);
     });
@@ -99,7 +105,7 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
       raw=>{
         if(!Array.isArray(raw.flights)) throw new ApiError(502,'INVALID_API_RESPONSE');
         return raw.flights.map(item=>{
-          const normalized=flight(item),last=position(item?.last_position);
+          const normalized=localizeFlight(flight(item)),last=position(item?.last_position);
           return normalized&&last?{...normalized,position:last}:null;
         }).filter(Boolean).slice(0,30);
       }
@@ -115,20 +121,21 @@ export function createAeroApi({mode=process.env.SKYROUTE_DATA_MODE||'mock', key=
         ...(partial?{warning:results[0].status==='rejected'?'飛行中の便を取得できませんでした':'出発予定便を取得できませんでした'}:{})};
     },
     detail:id=>cached('detail:'+id,TTL.detail,`/flights/${encodeURIComponent(id)}?max_pages=1`,raw=>{
-      const found=(raw.flights||[]).find(f=>f.fa_flight_id===id); if(!found) throw new ApiError(404,'DATA_UNAVAILABLE'); return flight(found);
+      const found=(raw.flights||[]).find(f=>f.fa_flight_id===id); if(!found) throw new ApiError(404,'DATA_UNAVAILABLE'); return localizeFlight(flight(found));
     }),
     route:id=>cached('route:'+id,TTL.route,`/flights/${encodeURIComponent(id)}/route`,filedRoute),
     track:id=>cached('track:'+id,TTL.track,`/flights/${encodeURIComponent(id)}/track`,track),
     position:id=>cached('position:'+id,TTL.position,`/flights/${encodeURIComponent(id)}/position`,raw=>position(raw.last_position)),
-    airport:id=>cached('airport:'+id,TTL.airport,`/airports/${encodeURIComponent(id)}`,airport),
-    weather:id=>cached('weather:'+id,TTL.weather,`/airports/${encodeURIComponent(id)}/weather/observations`,raw=>({
-      airport:id,
-      raw:Array.isArray(raw.observations)&&raw.observations.length?raw.observations[0]:null,
-    })),
-    forecast:id=>cached('forecast:'+id,TTL.forecast,`/airports/${encodeURIComponent(id)}/weather/forecast`,raw=>({
-      airport:id,
-      raw:raw&&typeof raw==='object'?raw:null,
-    })),
+    airport:id=>{
+      const found=localAirport(id);
+      if(!found)throw new ApiError(404,'DATA_UNAVAILABLE');
+      return Promise.resolve({
+        data:found,
+        source:mode,
+        fetchedAt:new Date(now()).toISOString(),
+        stale:false,
+      });
+    },
     usage:()=>{
       const instant=now();
       const jst=new Date(instant+9*3600000);
