@@ -329,8 +329,15 @@ export class FlightExperience {
       if(signal.aborted)return;
       this.filed=filed.status==='fulfilled'?filed.value.data:null;this.track=track.status==='fulfilled'?track.value.data:[];this.lastTrackFetch=Date.now();
       this.rebuildRoutes();this.placeStationary();
-      if(this.selected.status==='ENROUTE')this.liveView.setMessage('「現在位置更新」を押すと現在位置を取得します。');
-      else this.liveView.setMessage((this.route!.waypoints.length<2?'Route unavailable. ':'')+(this.selected.status==='CANCELLED'?'Cancelled · 飛行アニメーションは停止しています。':this.selected.status==='ARRIVED'?'Arrived':'Scheduled · Position not available yet.'));
+      if(this.selected.status==='ENROUTE'){
+        // Selecting a flying aircraft should immediately move the 3D scene to
+        // its latest known position. This is a one-shot fetch; continued
+        // updates remain manual to keep AeroAPI usage under control.
+        await this.fetchPosition(signal,true);
+        if(signal.aborted)return;
+      } else {
+        this.liveView.setMessage((this.route!.waypoints.length<2?'Route unavailable. ':'')+(this.selected.status==='CANCELLED'?'Cancelled · 飛行アニメーションは停止しています。':this.selected.status==='ARRIVED'?'Arrived':'Scheduled · Position not available yet.'));
+      }
       if(!signal.aborted)this.scheduleSelection();
     } catch(error) {if(!signal.aborted){this.liveView.setMessage(errorText(error)+' · DEMOを利用できます');this.scheduleSelection();}}
   }
@@ -595,24 +602,64 @@ export class FlightExperience {
     } else this.aircraft.setVisible(false);
     this.liveView.updatePosition(null);
   }
-  private async fetchPosition(signal:AbortSignal) {
+  private async fetchPosition(signal:AbortSignal,focusImmediately=false) {
     if(!this.selected||this.selected.status!=='ENROUTE'||this.viewMode!=='LIVE')return;
-    if(!this.lastPosition)this.liveView.setMessage('Waiting for live position...');
+    if(!this.lastPosition)this.liveView.setMessage('現在位置を取得しています…');
     try {
       const result=await this.provider.getPosition(this.selected.id,signal);if(signal.aborted)return;
-      if(!result.data) {this.liveView.setMessage('Position not available yet.');return;}
-      let next=result.data;
+      const fallback=this.track.length?this.track.at(-1)??null:null;
+      if(!result.data&&!fallback) {
+        this.liveView.setMessage('現在位置を取得できませんでした。しばらくして「現在位置更新」を押してください。');
+        return;
+      }
+      let next=result.data??fallback!;
       if(next.heading===null) {
         const previous=this.lastPosition||this.track.filter(p=>Date.parse(p.timestamp)<Date.parse(next.timestamp)).at(-1);
         if(previous&&distanceBetween({lat:previous.latitude,lng:previous.longitude},{lat:next.latitude,lng:next.longitude})>1)
           next={...next,heading:bearingBetween({lat:previous.latitude,lng:previous.longitude},{lat:next.latitude,lng:next.longitude})};
       }
-      if(this.interpolator.push(next))this.lastPosition=next;
+      const accepted=this.interpolator.push(next);
+      if(accepted){
+        this.lastPosition=next;
+        // On first selection, do not wait for the animation frame before
+        // repositioning the aircraft/camera. This makes ENROUTE selection
+        // visibly jump to the live aircraft just like scheduled flights jump
+        // to their departure airport.
+        if(focusImmediately)this.applyPosition(next,true);
+      }
       this.drawRemainingRoute();
-      this.liveView.setMessage(result.stale?'LIVE DATA TEMPORARILY UNAVAILABLE · showing last position':Date.now()-Date.parse(result.data.timestamp)>120000?'Position is older than 2 minutes.':this.autoPositionRefresh?'Live position · 自動更新 ON（1分ごと）':'Live position · 自動更新 OFF（手動取得）');
+      const age=Date.now()-Date.parse(next.timestamp);
+      const fallbackUsed=!result.data&&Boolean(fallback);
+      this.liveView.setMessage(
+        fallbackUsed
+          ?'最新の航跡位置を表示しています · 「現在位置更新」で再取得できます。'
+          :result.stale
+            ?'LIVE DATA TEMPORARILY UNAVAILABLE · showing last position'
+            :age>120000
+              ?'Position is older than 2 minutes.'
+              :this.autoPositionRefresh
+                ?'Live position · 自動更新 ON（1分ごと）'
+                :'Live position · 自動更新 OFF（手動取得）'
+      );
       this.updateSource(result.stale?' · cached position':'');
-      if(!this.raf)this.animateLive();this.debug();
-    } catch(error) {if(!signal.aborted)this.liveView.setMessage('LIVE DATA TEMPORARILY UNAVAILABLE · '+errorText(error));}
+      if(!this.raf)this.animateLive();
+      this.debug();
+    } catch(error) {
+      if(signal.aborted)return;
+      const fallback=this.track.length?this.track.at(-1)??null:null;
+      if(fallback){
+        if(this.interpolator.push(fallback)){
+          this.lastPosition=fallback;
+          if(focusImmediately)this.applyPosition(fallback,true);
+        }
+        this.drawRemainingRoute();
+        if(!this.raf)this.animateLive();
+        this.liveView.setMessage('現在位置APIを取得できないため、最新の航跡位置を表示しています。');
+        this.debug();
+        return;
+      }
+      this.liveView.setMessage('LIVE DATA TEMPORARILY UNAVAILABLE · '+errorText(error));
+    }
   }
   private animateLive=()=>{
     this.raf=requestAnimationFrame(this.animateLive);
