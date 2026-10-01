@@ -89,9 +89,7 @@ FlightAware AeroAPIから実際の運航データを取得します。
 - Filed Route
 - Actual Track
 
-現在位置は原則として手動更新です。
-
-「自動更新」をONにした場合のみ、一定間隔で現在位置を再取得します。
+飛行中便の現在位置は、便一覧からその便を選んだ時に1回だけ取得します。Preview FlightとReplay Trackは、その選択時位置を基準に動作し、再生操作では現在位置APIを追加呼び出ししません。
 
 ### DEMO
 
@@ -176,8 +174,8 @@ SkyRouteでは、1つのAPIだけに依存せず、複数の情報源を組み�
 
 | 情報 | 主な取得元 | 用途 |
 |---|---|---|
-| METAR | FlightAware AeroAPI | 出発・到着空港の現在観測 |
-| TAF | FlightAware AeroAPI | 出発・到着空港の気象予報 |
+| METAR | NOAA Aviation Weather Center | 出発・到着空港の現在観測 |
+| TAF | NOAA Aviation Weather Center | 出発・到着空港の気象予報 |
 | SIGMET | NOAA Aviation Weather Center | 航路周辺の危険気象 |
 | 降水NOWCAST | 気象庁 | 現在～約60分後の降水 |
 | 雷NOWCAST | 気象庁 | 雷活動度 |
@@ -193,7 +191,7 @@ SIGMETとNOWCASTはデフォルトでONです。
 
 METARは空港の現在の気象観測です。
 
-SkyRouteではAeroAPIの空港気象観測APIから、出発空港と到着空港の最新観測を取得します。
+SkyRouteではNOAA Aviation Weather CenterのData APIから、出発空港と到着空港の最新METARを取得します。
 
 主にAI解説で、
 
@@ -214,11 +212,7 @@ SkyRouteではAeroAPIの空港気象観測APIから、出発空港と到着空�
 
 TAFは空港の将来の気象予報です。
 
-SkyRouteではAeroAPIの
-
-`/airports/{ICAO}/weather/forecast`
-
-から取得します。
+SkyRouteではNOAA Aviation Weather CenterのTAF Data APIから取得します。
 
 AI解説ではMETARとTAFを区別し、
 
@@ -446,16 +440,18 @@ FlightAware側の利用統計は即時反映ではないため、最終的な請
 ```text
 FlightAware AeroAPI
  ├─ 出発便
- ├─ 便詳細
- ├─ 現在位置
+ ├─ 必要時の便詳細
+ ├─ 選択時の現在位置
  ├─ Actual Track
  ├─ Filed Route
- ├─ 空港情報
- ├─ METAR
- ├─ TAF
  └─ Account Usage
 
+SkyRoute ローカル空港マスタ
+ └─ 日本国内空港の名称・座標・標高
+
 NOAA Aviation Weather Center
+ ├─ METAR
+ ├─ TAF
  └─ International SIGMET
       └─ 日本(RJJJ)はJMA発表情報を含む
 
