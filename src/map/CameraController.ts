@@ -10,7 +10,7 @@ import { lerp, lerpAngle, clamp } from '../utils/interpolation';
 export type CameraMode = 'CLOSE' | 'FOLLOW' | 'COCKPIT' | 'OVERVIEW' | 'FREE';
 
 export class CameraController {
-  private mode: CameraMode = 'CLOSE'; // Default to close chase so aircraft is immediately clear
+  private mode: CameraMode = 'FOLLOW'; // Default to the normal rear follow view
   private map: any = null;
 
   // Smoothed camera state
@@ -299,4 +299,5 @@ export class CameraController {
     }
   }
 }
+
 

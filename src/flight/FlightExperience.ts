@@ -17,6 +17,7 @@ import type { FlightRoute, TelemetryData } from './types';
 import { FlightPanel } from '../ui/FlightPanel';
 import { FlightInfo, demoCommentary } from '../ui/FlightInfo';
 import { PlaybackControls } from '../ui/PlaybackControls';
+import { WeatherControls } from '../ui/WeatherControls';
 import { MapControls } from '../ui/MapControls';
 import { PanelVisibility } from '../ui/PanelVisibility';
 import { LiveFlightView } from '../ui/LiveFlightView';
@@ -64,6 +65,7 @@ export class FlightExperience {
   private animator:FlightAnimator;
   private playback:PlaybackControls;
   private controls:MapControls;
+  private weatherControls:WeatherControls;
   private aircraftModelManuallySelected=false;
   private statusLabel:HTMLElement;
   private mapStatus:HTMLElement;
@@ -86,9 +88,13 @@ export class FlightExperience {
 
     const nowcastRoot=document.createElement('div');
     nowcastRoot.id='nowcast-panel';
+    const weatherControlsRoot=document.createElement('div');
+    weatherControlsRoot.className='weather-controls';
+    const nowcastContent=document.createElement('div');
+    nowcastContent.className='nowcast-content';
+    nowcastRoot.append(weatherControlsRoot,nowcastContent);
     element('app').append(nowcastRoot);
-    this.nowcastPanel=new NowcastPanel(nowcastRoot);
-    nowcastRoot.addEventListener('skyroute-nowcast-close',()=>void this.toggleNowcast(false));
+    this.nowcastPanel=new NowcastPanel(nowcastContent);
 
     this.animator=new FlightAnimator(t=>{
       if(this.dataMode==='LIVE'&&this.viewMode==='LIVE')return;
@@ -108,17 +114,19 @@ export class FlightExperience {
       onMapModeChange:mode=>{map.mode=mode;},onCameraModeChange:mode=>{this.camera.setMode(mode);this.refreshCamera();},onAircraftModelChange:modelUrl=>this.setAircraftModel(modelUrl,true),
       onOffsetChange:heading=>{this.camera.setHeadingOffset(heading);this.refreshCamera();},onTiltChange:tilt=>{this.camera.setTilt(tilt);this.refreshCamera();},onRotateView:degrees=>this.camera.rotateOnce(degrees),
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
+    });
+    this.weatherControls=new WeatherControls(weatherControlsRoot,{
       onSigmetToggle:enabled=>void this.toggleSigmet(enabled),
       onNowcastToggle:enabled=>void this.toggleNowcast(enabled),
       onNowcast3DTimeChange:mode=>this.nowcast3D.setTimeMode(mode),
       onNowcast3DLayerToggle:(layer,enabled)=>this.nowcast3D.setLayerEnabled(layer,enabled),
     });
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
-    this.sigmet.onStatusChange(status=>this.controls.setSigmetState(status.enabled,status.message,status.count));
+    this.sigmet.onStatusChange(status=>this.weatherControls.setSigmetState(status.enabled,status.message,status.count));
     // Weather layers are ON by default. They wait for a selected route/airports,
     // then fetch automatically as soon as the required context becomes available.
     void this.sigmet.setEnabled(true);
-    this.controls.setNowcastState(true,'出発・到着空港を選択すると自動取得');
+    this.weatherControls.setNowcastState(true,'出発・到着空港を選択すると自動取得');
     void this.nowcastPanel.setEnabled(true);
     this.nowcast3D.setEnabled(true);
     new PanelVisibility();
@@ -140,11 +148,16 @@ export class FlightExperience {
     });
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
-    modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><button id="refresh-flights">更新</button><span id="data-source-status" role="status">「更新」を押すと便一覧を取得します</span>';
+    modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><span id="data-source-status" role="status">LIVE</span>';
     const toolbarItems=toolbar.querySelector('.panel-visibility-items') ?? toolbar;
     toolbarItems.append(modes);this.statusLabel=element('data-source-status');
     element('data-live').onclick=()=>void this.setMode('LIVE');element('data-demo').onclick=()=>void this.setMode('DEMO');
-    element('refresh-flights').onclick=()=>void this.refreshList();
+    const listHeader=document.querySelector<HTMLElement>('[data-panel-id="flight-panel-root"] .mobile-panel-card-title')!;
+    const refresh=document.createElement('button');
+    refresh.id='refresh-flights';refresh.type='button';refresh.textContent='更新';
+    refresh.title='便一覧を取得（API通信が発生します）';
+    refresh.onclick=()=>void this.refreshList();
+    listHeader.append(refresh);
     const topBar=document.getElementById('top-app-bar')||toolbar;
     new ResizeObserver(()=>element('app').style.setProperty('--top-controls-height',topBar.getBoundingClientRect().height+'px')).observe(topBar);
     this.demoPanel.onSelect(id=>void this.selectDemo(id));
@@ -155,7 +168,7 @@ export class FlightExperience {
   private setAutomaticAircraftModel(modelUrl:string) {if(!this.aircraftModelManuallySelected)this.setAircraftModel(modelUrl);}
   private showInitialHanedaScene() {
     // Startup is deliberately API-free. Pick a bundled aircraft and park it on Haneda's apron.
-    // Do not call camera.update() here: CLOSE mode would zoom to chase-camera distance.
+    // Initialize the north-facing aircraft with its normal rear FOLLOW camera.
     const parked:TelemetryData={lat:35.5463558,lng:139.7833912,altitude:10,speedKmh:0,heading:0,pitch:0,roll:0,progress:0,distanceRemainingKm:0,totalDistanceKm:0,isClimbing:false,isDescent:false,flightPhase:'Landed'};
     this.currentTelemetry=parked;
     this.aircraft.setScale(AIRCRAFT_SCALE_NORMAL);
@@ -190,12 +203,12 @@ export class FlightExperience {
   }
   private async toggleSigmet(enabled:boolean) {
     const status=await this.sigmet.setEnabled(enabled);
-    this.controls.setSigmetState(status.enabled,status.message,status.count);
+    this.weatherControls.setSigmetState(status.enabled,status.message,status.count);
   }
   private async toggleNowcast(enabled:boolean) {
     this.nowcast3D.setEnabled(enabled);
     await this.nowcastPanel.setEnabled(enabled);
-    this.controls.setNowcastState(enabled,enabled?'出発・到着空港の現在/約60分後 + 3D雨/雷/竜巻':'NOWCAST OFF');
+    this.weatherControls.setNowcastState(enabled,enabled?'出発・到着空港の現在/約60分後 + 3D雨/雷/竜巻':'NOWCAST OFF');
   }
   private toNowcastAirport(value:{code?:string;iata?:string|null;icao?:string;name?:string|null;lat?:number;lng?:number;latitude?:number|null;longitude?:number|null}):NowcastAirport|null {
     const lat=value.lat??value.latitude;
@@ -231,7 +244,7 @@ export class FlightExperience {
       this.demoPanel.setDepartures(departures,departures[0].id);await this.selectDemo(departures[0].id);
     } else {
       element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
-      this.liveView.setAirport(this.selectedAirport);this.liveView.showList([],'','空港を選択して「更新」を押すと便一覧を取得します。');this.statusLabel.textContent='「更新」を押すと便一覧を取得します';
+      this.liveView.setAirport(this.selectedAirport);this.liveView.showList([],'','空港を選択して「更新」を押すと便一覧を取得します。');this.statusLabel.textContent='LIVE';
     }
   }
   private async changeAirport(icao:string) {
@@ -243,7 +256,7 @@ export class FlightExperience {
     element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
     this.listAbort.abort();this.listAbort=new AbortController();
     this.liveView.showList([],'','空港を選択して「更新」を押すと便一覧を取得します。');
-    this.statusLabel.textContent='「更新」を押すと便一覧を取得します';
+    this.statusLabel.textContent='LIVE';
   }
   private async selectDemo(id:string) {
     this.cancelSelection();const signal=this.selectionAbort.signal;
@@ -385,9 +398,9 @@ export class FlightExperience {
       panel.innerHTML=`<div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`;
     }
     if(modelNote){
-      const created=this.lastAiCreatedAt?new Intl.DateTimeFormat('ja-JP',{hour:'2-digit',minute:'2-digit'}).format(new Date(this.lastAiCreatedAt)):'';
+      const created=this.lastAiCreatedAt?new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(this.lastAiCreatedAt)):'';
       modelNote.hidden=false;
-      modelNote.textContent=`AIモデル: ${this.lastAiModel}${created?' · 作成 '+created:''}`;
+      modelNote.textContent=`AIモデル: ${this.lastAiModel}${created?' · 作成 '+created+' JST':''}`;
     }
   }
   private async speakAiCommentary() {
@@ -859,3 +872,4 @@ export class FlightExperience {
     positionAgeSeconds:this.lastPosition?Math.round((Date.now()-Date.parse(this.lastPosition.timestamp))/1000):null,
     altitudeSource:this.lastPosition?.altitudeEstimated?'estimated':this.lastPosition?.altitudeMeters!=null?'reported':'unavailable',lastPositionUpdate:this.lastPosition?.timestamp});}
 }
+

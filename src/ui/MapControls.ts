@@ -16,25 +16,14 @@ export interface MapControlsHandlers {
   onOffsetChange?: (offsetDeg: number) => void;
   onTiltChange?: (tiltDeg: number) => void;
   onRotateView?: (degrees: number) => void;
-  onSigmetToggle?: (enabled: boolean) => void;
-  onNowcastToggle?: (enabled: boolean) => void;
-  onNowcast3DTimeChange?: (mode: 'current' | 'forecast60') => void;
-  onNowcast3DLayerToggle?: (layer: 'rain' | 'thunder' | 'tornado', enabled: boolean) => void;
 }
 
 export class MapControls {
   private container: HTMLElement;
   private handlers: MapControlsHandlers;
   private currentMapMode: 'HYBRID' | 'SATELLITE' = 'HYBRID';
-  private currentCameraMode: CameraMode = 'CLOSE';
+  private currentCameraMode: CameraMode = 'FOLLOW';
   private currentAircraftModelUrl = AIRCRAFT_MODEL_URL;
-  private sigmetEnabled = true;
-  private nowcastEnabled = true;
-  private nowcast3DLayers: Record<'rain'|'thunder'|'tornado',boolean> = {
-    rain:true,
-    thunder:true,
-    tornado:true,
-  };
 
   constructor(container: HTMLElement, handlers: MapControlsHandlers) {
     this.container = container;
@@ -59,31 +48,6 @@ export class MapControls {
     this.currentAircraftModelUrl = modelUrl || AIRCRAFT_MODEL_URL;
     const select = this.container.querySelector<HTMLSelectElement>('#aircraft-model-select');
     if (select) select.value = this.currentAircraftModelUrl;
-  }
-
-  public setSigmetState(enabled: boolean, status?: string, count?: number): void {
-    this.sigmetEnabled = enabled;
-    const button = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
-    if (!button) return;
-    button.classList.toggle('active', enabled);
-    button.setAttribute('aria-pressed', String(enabled));
-    button.textContent = enabled
-      ? (count === undefined ? 'SIGMET ON' : `SIGMET ON · ${count}件`)
-      : 'SIGMET OFF';
-    button.title = status || (enabled ? 'SIGMET表示をOFFにする' : '航路周辺のSIGMETを表示');
-  }
-
-  public setNowcastState(enabled: boolean, status?: string): void {
-    this.nowcastEnabled = enabled;
-    const button = this.container.querySelector<HTMLButtonElement>('#nowcast-toggle');
-    if (!button) return;
-    button.classList.toggle('active', enabled);
-    button.setAttribute('aria-pressed', String(enabled));
-    button.textContent = enabled ? 'NOWCAST ON' : 'NOWCAST OFF';
-    button.title = status || (enabled ? '空港ナウキャストを閉じる' : '出発・到着空港のナウキャストを表示');
-    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-time-btn,.nowcast-3d-layer-btn').forEach(btn=>{
-      btn.disabled=!enabled;
-    });
   }
 
   public setMapMode(mode: 'HYBRID' | 'SATELLITE'): void {
@@ -130,14 +94,14 @@ export class MapControls {
         <div class="toolbar-group">
           <span class="group-label">CAMERA</span>
           <div class="segmented-control">
+            <button class="cam-mode-btn ${this.currentCameraMode === 'COCKPIT' ? 'active' : ''}" data-mode="COCKPIT" title="パイロット視点（操縦席）">
+              COCKPIT
+            </button>
             <button class="cam-mode-btn ${this.currentCameraMode === 'CLOSE' ? 'active' : ''}" data-mode="CLOSE" title="機体のすぐ後ろ（近接追従）">
               CLOSE
             </button>
             <button class="cam-mode-btn ${this.currentCameraMode === 'FOLLOW' ? 'active' : ''}" data-mode="FOLLOW" title="後方斜め上（通常追従）">
               FOLLOW
-            </button>
-            <button class="cam-mode-btn ${this.currentCameraMode === 'COCKPIT' ? 'active' : ''}" data-mode="COCKPIT" title="パイロット視点（操縦席）">
-              COCKPIT
             </button>
             <button class="cam-mode-btn ${this.currentCameraMode === 'OVERVIEW' ? 'active' : ''}" data-mode="OVERVIEW" title="全体俯瞰（機体拡大）">
               OVERVIEW
@@ -158,53 +122,6 @@ export class MapControls {
             <button id="map-mode-satellite" class="map-layer-btn ${this.currentMapMode === 'SATELLITE' ? 'active' : ''}" data-mode="SATELLITE">
               SATELLITE
             </button>
-          </div>
-        </div>
-
-        <!-- Aviation Weather -->
-        <div class="toolbar-group">
-          <span class="group-label">WEATHER</span>
-          <div class="segmented-control">
-            <button id="sigmet-toggle" class="map-layer-btn sigmet-toggle-btn active" type="button" aria-pressed="true" title="航路周辺のSIGMETを表示中">
-              SIGMET ON
-            </button>
-            <button id="nowcast-toggle" class="map-layer-btn nowcast-toggle-btn active" type="button" aria-pressed="true" title="出発・到着空港のナウキャストを表示中">
-              NOWCAST ON
-            </button>
-          </div>
-          <div class="nowcast-3d-control">
-            <span class="nowcast-3d-label">3D気象</span>
-            <div class="segmented-control nowcast-3d-layer-group" aria-label="3D気象レイヤー">
-              <button class="map-layer-btn nowcast-3d-layer-btn active" data-nowcast-layer="rain" type="button" aria-pressed="true" title="3D降水の表示・非表示">雨</button>
-              <button class="map-layer-btn nowcast-3d-layer-btn active" data-nowcast-layer="thunder" type="button" aria-pressed="true" title="3D雷活動度の表示・非表示">雷</button>
-              <button class="map-layer-btn nowcast-3d-layer-btn active" data-nowcast-layer="tornado" type="button" aria-pressed="true" title="3D竜巻発生確度の表示・非表示">竜巻</button>
-            </div>
-            <div class="segmented-control">
-              <button class="map-layer-btn nowcast-3d-time-btn active" data-nowcast-time="current" type="button" title="現在の3D気象を表示">NOW</button>
-              <button class="map-layer-btn nowcast-3d-time-btn" data-nowcast-time="forecast60" type="button" title="約60分後の3D気象を表示">+60分</button>
-            </div>
-            <span class="nowcast-3d-note">出発・到着空港の周辺30kmのみ · 高さ=降水強度/危険度の視覚表現（実際の雲・雷・竜巻の高さではありません）</span>
-          </div>
-          <div class="nowcast-rain-legend" aria-label="NOWCAST 3D気象凡例">
-            <span><i class="rain3d weak"></i>雨 1–5</span>
-            <span><i class="rain3d rain"></i>5–10</span>
-            <span><i class="rain3d moderate"></i>10–20</span>
-            <span><i class="rain3d strong"></i>20–30</span>
-            <span><i class="rain3d heavy"></i>30–50</span>
-            <span><i class="rain3d severe"></i>50+ mm/h</span>
-            <span><i class="weather3d thunder"></i>雷 活動度1–4</span>
-            <span><i class="weather3d tornado"></i>竜巻 発生確度1–2</span>
-          </div>
-          <div class="sigmet-source-note">
-            日本(RJJJ): 発表 JMA(RJTD) / 配信 NOAA Aviation Weather Center
-          </div>
-          <div class="sigmet-color-legend" aria-label="SIGMET色凡例">
-            <span><i class="sigmet-color turb"></i>乱気流</span>
-            <span><i class="sigmet-color ice"></i>着氷</span>
-            <span><i class="sigmet-color ash"></i>火山灰</span>
-            <span><i class="sigmet-color tc"></i>台風/熱帯低気圧</span>
-            <span><i class="sigmet-color mtw"></i>山岳波</span>
-            <span><i class="sigmet-color other"></i>その他/雷雨等</span>
           </div>
         </div>
 
@@ -282,46 +199,6 @@ export class MapControls {
       });
     }
 
-    const sigmetBtn = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
-    if (sigmetBtn) {
-      sigmetBtn.addEventListener('click', () => {
-        this.sigmetEnabled = !this.sigmetEnabled;
-        this.setSigmetState(this.sigmetEnabled, this.sigmetEnabled ? 'SIGMET 読込中…' : 'SIGMET OFF');
-        this.handlers.onSigmetToggle?.(this.sigmetEnabled);
-      });
-    }
-
-    const nowcastBtn = this.container.querySelector<HTMLButtonElement>('#nowcast-toggle');
-    if (nowcastBtn) {
-      nowcastBtn.addEventListener('click', () => {
-        this.nowcastEnabled = !this.nowcastEnabled;
-        this.setNowcastState(this.nowcastEnabled, this.nowcastEnabled ? 'ナウキャスト読込中…' : 'NOWCAST OFF');
-        this.handlers.onNowcastToggle?.(this.nowcastEnabled);
-      });
-    }
-
-    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-layer-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        if(!this.nowcastEnabled)return;
-        const layer=btn.dataset.nowcastLayer as 'rain'|'thunder'|'tornado'|undefined;
-        if(!layer)return;
-        const enabled=!this.nowcast3DLayers[layer];
-        this.nowcast3DLayers[layer]=enabled;
-        btn.classList.toggle('active',enabled);
-        btn.setAttribute('aria-pressed',String(enabled));
-        this.handlers.onNowcast3DLayerToggle?.(layer,enabled);
-      });
-    });
-
-    this.container.querySelectorAll<HTMLButtonElement>('.nowcast-3d-time-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        if(!this.nowcastEnabled)return;
-        const mode=btn.dataset.nowcastTime==='forecast60'?'forecast60':'current';
-        this.container.querySelectorAll('.nowcast-3d-time-btn').forEach(other=>other.classList.toggle('active',other===btn));
-        this.handlers.onNowcast3DTimeChange?.(mode);
-      });
-    });
-
     const mobileControlsBtn = this.container.querySelector<HTMLButtonElement>('#mobile-map-controls-btn');
     const toolbar = this.container.querySelector('.map-controls-toolbar');
     if (mobileControlsBtn && toolbar) {
@@ -373,3 +250,4 @@ export class MapControls {
     });
   }
 }
+

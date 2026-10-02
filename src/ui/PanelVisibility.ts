@@ -27,11 +27,11 @@ export class PanelVisibility {
     const panelDefs = [
       {id:'flight-panel-root',label:'便一覧',contentDriven:false,placeholder:'便一覧を表示します'},
       {id:'flight-info-root',label:'飛行情報',contentDriven:false,placeholder:'便を選択すると飛行情報を表示します'},
-      {id:'map-controls-container',label:'カメラ',contentDriven:false,placeholder:'カメラ・地図・気象操作を表示します'},
+      {id:'map-controls-container',label:'カメラ',contentDriven:false,placeholder:'カメラ・地図操作を表示します'},
       {id:'playback-container',label:'再生バー',contentDriven:false,placeholder:'Preview / Replay の再生操作を表示します'},
       {id:'flight-map-status',label:'高度・時間',contentDriven:true,placeholder:'便を選択すると高度・残距離・残時間を表示します'},
       {id:'route-legend',label:'ルート色',contentDriven:true,placeholder:'ルート表示時に ACTUAL / FILED / ESTIMATED の凡例を表示します'},
-      {id:'nowcast-panel',label:'NOWCAST',contentDriven:true,placeholder:'NOWCAST ONで出発・到着空港の気象情報を表示します'},
+      {id:'nowcast-panel',label:'WEATHER',contentDriven:true,placeholder:'SIGMET・NOWCASTの気象情報を表示します'},
     ] as const;
 
     const visibleById = new Map<string,boolean>(panelDefs.map(def=>[def.id,true]));
@@ -170,3 +170,4 @@ export class PanelVisibility {
     }).observe(playback);
   }
 }
+

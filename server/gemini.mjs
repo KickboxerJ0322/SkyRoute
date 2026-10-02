@@ -2,6 +2,25 @@ import { ApiError } from './cache.mjs';
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
+// Normalize explicit UTC/offset timestamps before they reach the language model.
+// This includes JMA's compact UTC basetime/validtime values and date rollover.
+export function commentaryJapanTime(value) {
+  if (Array.isArray(value)) return value.map(commentaryJapanTime);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, commentaryJapanTime(item)]));
+  }
+  if (typeof value !== 'string') return value;
+  let timestamp = value;
+  if (/^\d{14}$/.test(value)) {
+    timestamp = `${value.slice(0,4)}-${value.slice(4,6)}-${value.slice(6,8)}T${value.slice(8,10)}:${value.slice(10,12)}:${value.slice(12,14)}Z`;
+  } else if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)) {
+    return value;
+  }
+  const ms = Date.parse(timestamp);
+  if (!Number.isFinite(ms)) return value;
+  return new Date(ms + 9 * 60 * 60 * 1000).toISOString().slice(0,19) + '+09:00';
+}
+
 export function createFlightCommentator({
   key = process.env.GEMINI_API_KEY,
   model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
@@ -12,6 +31,8 @@ export function createFlightCommentator({
 
     const systemInstruction = [
       'あなたはSkyRouteの航空データ解説AIです。専門知識のない人が、そのまま音声で聞いて理解できる自然な日本語で説明してください。',
+      '時刻はすべて日本時間（JST / Asia/Tokyo / UTC+09:00）で説明してください。入力の +09:00 はすでに日本時間へ変換済みなので、さらに9時間を加えないでください。日付をまたぐ場合は日付も明示してください。海外の空港についても日本時間で説明してください。METAR・TAFの原文などに残るZ/UTC表記は日本時間へ換算してください。',
+      '作成時刻と運航時刻は別です。予定・推定・実績を区別し、未取得の時刻を推測しないでください。',
       '入力はAeroAPIなどの公開データです。入力にない事実は作らないでください。',
       '予定通りかどうかは予定/推定/実績時刻や遅延値がある場合だけ評価してください。コードや略語をそのまま読まず、意味を日本語に言い換えてください。たとえば ENROUTE は「飛行中」、C は「上昇中」、D は「下降中」、A は可能なら位置情報源の意味を説明してください。',
       'ルート逸脱の有無は評価・言及しないでください。Filed Route座標や textualRoute は、取得できている内容を事実として紹介するだけにしてください。',
@@ -31,7 +52,7 @@ export function createFlightCommentator({
       systemInstruction: { parts: [{ text: systemInstruction }] },
       contents: [{
         role: 'user',
-        parts: [{ text: '次のフライトデータを解説してください。\n' + JSON.stringify(payload) }],
+        parts: [{ text: '次のフライトデータを解説してください。\n' + JSON.stringify({...commentaryJapanTime(payload), explanationTimeZone:'Asia/Tokyo (JST, UTC+09:00)', commentaryRequestedAt:commentaryJapanTime(new Date().toISOString())}) }],
       }],
       generationConfig: {
         temperature: 0.2,
@@ -78,3 +99,4 @@ export function createFlightCommentator({
     return { text: compact, model };
   };
 }
+

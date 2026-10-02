@@ -5,7 +5,7 @@ import { createAeroApi, TTL } from '../server/aeroApi.mjs';
 import { Cache, ApiError } from '../server/cache.mjs';
 import { flight, position, track, status } from '../server/normalize.mjs';
 import { createApp } from '../server/index.mjs';
-import { createFlightCommentator, DEFAULT_GEMINI_MODEL } from '../server/gemini.mjs';
+import { createFlightCommentator, commentaryJapanTime, DEFAULT_GEMINI_MODEL } from '../server/gemini.mjs';
 import { localAirport } from '../server/localAirports.mjs';
 import { createAviationWeatherService } from '../server/aviationWeather.mjs';
 const compiled=await build({stdin:{contents:`export {chooseRoute, formatJst} from './src/flight/AeroApiFlightProvider'; export {greatCirclePoints} from './src/flight/liveGeometry'; export {LiveFlightInterpolator} from './src/flight/LiveFlightInterpolator'; export {durationForDistance} from './src/flight/FlightAnimator';`,resolveDir:process.cwd()},bundle:true,write:false,format:'esm',platform:'node'});
@@ -214,4 +214,30 @@ test('AeroAPI usage is scoped to the current JST calendar month and rolls over a
 test('one unavailable list preserves the other list with an explicit partial warning',async()=>{
   const api=createAeroApi({mode:'live',key:'test',now:()=>now,logger:silent,fetcher:async url=>url.includes('scheduled_departures')?Response.json({scheduled_departures:[rawFlight]}):new Response('',{status:404})});
   const result=await api.departures();assert.equal(result.data.length,1);assert.equal(result.stale,true);assert.ok(result.warning);
+});
+
+
+test('AI commentary timestamps are normalized to JST before the model receives them', async()=>{
+  const payload={observedAt:'2026-10-02T10:56:00Z',flight:{actualDeparture:'2026-10-02T10:38:00Z',estimatedArrival:'2026-10-02T12:36:00Z',actualArrival:null},nowcast:{validtime:'20261002155000'},track:[{timestamp:'2026-10-02T23:55:00Z'}]};
+  const converted=commentaryJapanTime(payload);
+  assert.equal(converted.flight.actualDeparture,'2026-10-02T19:38:00+09:00');
+  assert.equal(converted.flight.estimatedArrival,'2026-10-02T21:36:00+09:00');
+  assert.equal(converted.observedAt,'2026-10-02T19:56:00+09:00');
+  assert.equal(converted.nowcast.validtime,'2026-10-03T00:50:00+09:00');
+  assert.equal(converted.track[0].timestamp,'2026-10-03T08:55:00+09:00');
+  assert.equal(converted.flight.actualArrival,null);
+  assert.equal(commentaryJapanTime(converted.flight.actualDeparture),converted.flight.actualDeparture);
+  assert.equal(commentaryJapanTime('2026-10-02T03:38:00-07:00'),converted.flight.actualDeparture);
+  assert.equal(commentaryJapanTime('unknown'),'unknown');
+  assert.equal(payload.flight.actualDeparture,'2026-10-02T10:38:00Z');
+  let request;
+  const ai=createFlightCommentator({key:'test',fetcher:async(_url,options)=>{
+    request=JSON.parse(options.body);
+    return Response.json({candidates:[{content:{parts:[{text:'日本時間の解説です。'}]}}]});
+  }});
+  await ai(payload);
+  const input=JSON.parse(request.contents[0].parts[0].text.split('\n').slice(1).join('\n'));
+  assert.deepEqual(input.flight,converted.flight);
+  assert.match(input.explanationTimeZone,/Asia\/Tokyo/);
+  assert.match(request.systemInstruction.parts[0].text,/さらに9時間を加えない/);
 });

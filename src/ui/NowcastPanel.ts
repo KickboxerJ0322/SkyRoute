@@ -266,7 +266,6 @@ export class NowcastPanel {
     this.container.innerHTML=`
       <div class="nowcast-panel-head">
         <div><strong>JMA NOWCAST</strong><span> 出発・到着空港</span></div>
-        <button type="button" id="nowcast-panel-close" aria-label="ナウキャストを閉じる">×</button>
       </div>
       <div class="nowcast-airports">
         ${airports.map(({airport,context})=>`
@@ -284,10 +283,7 @@ export class NowcastPanel {
         `).join('')}
       </div>
       <div class="nowcast-foot">出典: 気象庁 · 高解像度降水ナウキャスト / 雷ナウキャスト / 竜巻発生確度ナウキャスト · 空港直上/周辺10kmを構造化 · 中央十字＝空港位置</div>`;
-    this.container.querySelector<HTMLButtonElement>('#nowcast-panel-close')?.addEventListener('click',()=>{
-      this.enabled=false;
-      this.syncVisibility();
-      this.container.dispatchEvent(new CustomEvent('skyroute-nowcast-close',{bubbles:true}));
-    });
+
   }
 }
+
