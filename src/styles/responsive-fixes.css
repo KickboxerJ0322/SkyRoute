@@ -2476,9 +2476,25 @@
 .weather-controls .sigmet-source-note { border-top: 1px solid rgba(255,255,255,.15); padding-top: 12px; }
 .nowcast-content { margin-top: 14px; }
 .nowcast-content[hidden] { display: none !important; }
-#mobile-panel-stack .mobile-panel-card-title:has(#refresh-flights) { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-#refresh-flights { background: #a64b08; color: #fff; border: 1px solid #ffb454; border-radius: 6px; padding: 6px 16px; font: inherit; cursor: pointer; }
-#refresh-flights:hover:not(:disabled) { background: #c45d10; }
+#app #mobile-panel-stack .mobile-panel-card-title:has(#refresh-flights) {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#refresh-flights {
+  margin-left: auto;
+  flex: 0 0 auto;
+  background: #102741;
+  color: var(--accent-cyan);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+#refresh-flights:hover:not(:disabled),
+#refresh-flights:focus-visible { border-color: var(--accent-cyan); background: #163652; }
 #refresh-flights:disabled { opacity: .45; cursor: default; }
 @media (max-width: 768px) {
   #app.mobile-stacked-panels #mobile-panel-stack:not([hidden]) {
