@@ -109,7 +109,11 @@ async function initSkyRoute(): Promise<void> {
     }
   };
 
-  homeButton?.addEventListener('click', () => setMode('ROUTE'));
+  // Reload to clear the selected flight, playback, commentary and panel state.
+  // Startup returns to Haneda in LIVE mode without fetching the flight list.
+  homeButton?.setAttribute('title', 'リセットして初期画面に戻る');
+  homeButton?.setAttribute('aria-label', 'SkyRouteをリセットして初期画面に戻る');
+  homeButton?.addEventListener('click', () => window.location.reload());
   routeButton?.addEventListener('click', () => setMode('ROUTE'));
   infoButton?.addEventListener('click', () => setMode('INFO'));
   setMode('ROUTE');
