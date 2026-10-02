@@ -512,10 +512,26 @@ export class FlightExperience {
     if(!button||!panel)return;
     button.disabled=true;button.textContent='AI解析中…';panel.hidden=false;panel.textContent='運航・METAR・TAF・SIGMET・NOWCASTをGeminiで解析しています…';
     const sample=<T>(items:T[],max=28)=>items.length<=max?items:Array.from({length:max},(_,i)=>items[Math.round(i*(items.length-1)/(max-1))]);
+    // Capture the selected flight and position before asynchronous weather requests.
+    const signal=this.selectionAbort.signal;
+    const selected=this.selected;
+    const observedAt=new Date().toISOString();
+    const position=this.lastPosition?{...this.lastPosition}:null;
+    const viewMode=this.viewMode;
+    const derived=this.currentTelemetry?{flightPhase:this.currentTelemetry.flightPhase}:null;
+    const routeContext={
+      selectedType:this.route?.type??null,
+      filedRouteAvailable:!!this.filed?.waypoints.length,
+      textualRoute:selected.filedRouteText??null,
+      actualTrackPointCount:this.track.length,
+      filedWaypoints:this.filed?sample(this.filed.waypoints):[],
+      actualTrack:sample(this.track),
+    };
+    const isCurrent=()=>!signal.aborted&&this.selected===selected&&this.viewMode===viewMode;
     let weather:{origin:unknown;destination:unknown}={origin:null,destination:null};
     try {
-      const originCode=this.selected.origin.icao;
-      const destinationCode=this.selected.destination.icao;
+      const originCode=selected.origin.icao;
+      const destinationCode=selected.destination.icao;
       const [originWeather,destinationWeather,originForecast,destinationForecast]=await Promise.allSettled([
         originCode?this.provider.getWeather(originCode):Promise.resolve(null),
         destinationCode?this.provider.getWeather(destinationCode):Promise.resolve(null),
@@ -537,43 +553,37 @@ export class FlightExperience {
         },
       };
     } catch {}
+    if(!isCurrent()){button.disabled=false;button.textContent='AI解説';return;}
     const [sigmetResult,nowcastResult]=await Promise.allSettled([
       this.sigmet.getCommentaryContext(),
       this.nowcastPanel.getCommentaryContext(),
     ]);
     const sigmet=sigmetResult.status==='fulfilled'?sigmetResult.value:null;
     const nowcast=nowcastResult.status==='fulfilled'?nowcastResult.value:null;
+    if(!isCurrent()){button.disabled=false;button.textContent='AI解説';return;}
     const payload={
-      observedAt:new Date().toISOString(),
-      flight:this.selected,
-      currentPosition:this.lastPosition,
-      currentDerived:this.currentTelemetry?{
-        distanceRemainingKm:this.currentTelemetry.distanceRemainingKm,
-        flightPhase:this.currentTelemetry.flightPhase,
-      }:null,
-      route:{
-        selectedType:this.route?.type??null,
-        filedRouteAvailable:!!this.filed?.waypoints.length,
-        textualRoute:this.selected.filedRouteText??null,
-        actualTrackPointCount:this.track.length,
-        filedWaypoints:this.filed?sample(this.filed.waypoints):[],
-        actualTrack:sample(this.track),
-      },
+      observedAt,
+      flight:selected,
+      currentPosition:position,
+      currentDerived:derived,
+      route:routeContext,
       weather,
       sigmet,
       nowcast,
     };
     try {
       const response=await fetch('/api/ai/flight-commentary',{
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal,
       });
       const body=await response.json();
+      if(!isCurrent()){button.disabled=false;button.textContent='AI解説';return;}
       if(!response.ok)throw new Error(body.error||'AI_UNAVAILABLE');
       this.lastAiCommentary=String(body.text||'');
       this.lastAiModel=String(body.model||'');
       this.lastAiCreatedAt=new Date().toISOString();
       this.restoreAiCommentary();
     } catch(error) {
+      if(!isCurrent()){button.disabled=false;button.textContent='AI解説';return;}
       const code=error instanceof Error?error.message:'AI_UNAVAILABLE';
       panel.textContent=code==='AI_NOT_CONFIGURED'
         ?'Gemini APIキーがまだ設定されていません。設定後、このボタンから解説できます。'
