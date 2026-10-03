@@ -1,3 +1,4 @@
+import { NightOverlay } from '../map/NightMode';
 import { greatCirclePoints } from './liveGeometry';
 import { shapePreviewRoute } from './routeShaping';
 import { weatherWindDirection } from './weather';
@@ -66,6 +67,8 @@ export class FlightExperience {
   private playback:PlaybackControls;
   private controls:MapControls;
   private weatherControls:WeatherControls;
+  private nightOverlay:NightOverlay;
+  private playbackClock: { progress: number; time: number }[] = [];
   private aircraftModelManuallySelected=false;
   private statusLabel:HTMLElement;
   private mapStatus:HTMLElement;
@@ -96,8 +99,10 @@ export class FlightExperience {
     element('app').append(nowcastRoot);
     this.nowcastPanel=new NowcastPanel(nowcastContent);
 
+    this.nightOverlay=new NightOverlay(element('map-container'),(mode,dark,time)=>this.weatherControls?.setNightState(mode,dark,time));
     this.animator=new FlightAnimator(t=>{
       if(this.dataMode==='LIVE'&&this.viewMode==='LIVE')return;
+      this.updatePlaybackNight(t.progress);
       this.applyTelemetry(t);
       if(this.dataMode==='DEMO')this.demoInfo.updateTelemetry(t);
       else {
@@ -116,11 +121,13 @@ export class FlightExperience {
       onOpenMobileDepartures:()=>element('flight-panel-root').querySelector('.flight-panel')?.classList.toggle('open-mobile'),
     });
     this.weatherControls=new WeatherControls(weatherControlsRoot,{
+      onNightModeChange:mode=>this.nightOverlay.setMode(mode),
       onSigmetToggle:enabled=>void this.toggleSigmet(enabled),
       onNowcastToggle:enabled=>void this.toggleNowcast(enabled),
       onNowcast3DTimeChange:mode=>this.nowcast3D.setTimeMode(mode),
       onNowcast3DLayerToggle:(layer,enabled)=>this.nowcast3D.setLayerEnabled(layer,enabled),
     });
+    this.nightOverlay.setTime(Date.now());
     this.camera.onModeChange(mode=>{this.controls.setCameraMode(mode);this.aircraft.setScale(mode==='OVERVIEW'?AIRCRAFT_SCALE_OVERVIEW*this.camera.getOverviewScaleMultiplier():AIRCRAFT_SCALE_NORMAL);});
     this.sigmet.onStatusChange(status=>this.weatherControls.setSigmetState(status.enabled,status.message,status.count));
     // Weather layers are ON by default. They wait for a selected route/airports,
@@ -180,6 +187,15 @@ export class FlightExperience {
     this.camera.setHeadingOffset(0);
     this.camera.update(parked);
   }
+  private updatePlaybackNight(progress:number) {
+    const clock=this.playbackClock;
+    if(!clock.length){this.nightOverlay.setTime(Date.now());return;}
+    const index=clock.findIndex(point=>point.progress>=progress);
+    if(index<=0){this.nightOverlay.setTime(index===0?clock[0].time:clock.at(-1)!.time);return;}
+    const before=clock[index-1],after=clock[index];
+    const fraction=(progress-before.progress)/Math.max(1e-9,after.progress-before.progress);
+    this.nightOverlay.setTime(before.time+(after.time-before.time)*fraction);
+  }
   private syncPlayback() {this.playback.setPlayingState(this.animator.getIsPlaying(),this.animator.getDirection());}
   private refreshCamera() {if(this.currentTelemetry)this.camera.update(this.currentTelemetry);}
   private applyTelemetry(t:TelemetryData) {
@@ -229,7 +245,7 @@ export class FlightExperience {
   private cancelSelection() {
     this.selectionAbort.abort();this.selectionAbort=new AbortController();clearTimeout(this.selectionTimer);this.autoPositionRefresh=false;this.lastAiCommentary='';this.lastAiModel='';this.lastAiCreatedAt='';this.stopAiSpeech();cancelAnimationFrame(this.raf);this.raf=0;
     this.animator.pause();this.syncPlayback();this.interpolator.reset();this.lastPosition=null;this.selectionPositionAnchor=null;this.currentTelemetry=null;this.activeAnimationRoute=null;
-    this.route=null;this.filed=null;this.track=[];this.activeDemoRoute=null;this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
+    this.route=null;this.filed=null;this.track=[];this.activeDemoRoute=null;this.nightOverlay.setTime(Date.now());this.planned.clear();this.actual.clear();this.aircraft.setVisible(false);
     this.playback.clearRouteProfile();this.mapStatus.hidden=true;this.setRouteLegendVisible(false);this.sigmet.clearRoute();this.nowcastPanel.clear();this.nowcast3D.clear();
   }
   private stop() {this.cancelSelection();this.listAbort.abort();clearTimeout(this.listTimer);}
@@ -280,6 +296,11 @@ export class FlightExperience {
       departureWindDirectionDeg:winds.departure,
       arrivalWindDirectionDeg:winds.arrival,
     });
+    const demoTime=(await this.demo.getDepartures()).find(flight=>flight.id===id)?.scheduledTime??'09:30';
+    if(signal.aborted||this.dataMode!=='DEMO')return;
+    const japanDate=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+    const start=Date.parse(`${japanDate}T${demoTime}:00+09:00`);
+    this.playbackClock=[{progress:0,time:start},{progress:1,time:start+route.durationSeconds*1000}];
     this.activeDemoRoute=route;
     this.activeAnimationRoute=previewRoute;
     const demoOriginNowcast=this.toNowcastAirport(route.origin);
@@ -287,7 +308,7 @@ export class FlightExperience {
     this.nowcastPanel.setAirports(demoOriginNowcast,demoDestinationNowcast);
     this.nowcast3D.setAirports(demoOriginNowcast,demoDestinationNowcast);
     this.demoPanel.setSelectedRoute(id);this.demoInfo.setRoute(route);this.demoInfo.setDemoWind(winds.departure,winds.arrival);
-    this.planned.setRoute(previewRoute.waypoints,'ESTIMATED');this.camera.setRoute(previewRoute);this.sigmet.setRoute(previewRoute.waypoints);
+    this.planned.setRoute(previewRoute.waypoints,'ESTIMATED',true);this.camera.setRoute(previewRoute);this.sigmet.setRoute(previewRoute.waypoints);
     this.playback.setRouteProfile(previewRoute.waypoints);this.setRouteLegendVisible(true);
     this.lastAiCommentary=demoCommentary[id]??'';
     this.bindDemoActions();
@@ -699,6 +720,7 @@ export class FlightExperience {
     const p=this.interpolator.sample();if(p)this.applyPosition(p,true);
   };
   private applyPosition(p:SkyRoutePosition,updateHud:boolean) {
+    this.nightOverlay.setTime(Date.parse(p.timestamp));
     if(p.altitudeMeters===null){this.aircraft.setVisible(false);if(updateHud)this.liveView.updatePosition(p);return;}
     const destination=this.selected?.destination;
     const remaining=destination?.latitude!=null&&destination.longitude!=null?distanceBetween({lat:p.latitude,lng:p.longitude},{lat:destination.latitude,lng:destination.longitude})/1000:0;
@@ -755,6 +777,7 @@ export class FlightExperience {
     const previewPosition=this.selectionPositionAnchor??this.lastPosition;
 
     let route:SkyRouteRoute;
+    this.playbackClock=[];
 
     if(replay) {
       const anchor=previewPosition;
@@ -783,6 +806,11 @@ export class FlightExperience {
         this.liveView.setMessage('便選択時点までのReplay trackが不足しています。');
         return;
       }
+      const distances=[0];
+      for(let i=1;i<replayTrack.length;i++)distances.push(distances[i-1]+Math.max(10,distanceBetween(
+        {lat:replayTrack[i-1].latitude,lng:replayTrack[i-1].longitude},
+        {lat:replayTrack[i].latitude,lng:replayTrack[i].longitude})));
+      this.playbackClock=replayTrack.map((point,i)=>({progress:distances[i]/distances.at(-1)!,time:Date.parse(point.timestamp)}));
       route={
         type:'ACTUAL',
         altitudeEstimated:replayTrack.some(point=>point.altitudeEstimated),
@@ -850,9 +878,15 @@ export class FlightExperience {
         departureWindDirectionDeg:departureWind,
         arrivalWindDirectionDeg:arrivalWind,
       });
+    if(!replay){
+      const start=Date.parse(previewPosition?.timestamp??selected.actualDeparture??selected.estimatedDeparture??selected.scheduledDeparture??'');
+      const departure=Number.isFinite(start)?start:Date.now();
+      const arrival=Date.parse(selected.estimatedArrival??selected.scheduledArrival??'');
+      this.playbackClock=[{progress:0,time:departure},{progress:1,time:Number.isFinite(arrival)&&arrival>departure?arrival:departure+animationRoute.durationSeconds*1000}];
+    }
     this.activeAnimationRoute=animationRoute;
     this.sigmet.setRoute(animationRoute.waypoints);
-    this.planned.setRoute(route.type==='ACTUAL'?[]:animationRoute.waypoints,route.type);
+    this.planned.setRoute(route.type==='ACTUAL'?[]:animationRoute.waypoints,route.type,true);
     this.playback.setRouteProfile(animationRoute.waypoints);this.setRouteLegendVisible(true);
     this.enablePlayback(true);this.camera.setRoute(animationRoute);
     this.animator.setRoute(animationRoute);this.animator.play();this.syncPlayback();

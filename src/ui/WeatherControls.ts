@@ -1,11 +1,15 @@
+import type { NightMode } from '../map/NightMode';
+
 /** Weather controls remain mounted independently of NOWCAST data refreshes. */
 export interface WeatherControlsHandlers {
+  onNightModeChange?: (mode: NightMode) => void;
   onSigmetToggle?: (enabled: boolean) => void;
   onNowcastToggle?: (enabled: boolean) => void;
   onNowcast3DTimeChange?: (mode: 'current' | 'forecast60') => void;
   onNowcast3DLayerToggle?: (layer: 'rain' | 'thunder' | 'tornado', enabled: boolean) => void;
 }
 export class WeatherControls {
+  private nightMode: NightMode = 'auto';
   private sigmetEnabled = true;
   private nowcastEnabled = true;
   private nowcast3DLayers: Record<'rain'|'thunder'|'tornado',boolean> = {
@@ -16,6 +20,10 @@ export class WeatherControls {
 
   constructor(private container: HTMLElement, private handlers: WeatherControlsHandlers) {
     this.container.innerHTML = `
+        <div class="night-control">
+          <button id="night-toggle" class="map-layer-btn" type="button" title="夜間 自動 → ON → OFF">夜間 自動</button>
+          <span id="night-status" class="nowcast-3d-note">日本時間18:00〜翌5:00 · 地図全体を暗く表示</span>
+        </div>
         <!-- Aviation Weather -->
         <div class="toolbar-group">
           <span class="group-label">気象レイヤー</span>
@@ -66,6 +74,17 @@ export class WeatherControls {
     `;
     this.attachEventListeners();
   }
+  public setNightState(mode: NightMode, dark: boolean, timestamp: number): void {
+    this.nightMode = mode;
+    const button = this.container.querySelector<HTMLButtonElement>('#night-toggle')!;
+    const label = mode === 'auto' ? '自動' : mode === 'on' ? 'ON' : 'OFF';
+    button.textContent = `夜間 ${label}`;
+    button.classList.toggle('active', dark);
+    button.setAttribute('aria-label', `夜間モード ${label}。押すと${mode === 'auto' ? 'ON' : mode === 'on' ? 'OFF' : '自動'}に切替`);
+    const time = new Intl.DateTimeFormat('ja-JP', {timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false}).format(timestamp);
+    this.container.querySelector('#night-status')!.textContent = `表示時刻 ${time} JST · ${dark ? '夜間表示' : '昼間表示'} · 自動 18:00〜翌5:00`;
+  }
+
   public setSigmetState(enabled: boolean, status?: string, count?: number): void {
     this.sigmetEnabled = enabled;
     const button = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
@@ -92,6 +111,10 @@ export class WeatherControls {
   }
 
   private attachEventListeners(): void {
+    this.container.querySelector('#night-toggle')!.addEventListener('click', () => {
+      this.nightMode = this.nightMode === 'auto' ? 'on' : this.nightMode === 'on' ? 'off' : 'auto';
+      this.handlers.onNightModeChange?.(this.nightMode);
+    });
     const sigmetBtn = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
     if (sigmetBtn) {
       sigmetBtn.addEventListener('click', () => {

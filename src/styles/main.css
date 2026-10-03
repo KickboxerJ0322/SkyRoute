@@ -1653,3 +1653,21 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
     max-width: none;
   }
 }
+
+
+/* Night film is confined to the map stacking context; panels retain their brightness. */
+#map-container { isolation: isolate; }
+#map-container .night-film {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.5s ease-in-out;
+}
+#map-container .night-film.active { opacity: 0.42; }
+.night-control { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  #map-container .night-film { transition: none; }
+}

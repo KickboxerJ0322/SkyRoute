@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+const compiled=await build({stdin:{contents:"export { smoothPath } from './src/flight/smoothPath'; export { isJapanNight, NightOverlay } from './src/map/NightMode';",resolveDir:process.cwd()},bundle:true,write:false,format:'esm',platform:'node'});
+const {smoothPath,isJapanNight,NightOverlay}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+const points=[{lat:35,lng:139,altitude:0},{lat:35.5,lng:139,altitude:9000},{lat:35.5,lng:140,altitude:1000}];
+const original=JSON.stringify(points),path=smoothPath(points);
+assert.equal(JSON.stringify(points),original);
+for(const point of points)assert.ok(path.some(p=>p.lat===point.lat&&p.lng===point.lng&&p.altitude===point.altitude));
+assert.ok(path.length>points.length);
+for(const p of path){assert.ok(p.altitude>=0&&p.altitude<=9000);assert.ok(p.lat>=35&&p.lat<=35.5);assert.ok(p.lng>=139&&p.lng<=140);}
+const across=smoothPath([{lat:35,lng:179,altitude:10},{lat:36,lng:-179,altitude:30},{lat:37,lng:-178,altitude:20}]);
+assert.ok(across.every(p=>Math.abs(p.lng)>=178),'crosses dateline along short path');
+for(const [time,expected] of [['04:59:59',true],['05:00:00',false],['17:59:59',false],['18:00:00',true],['23:59:59',true]])assert.equal(isJapanNight(Date.parse(`2026-10-04T${time}+09:00`)),expected,time);
+assert.equal(isJapanNight(NaN),false);
+const active=new Set();let film,state;
+globalThis.document={createElement:()=>({className:'',setAttribute(){},classList:{toggle:(name,on)=>on?active.add(name):active.delete(name)}})};
+const overlay=new NightOverlay({append:el=>{film=el;}},(...value)=>{state=value;});
+overlay.setTime(Date.parse('2026-10-04T12:00:00+09:00'));assert.equal(active.has('active'),false);
+overlay.setMode('on');assert.equal(active.has('active'),true);assert.equal(state[0],'on');
+overlay.setMode('off');overlay.setTime(Date.parse('2026-10-04T23:00:00+09:00'));assert.equal(active.has('active'),false);
+overlay.setMode('auto');assert.equal(active.has('active'),true);assert.equal(film.className,'night-film');
+console.log('Passed: retained route points, bounded smooth altitude, dateline, JST night boundaries and manual overrides.');

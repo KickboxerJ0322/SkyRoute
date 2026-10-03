@@ -4,6 +4,7 @@
  */
 
 import { Maps3DLibrary } from './initMap3D';
+import { smoothPath } from '../flight/smoothPath';
 import { Waypoint } from '../flight/types';
 
 export class RouteRenderer {
@@ -20,15 +21,15 @@ export class RouteRenderer {
   /**
    * Sets and renders waypoints as a floating 3D polyline.
    */
-  public setRoute(waypoints: Waypoint[], type: 'FILED' | 'ACTUAL' | 'ESTIMATED' = 'ACTUAL'): void {
+  public setRoute(waypoints: Waypoint[], type: 'FILED' | 'ACTUAL' | 'ESTIMATED' = 'ACTUAL', prepared = false): void {
     if (waypoints.length < 2) { this.clear(); return; }
     const color = type === 'ACTUAL' ? '#00D4FF' : type === 'FILED' ? '#3578FF' : '#FFB300';
     const outerColor = type === 'ACTUAL' ? '#006C88' : type === 'FILED' ? '#153A91' : '#7A5200';
-    const strokeWidth = type === 'ESTIMATED' ? 6 : 8;
+    const strokeWidth = type === 'ESTIMATED' ? 4 : 5;
     const { Polyline3DElement, AltitudeMode } = this.lib;
 
     // Format coordinates with explicit altitude for 3D aerial path
-    const coordinates = waypoints.map((wp) => ({
+    const coordinates = (prepared ? waypoints : smoothPath(waypoints)).map((wp) => ({
       lat: wp.lat,
       lng: wp.lng,
       altitude: wp.altitude,
@@ -67,4 +68,5 @@ export class RouteRenderer {
     this.clear();
   }
 }
+
 

@@ -9,6 +9,7 @@
  * Recorded ACTUAL tracks should remain untouched.
  */
 
+import { smoothPath } from './smoothPath';
 import type { Airport, FlightRoute, Waypoint } from './types';
 import { angleDifference, bearingBetween, distanceBetween } from '../utils/geo';
 
@@ -23,7 +24,7 @@ export interface RouteShapingOptions {
 
 const TERMINAL_RADIUS_METERS = 9000;
 const TERMINAL_SWEEP_DEGREES = 240;
-const TERMINAL_STEPS = 10;
+const TERMINAL_STEPS = 24;
 const TERMINAL_TRIM_METERS = 12000;
 
 const toRad = (deg: number): number => deg * Math.PI / 180;
@@ -341,7 +342,7 @@ export const smoothRouteTurns = (route: FlightRoute): FlightRoute => {
 
     appendDistinct(rounded, [entry]);
 
-    const samples = turnAngle > 70 ? 8 : turnAngle > 30 ? 6 : 4;
+    const samples = turnAngle > 70 ? 24 : turnAngle > 30 ? 18 : 12;
     for (let sample = 1; sample < samples; sample += 1) {
       appendDistinct(rounded, [
         bezierWaypoint(entry, current, exit, sample / samples),
@@ -365,4 +366,8 @@ export const smoothRouteTurns = (route: FlightRoute): FlightRoute => {
 export const shapePreviewRoute = (
   route: FlightRoute,
   options: RouteShapingOptions = {},
-): FlightRoute => smoothRouteTurns(withTerminalManeuvers(route, options));
+): FlightRoute => {
+  const shaped = smoothRouteTurns(withTerminalManeuvers(route, options));
+  return { ...shaped, waypoints: smoothPath(shaped.waypoints) };
+};
+
