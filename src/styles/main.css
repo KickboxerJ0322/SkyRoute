@@ -1671,3 +1671,6 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   #map-container .night-film { transition: none; }
 }
+
+#nowcast-panel .night-mode-btn { min-width: 48px; min-height: 36px; padding: 6px 12px; border: 1px solid var(--panel-border); }
+#nowcast-panel .night-control #night-status { flex-basis: 100%; }

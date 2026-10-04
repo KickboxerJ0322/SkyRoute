@@ -9,7 +9,6 @@ export interface WeatherControlsHandlers {
   onNowcast3DLayerToggle?: (layer: 'rain' | 'thunder' | 'tornado', enabled: boolean) => void;
 }
 export class WeatherControls {
-  private nightMode: NightMode = 'auto';
   private sigmetEnabled = true;
   private nowcastEnabled = true;
   private nowcast3DLayers: Record<'rain'|'thunder'|'tornado',boolean> = {
@@ -21,7 +20,12 @@ export class WeatherControls {
   constructor(private container: HTMLElement, private handlers: WeatherControlsHandlers) {
     this.container.innerHTML = `
         <div class="night-control">
-          <button id="night-toggle" class="map-layer-btn" type="button" title="夜間 自動 → ON → OFF">夜間 自動</button>
+          <span class="group-label">夜間：</span>
+          <div class="segmented-control" role="group" aria-label="夜間モード">
+            <button class="map-layer-btn night-mode-btn active" data-night-mode="auto" type="button" aria-pressed="true" title="日本時間18:00〜翌5:00に自動で夜間表示">自動</button>
+            <button class="map-layer-btn night-mode-btn" data-night-mode="on" type="button" aria-pressed="false" title="時刻に関係なく夜間表示にする">ON</button>
+            <button class="map-layer-btn night-mode-btn" data-night-mode="off" type="button" aria-pressed="false" title="時刻に関係なく昼間表示にする">OFF</button>
+          </div>
           <span id="night-status" class="nowcast-3d-note">日本時間18:00〜翌5:00 · 地図全体を暗く表示</span>
         </div>
         <!-- Aviation Weather -->
@@ -75,12 +79,11 @@ export class WeatherControls {
     this.attachEventListeners();
   }
   public setNightState(mode: NightMode, dark: boolean, timestamp: number): void {
-    this.nightMode = mode;
-    const button = this.container.querySelector<HTMLButtonElement>('#night-toggle')!;
-    const label = mode === 'auto' ? '自動' : mode === 'on' ? 'ON' : 'OFF';
-    button.textContent = `夜間 ${label}`;
-    button.classList.toggle('active', dark);
-    button.setAttribute('aria-label', `夜間モード ${label}。押すと${mode === 'auto' ? 'ON' : mode === 'on' ? 'OFF' : '自動'}に切替`);
+    this.container.querySelectorAll<HTMLButtonElement>('[data-night-mode]').forEach(button => {
+      const selected = button.dataset.nightMode === mode;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
     const time = new Intl.DateTimeFormat('ja-JP', {timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false}).format(timestamp);
     this.container.querySelector('#night-status')!.textContent = `表示時刻 ${time} JST · ${dark ? '夜間表示' : '昼間表示'} · 自動 18:00〜翌5:00`;
   }
@@ -111,10 +114,17 @@ export class WeatherControls {
   }
 
   private attachEventListeners(): void {
-    this.container.querySelector('#night-toggle')!.addEventListener('click', () => {
-      this.nightMode = this.nightMode === 'auto' ? 'on' : this.nightMode === 'on' ? 'off' : 'auto';
-      this.handlers.onNightModeChange?.(this.nightMode);
+    this.container.querySelectorAll<HTMLButtonElement>('[data-night-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        const mode = button.dataset.nightMode as NightMode;
+        this.container.querySelectorAll<HTMLButtonElement>('[data-night-mode]').forEach(other => {
+          other.classList.toggle('active', other === button);
+          other.setAttribute('aria-pressed', String(other === button));
+        });
+        this.handlers.onNightModeChange?.(mode);
+      });
     });
+
     const sigmetBtn = this.container.querySelector<HTMLButtonElement>('#sigmet-toggle');
     if (sigmetBtn) {
       sigmetBtn.addEventListener('click', () => {
