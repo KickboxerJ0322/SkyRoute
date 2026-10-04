@@ -60,3 +60,27 @@ for (const mode of ['CLOSE', 'FOLLOW', 'COCKPIT', 'OVERVIEW', 'FREE']) {
 camera.setMode('CLOSE'); camera.setTilt(-1); camera.update(telemetry);
 assert.equal(map.tilt, 78, 'AUTO restores camera preset');
 console.log('Passed: all 4 routes, forward/reverse endpoints, constant-speed pacing, speed bounds, cockpit tracking, close camera, baseline orientation.');
+
+
+// FOLLOW must keep its focal point on the aircraft even with uneven frame timing.
+const followMap = {};
+const follow = new CameraController(followMap);
+follow.update(telemetry, 0);
+for (const time of [16, 50, 110, 126, 200]) {
+  const moving = {...telemetry, lat:35+time/100000, lng:140+time/200000, altitude:1000+time};
+  follow.update(moving,time);
+  assert.deepEqual(followMap.center,{lat:moving.lat,lng:moving.lng,altitude:moving.altitude+15});
+  assert.equal(followMap.range,360);
+  assert.equal(followMap.tilt,74);
+}
+const headingAfter = intervals => {
+  const target = {}, controller = new CameraController(target);
+  controller.update({...telemetry,heading:350},0);
+  for (const time of intervals) controller.update({...telemetry,heading:10},time);
+  return target.heading;
+};
+const regular = headingAfter(Array.from({length:30},(_,i)=>(i+1)*1000/30));
+const uneven = headingAfter([16,50,110,200,230,400,470,600,750,1000]);
+assert.ok(Math.abs(regular-uneven)<1e-9,'same elapsed time produces the same heading response');
+assert.ok(regular>0&&regular<10,'heading follows the short turn across north');
+console.log('Passed: FOLLOW focal lock, unchanged framing and frame-rate-independent heading.');

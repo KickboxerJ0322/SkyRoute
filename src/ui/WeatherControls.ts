@@ -31,7 +31,7 @@ export class WeatherControls {
         <!-- Aviation Weather -->
         <div class="toolbar-group">
           <span class="group-label">気象レイヤー</span>
-          <div class="segmented-control">
+          <div class="segmented-control weather-layer-toggles">
             <button id="sigmet-toggle" class="map-layer-btn sigmet-toggle-btn active" type="button" aria-pressed="true" title="航路周辺のSIGMETを表示中">
               SIGMET ON
             </button>

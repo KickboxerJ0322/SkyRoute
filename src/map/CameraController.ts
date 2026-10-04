@@ -19,6 +19,7 @@ export class CameraController {
   private smoothTilt = 78;
   private smoothRange = 220;
   private isInitialized = false;
+  private lastUpdateTime: number | null = null;
 
   private headingOffset = 0;
   private tiltOverride: number | null = null;
@@ -125,7 +126,9 @@ export class CameraController {
   /**
    * Called on every telemetry tick to update camera in CLOSE, FOLLOW, or COCKPIT modes.
    */
-  public update(telemetry: TelemetryData): void {
+  public update(telemetry: TelemetryData, now = performance.now()): void {
+    const elapsedMs = this.lastUpdateTime === null ? 0 : Math.max(0, now - this.lastUpdateTime);
+    this.lastUpdateTime = now;
     this.lastTelemetry = telemetry;
 
     if (!this.map || this.mode === 'FREE') {
@@ -156,8 +159,10 @@ export class CameraController {
       altitude: telemetry.altitude + 15,
     };
     let targetHeading = telemetry.heading;
-    let posLag = CAMERA_PRESETS.FOLLOW.positionLag;
-    let headingLag = CAMERA_PRESETS.FOLLOW.headingLag;
+    // Lock the focal point to the aircraft so variable frame timing cannot cause positional wobble.
+    let posLag = 1;
+    // Preserve the previous turn response at 30 Hz, independent of update frequency.
+    let headingLag = 1 - Math.pow(1 - CAMERA_PRESETS.FOLLOW.headingLag, elapsedMs / (1000 / 30));
 
     if (this.mode === 'CLOSE') {
       // Intimate view right behind the tail & engines
@@ -204,7 +209,7 @@ export class CameraController {
       this.isInitialized = true;
     }
 
-    // Smoothly lag behind aircraft movement
+    // Keep the camera center synchronized with the rendered aircraft
     this.smoothCenter.lat = lerp(this.smoothCenter.lat, targetCenter.lat, posLag);
     this.smoothCenter.lng = lerp(this.smoothCenter.lng, targetCenter.lng, posLag);
     this.smoothCenter.altitude = lerp(
