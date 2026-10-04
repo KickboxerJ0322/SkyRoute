@@ -1661,12 +1661,12 @@ button:disabled, input:disabled { opacity: .45; cursor: default; }
   position: absolute;
   inset: 0;
   z-index: 10;
-  background: #000;
+  background: #020b24;
   opacity: 0;
   pointer-events: none;
   transition: opacity 1.5s ease-in-out;
 }
-#map-container .night-film.active { opacity: 0.42; }
+#map-container .night-film.active { opacity: 0.58; }
 .night-control { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 @media (prefers-reduced-motion: reduce) {
   #map-container .night-film { transition: none; }
