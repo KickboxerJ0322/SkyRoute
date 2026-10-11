@@ -48,9 +48,6 @@ export class FlightPanel {
             <div class="brand-icon"><img src="/skyroute-icon.svg" alt="" width="26" height="26" /></div>
             <div><h1 class="brand-title">SkyRoute DEMO</h1></div>
           </div>
-          <button class="mobile-close-btn" id="mobile-close-btn" aria-label="Close Departures">
-            ✕
-          </button>
         </div>
 
         <div class="departures-section">
@@ -136,13 +133,6 @@ export class FlightPanel {
         }
       });
     });
-
-    const closeBtn = this.container.querySelector('#mobile-close-btn');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        this.toggleMobileDrawer();
-      });
-    }
   }
 }
 
