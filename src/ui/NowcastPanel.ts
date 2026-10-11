@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 export interface NowcastAirport {
   code:string;
   name:string;
@@ -124,7 +125,7 @@ const radarFrame=(airport:NowcastAirport,time:NowcastTime,label:string,template:
         .replace('{z}',String(z))
         .replace('{x}',String(wrapped))
         .replace('{y}',String(ty));
-      images.push(`<img src="${src}" alt="" loading="lazy" style="left:${tx*tileSize-left}px;top:${ty*tileSize-top}px">`);
+      images.push(`<img src="${esc(src)}" alt="" loading="lazy" style="left:${tx*tileSize-left}px;top:${ty*tileSize-top}px">`);
     }
   }
   return `
@@ -233,10 +234,10 @@ export class NowcastPanel {
   private async refresh():Promise<void>{
     const id=++this.requestId;
     if(!this.origin||!this.destination){
-      this.container.innerHTML='<div class="nowcast-panel-message">出発・到着空港を選択してください。</div>';
+      setSafeHtml(this.container, '<div class="nowcast-panel-message">出発・到着空港を選択してください。</div>');
       return;
     }
-    this.container.innerHTML='<div class="nowcast-panel-message">気象庁ナウキャスト読込中…</div>';
+    setSafeHtml(this.container, '<div class="nowcast-panel-message">気象庁ナウキャスト読込中…</div>');
     try{
       const [times,structured]=await Promise.all([
         fetch('/api/weather/nowcast/times',{headers:{Accept:'application/json'}}).then(async response=>{
@@ -252,7 +253,7 @@ export class NowcastPanel {
     }catch(error){
       if(id!==this.requestId)return;
       console.error('NOWCAST_FETCH_FAILED',error);
-      this.container.innerHTML='<div class="nowcast-panel-message">ナウキャスト取得失敗</div>';
+      setSafeHtml(this.container, '<div class="nowcast-panel-message">ナウキャスト取得失敗</div>');
     }
   }
 
@@ -263,7 +264,7 @@ export class NowcastPanel {
     ].filter((value):value is {airport:NowcastAirport;context:{airport:NowcastAirport;analysis:NowcastPointAnalysis}}=>
       Boolean(value.airport&&value.context)
     );
-    this.container.innerHTML=`
+    setSafeHtml(this.container, `
       <div class="nowcast-panel-head">
         <div><strong>JMA NOWCAST</strong><span> 出発・到着空港</span></div>
       </div>
@@ -282,7 +283,7 @@ export class NowcastPanel {
           </section>
         `).join('')}
       </div>
-      <div class="nowcast-foot">出典: 気象庁 · 高解像度降水ナウキャスト / 雷ナウキャスト / 竜巻発生確度ナウキャスト · 空港直上/周辺10kmを構造化 · 中央十字＝空港位置</div>`;
+      <div class="nowcast-foot">出典: 気象庁 · 高解像度降水ナウキャスト / 雷ナウキャスト / 竜巻発生確度ナウキャスト · 空港直上/周辺10kmを構造化 · 中央十字＝空港位置</div>`);
 
   }
 }

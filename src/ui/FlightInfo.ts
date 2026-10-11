@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 import type { TelemetryData, FlightRoute } from '../flight/types';
 import { escapeHtml } from './LiveFlightView';
 import { flightPhaseLabel, remainingTimeLabel } from '../flight/presentation';
@@ -21,7 +22,7 @@ export class FlightInfo {
     const origin = escapeHtml(route.origin.code);
     const destination = escapeHtml(route.destination.code);
     const aircraft = escapeHtml(route.aircraftType);
-    this.container.innerHTML = `<div class="flight-info-hud live-info">
+    setSafeHtml(this.container, `<div class="flight-info-hud live-info">
       <div class="hud-top-bar"><span class="hud-route-text">${flight} · ${origin} → ${destination}</span><span class="phase-pill">DEMO</span></div>
       <div class="live-airports">${escapeHtml(route.origin.name)} → ${escapeHtml(route.destination.name)}</div>
       <div class="live-metadata">Operated by ${escapeHtml(route.airline)} · Simulated flight<br>Aircraft: ${aircraft}</div>
@@ -36,7 +37,7 @@ export class FlightInfo {
       <div class="live-ai-commentary" id="live-ai-commentary"><div class="live-ai-text">${escapeHtml(demoCommentary[route.id] ?? '')}</div></div>
       <div class="live-ai-model-note" id="live-ai-model-note">AI解説サンプル · 仮の文章（AIによる取得・生成結果ではありません）</div>
       <div class="live-message" id="live-message" role="status">DEMO · Simulated flight</div>
-    </div>`;
+    </div>`);
   }
 
   updateTelemetry(telemetry: TelemetryData): void {

@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 /**
  * Playback Controls Component
  * Controls Play Forward, Reverse Playback, Restart, Continuous Speed (0.2x to 50x), and Seek slider.
@@ -44,11 +45,11 @@ export class PlaybackControls {
 
     if (playBtn) {
       if (this.isPlaying && this.currentDirection === 1) {
-        playBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+        setSafeHtml(playBtn, `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`);
         playBtn.classList.add('active-play');
         playBtn.setAttribute('title', 'Pause (一時停止)');
       } else {
-        playBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+        setSafeHtml(playBtn, `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`);
         playBtn.classList.remove('active-play');
         playBtn.setAttribute('title', 'Play Forward (順再生)');
       }
@@ -56,11 +57,11 @@ export class PlaybackControls {
 
     if (revBtn) {
       if (this.isPlaying && this.currentDirection === -1) {
-        revBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+        setSafeHtml(revBtn, `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`);
         revBtn.classList.add('active-reverse');
         revBtn.setAttribute('title', 'Pause Reverse (逆再生一時停止)');
       } else {
-        revBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 3 5 12 19 21 19 3"/></svg>`;
+        setSafeHtml(revBtn, `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 3 5 12 19 21 19 3"/></svg>`);
         revBtn.classList.remove('active-reverse');
         revBtn.setAttribute('title', 'Reverse Play (逆再生)');
       }
@@ -142,7 +143,7 @@ export class PlaybackControls {
   }
 
   private render(): void {
-    this.container.innerHTML = `
+    setSafeHtml(this.container, `
       <div class="playback-bar-wrapper">
         <div class="altitude-profile" id="altitude-profile" hidden>
           <div class="altitude-profile-head"><span>ALTITUDE PROFILE</span><span id="altitude-profile-max">--</span></div>
@@ -226,7 +227,7 @@ export class PlaybackControls {
           </div>
         </div>
       </div>
-    `;
+    `);
 
     this.attachEventListeners();
   }

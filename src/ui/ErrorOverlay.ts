@@ -1,3 +1,4 @@
+import { setSafeHtml, escapeHtml } from '../utils/safeHtml';
 /**
  * Error Overlay Component
  * Provides user-visible diagnostics for missing API keys, WebGL support, and load failures.
@@ -27,7 +28,7 @@ export class ErrorOverlay {
 
     this.element = document.createElement('div');
     this.element.className = 'error-overlay';
-    this.element.innerHTML = `
+    setSafeHtml(this.element, `
       <div class="error-modal">
         <div class="error-icon-wrapper">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FF4D4D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -36,18 +37,19 @@ export class ErrorOverlay {
             <line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
         </div>
-        <h2 class="error-title">${details.title}</h2>
+        <h2 class="error-title">${escapeHtml(details.title)}</h2>
         <p class="error-message">${details.message}</p>
         <div class="error-remedy-box">
           <div class="remedy-header">Action Required:</div>
           <div class="remedy-content">${details.remedy}</div>
         </div>
-        <button class="error-retry-btn" onclick="window.location.reload()">
+        <button class="error-retry-btn">
           再読み込み (Reload)
         </button>
       </div>
-    `;
+    `);
 
+    this.element.querySelector('.error-retry-btn')?.addEventListener('click', () => window.location.reload());
     document.body.appendChild(this.element);
   }
 
@@ -70,7 +72,7 @@ export class ErrorOverlay {
     overlay.showError({
       type: 'GLB_LOAD_FAILED',
       title: '3D Aircraft Model Load Failure',
-      message: `旅客機モデル (<code>${url}</code>) の読み込みに失敗しました。`,
+      message: `旅客機モデル (<code>${escapeHtml(url)}</code>) の読み込みに失敗しました。`,
       remedy: `
         <code>public/models/skyroute_787_10.glb</code> が存在し、HTTP 200 で配信されているか確認してください。
       `,

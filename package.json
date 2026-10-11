@@ -10,19 +10,22 @@
     "dev:client": "vite",
     "dev:server": "node --watch server/index.mjs",
     "start": "node server/index.mjs",
-    "test": "node tests/flight-regression.mjs && node tests/route-shaping.test.mjs && node tests/route-night.test.mjs && node tests/sigmet.test.mjs && node tests/nowcast.test.mjs && node --test tests/phase2.test.mjs tests/commentary-distance.test.mjs tests/plateau.test.mjs",
+    "test": "node tests/flight-regression.mjs && node tests/route-shaping.test.mjs && node tests/route-night.test.mjs && node tests/sigmet.test.mjs && node tests/nowcast.test.mjs && node --test tests/phase2.test.mjs tests/commentary-distance.test.mjs tests/plateau.test.mjs tests/security.test.mjs",
     "test:browser": "playwright test",
     "capture:fixture": "node scripts/capture-fixture.mjs",
     "build:plateau": "node scripts/build-plateau-haneda.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "jsdom": "^26.1.0",
     "saxes": "^6.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.2.0"
   },
   "engines": {
     "node": ">=22.6"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.16"
   }
 }
-

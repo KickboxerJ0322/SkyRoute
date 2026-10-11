@@ -37,3 +37,15 @@ then attach it to Cloud Run as the environment variable `GEMINI_API_KEY`.
 
 The Cloud Build deploy uses `--update-env-vars` and `--update-secrets`, so manually
 attached Gemini configuration is preserved by future GitHub-triggered deployments.
+
+## Container health and UI rendering
+
+The Docker image checks `/api/health` on `PORT` (default 8080) every 30 seconds,
+without calling paid upstream APIs. Cloud Run probes are configured independently;
+Docker `HEALTHCHECK` does not configure a Cloud Run startup or liveness probe.
+
+UI markup is sanitized through `src/utils/safeHtml.ts` (DOMPurify) before insertion
+with `replaceChildren`. Keep external text escaped in template interpolations;
+sanitization is an additional boundary. Bind events with JavaScript listeners,
+rather than inline HTML handlers. `npm test` includes malicious-markup and control
+binding regressions; `npm run test:browser` includes browser security checks.

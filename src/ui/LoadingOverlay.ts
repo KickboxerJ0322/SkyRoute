@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 /**
  * Loading Overlay Component
  * Provides an aviation-themed HUD loading screen with status messages.
@@ -9,7 +10,7 @@ export class LoadingOverlay {
   constructor() {
     this.element = document.createElement('div');
     this.element.className = 'loading-overlay';
-    this.element.innerHTML = `
+    setSafeHtml(this.element, `
       <div class="loading-content">
         <div class="radar-spinner">
           <div class="radar-circle circle-1"></div>
@@ -21,7 +22,7 @@ export class LoadingOverlay {
         <div class="loading-title" id="loading-status-text">Loading Photorealistic 3D Map...</div>
         <div class="loading-subtitle">Boeing 787-10 Dreamliner & Haneda Airport</div>
       </div>
-    `;
+    `);
     document.body.appendChild(this.element);
   }
 

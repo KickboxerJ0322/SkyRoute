@@ -1,3 +1,4 @@
+import { setSafeHtml, escapeHtml } from '../utils/safeHtml';
 /**
  * Flight Panel Component
  * Displays Haneda departures board, route selection list, and mobile drawer toggling.
@@ -40,7 +41,7 @@ export class FlightPanel {
   }
 
   private render(): void {
-    this.container.innerHTML = `
+    setSafeHtml(this.container, `
       <div class="flight-panel ${this.isOpenOnMobile ? 'open-mobile' : ''}">
         <div class="panel-header">
           <div class="brand-row">
@@ -63,28 +64,28 @@ export class FlightPanel {
             ${this.departures
               .map(
                 (dep) => `
-              <div class="route-card ${dep.id === this.selectedRouteId ? 'active' : ''}" data-route-id="${dep.id}">
+              <div class="route-card ${dep.id === this.selectedRouteId ? 'active' : ''}" data-route-id="${escapeHtml(dep.id)}">
                 <div class="route-header-row">
-                  <span class="flight-number">${dep.flightNumber}</span>
-                  <span class="route-status">${dep.status}</span>
+                  <span class="flight-number">${escapeHtml(dep.flightNumber)}</span>
+                  <span class="route-status">${escapeHtml(dep.status)}</span>
                 </div>
                 <div class="route-destination-row">
                   <div class="airport-pair">
                     <span class="origin-code">HND</span>
                     <span class="flight-arrow">✈</span>
-                    <span class="dest-code">${dep.destinationCode}</span>
+                    <span class="dest-code">${escapeHtml(dep.destinationCode)}</span>
                   </div>
-                  <div class="destination-name">${dep.destinationName}</div>
+                  <div class="destination-name">${escapeHtml(dep.destinationName)}</div>
                 </div>
                 <div class="route-meta-row">
                   <span class="meta-item">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                     </svg>
-                    ${dep.scheduledTime}
+                    ${escapeHtml(dep.scheduledTime)}
                   </span>
-                  <span class="meta-item">Gate ${dep.gate}</span>
-                  <span class="meta-aircraft">${dep.aircraftType}</span>
+                  <span class="meta-item">Gate ${escapeHtml(dep.gate)}</span>
+                  <span class="meta-aircraft">${escapeHtml(dep.aircraftType)}</span>
                 </div>
               </div>
             `
@@ -100,7 +101,7 @@ export class FlightPanel {
           <span>Demo Route (概算飛行ルート・シミュレーション)</span>
         </div>
       </div>
-    `;
+    `);
 
     this.attachEventListeners();
   }
