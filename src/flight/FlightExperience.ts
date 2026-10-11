@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 import { NightOverlay } from '../map/NightMode';
 import { greatCirclePoints } from './liveGeometry';
 import { shapePreviewRoute } from './routeShaping';
@@ -86,7 +87,7 @@ export class FlightExperience {
     this.routeLegend=document.createElement('div');
     this.routeLegend.id='route-legend';
     this.routeLegend.hidden=true;
-    this.routeLegend.innerHTML='<span class="route-legend-title">ROUTE</span><span><i class="route-swatch actual"></i>実測 ACTUAL</span><span><i class="route-swatch filed"></i>予定 FILED</span><span><i class="route-swatch estimated"></i>推定 ESTIMATED</span>';
+    setSafeHtml(this.routeLegend, '<span class="route-legend-title">ROUTE</span><span><i class="route-swatch actual"></i>実測 ACTUAL</span><span><i class="route-swatch filed"></i>予定 FILED</span><span><i class="route-swatch estimated"></i>推定 ESTIMATED</span>');
     element('app').append(this.routeLegend);
 
     const nowcastRoot=document.createElement('div');
@@ -155,7 +156,7 @@ export class FlightExperience {
     });
     const toolbar=element('panel-visibility-controls');
     const modes=document.createElement('div');modes.className='data-mode-controls';
-    modes.innerHTML='<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><span id="data-source-status" role="status">LIVE</span>';
+    setSafeHtml(modes, '<button id="data-live" aria-pressed="true">LIVE</button><button id="data-demo" aria-pressed="false">DEMO</button><span id="data-source-status" role="status">LIVE</span>');
     const toolbarItems=toolbar.querySelector('.panel-visibility-items') ?? toolbar;
     toolbarItems.append(modes);this.statusLabel=element('data-source-status');
     element('data-live').onclick=()=>void this.setMode('LIVE');element('data-demo').onclick=()=>void this.setMode('DEMO');
@@ -259,7 +260,7 @@ export class FlightExperience {
       const departures=await this.demo.getDepartures();if(this.dataMode!=='DEMO')return;
       this.demoPanel.setDepartures(departures,departures[0].id);await this.selectDemo(departures[0].id);
     } else {
-      element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
+      setSafeHtml(element('flight-info-root'), '<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>');
       this.liveView.setAirport(this.selectedAirport);this.liveView.showList([],'','空港を選択して「更新」を押すと便一覧を取得します。');this.statusLabel.textContent='LIVE';
     }
   }
@@ -269,7 +270,7 @@ export class FlightExperience {
     this.cancelSelection();
     this.selected=null;
     this.liveView.setAirport(icao);
-    element('flight-info-root').innerHTML='<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>';
+    setSafeHtml(element('flight-info-root'), '<div class="flight-info-hud live-empty">便を選択すると、実データの詳細と航路を表示します。</div>');
     this.listAbort.abort();this.listAbort=new AbortController();
     this.liveView.showList([],'','空港を選択して「更新」を押すと便一覧を取得します。');
     this.statusLabel.textContent='LIVE';
@@ -416,7 +417,7 @@ export class FlightExperience {
     if(panel){
       panel.hidden=false;
       const plain=this.lastAiCommentary.replace(/\*\*/g,'');
-      panel.innerHTML=`<div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`;
+      setSafeHtml(panel, `<div class="live-ai-text">${escapeForAi(plain).replace(/\n/g,'<br>')}</div>`);
     }
     if(modelNote){
       const created=this.lastAiCreatedAt?new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(this.lastAiCreatedAt)):'';

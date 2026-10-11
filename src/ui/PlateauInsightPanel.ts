@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 import { CATEGORIES, CATEGORY_LABELS, CATEGORY_COLORS, type BuildingFeature, type BuildingCategory } from '../plateau/types';
 
 export class PlateauInsightPanel {
@@ -7,10 +8,10 @@ export class PlateauInsightPanel {
   constructor(onFilter: (category: BuildingCategory, checked: boolean) => void, onCloseCard: () => void, onClose: () => void) {
     this.root.id = 'plateau-insight-panel'; this.root.hidden = true;
     this.root.setAttribute('aria-label', 'PLATEAU INSIGHT');
-    this.root.innerHTML = `<header><strong>PLATEAU INSIGHT</strong><button type="button" aria-label="Close PLATEAU">×</button></header>
+    setSafeHtml(this.root, `<header><strong>PLATEAU INSIGHT</strong><button type="button" aria-label="Close PLATEAU">×</button></header>
       <div class="plateau-body"><div class="plateau-scope">羽田周辺 · 建物属性</div><div class="plateau-categories"></div>
       <div class="plateau-status" role="status"></div><div class="plateau-card" hidden></div>
-      </div><footer><a href="https://www.mlit.go.jp/plateau/" target="_blank" rel="noopener noreferrer">Source: Project PLATEAU / MLIT</a></footer>`;
+      </div><footer><a href="https://www.mlit.go.jp/plateau/" target="_blank" rel="noopener noreferrer">Source: Project PLATEAU / MLIT</a></footer>`);
     const filters = this.root.querySelector('.plateau-categories')!;
     for (const category of CATEGORIES) {
       const label = document.createElement('label'), input = document.createElement('input');

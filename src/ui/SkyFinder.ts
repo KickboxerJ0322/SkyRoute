@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 import type { AircraftController } from '../map/AircraftController';
 import type { SkyRouteFlight, SkyRoutePosition } from '../flight/liveTypes';
 
@@ -26,7 +27,7 @@ export class SkyFinder {
   }
 
   private renderIntro(message = '現在地、住所、地名から周辺を飛んでいる旅客機を探せます。'): void {
-    this.container.innerHTML = `
+    setSafeHtml(this.container, `
       <section class="sky-finder-panel">
         <div class="sky-finder-header">
           <div>
@@ -44,7 +45,7 @@ export class SkyFinder {
         <p class="sky-finder-note">位置情報や入力した場所は周辺航空機の検索にのみ使用し、SkyRouteでは保存しません。</p>
         <div id="sky-finder-results"></div>
       </section>
-    `;
+    `);
     this.container.querySelector('#sky-finder-locate')?.addEventListener('click', () => void this.searchCurrentLocation());
     this.container.querySelector('#sky-finder-place-btn')?.addEventListener('click', () => void this.searchPlace());
     this.container.querySelector<HTMLInputElement>('#sky-finder-place')?.addEventListener('keydown', event => {
@@ -111,7 +112,7 @@ export class SkyFinder {
       await this.loadNearby();
     } catch {
       const root = this.container.querySelector('#sky-finder-results');
-      if (root) root.innerHTML = '<div class="sky-finder-empty">場所を特定できませんでした。別の住所・地名を入力してください。</div>';
+      if (root) setSafeHtml(root, '<div class="sky-finder-empty">場所を特定できませんでした。別の住所・地名を入力してください。</div>');
     } finally {
       if (button) {
         button.disabled = false;
@@ -142,11 +143,11 @@ export class SkyFinder {
     const root = this.container.querySelector('#sky-finder-results');
     if (!root || !this.location) return;
     if (!this.flights.length) {
-      root.innerHTML = `<div class="sky-finder-summary"><span>${escapeHtml(this.locationLabel)}</span></div><div class="sky-finder-empty">半径80km以内で表示できる旅客機が見つかりませんでした。</div>`;
+      setSafeHtml(root, `<div class="sky-finder-summary"><span>${escapeHtml(this.locationLabel)}</span></div><div class="sky-finder-empty">半径80km以内で表示できる旅客機が見つかりませんでした。</div>`);
       return;
     }
 
-    root.innerHTML = `
+    setSafeHtml(root, `
       <div class="sky-finder-summary">
         <span title="${escapeHtml(this.locationLabel)}">${escapeHtml(shortLabel(this.locationLabel))} · 半径80km</span>
         <strong>${this.flights.length}機</strong>${stale ? '<em>CACHED</em>' : ''}
@@ -172,7 +173,7 @@ export class SkyFinder {
         `).join('')}
       </div>
       <div id="sky-finder-detail" class="sky-finder-detail">「3D表示」で機体へ移動し、「飛行情報」で詳細を表示します。</div>
-    `;
+    `);
 
     root.querySelectorAll<HTMLElement>('.sky-finder-card').forEach(card => {
       const flight = this.flights.find(item => item.id === card.dataset.flightId);
@@ -209,12 +210,12 @@ export class SkyFinder {
     }
 
     const detail = this.container.querySelector('#sky-finder-detail');
-    if (detail) detail.innerHTML = `
+    if (detail) setSafeHtml(detail, `
       <strong>${escapeHtml(flight.ident)}</strong>
       <span>${escapeHtml(code(flight.origin))} → ${escapeHtml(code(flight.destination))}</span>
       <span>${escapeHtml(flight.destination.name || '')}</span>
       <span>${formatAltitude(position.altitudeMeters)} / ${formatSpeed(position.groundSpeedKmh)}</span>
-    `;
+    `);
   }
 }
 

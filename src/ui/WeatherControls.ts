@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 import type { NightMode } from '../map/NightMode';
 
 /** Weather controls remain mounted independently of NOWCAST data refreshes. */
@@ -18,7 +19,7 @@ export class WeatherControls {
   };
 
   constructor(private container: HTMLElement, private handlers: WeatherControlsHandlers) {
-    this.container.innerHTML = `
+    setSafeHtml(this.container, `
         <div class="night-control">
           <span class="group-label">夜間：</span>
           <div class="segmented-control" role="group" aria-label="夜間モード">
@@ -75,7 +76,7 @@ export class WeatherControls {
           </div>
         </div>
 
-    `;
+    `);
     this.attachEventListeners();
   }
   public setNightState(mode: NightMode, dark: boolean, timestamp: number): void {

@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 /**
  * Map & Camera Floating Control Toolbar
  * Controls Map Mode (HYBRID / SATELLITE), Camera Mode (FOLLOW / OVERVIEW / FREE),
@@ -66,7 +67,7 @@ export class MapControls {
   }
 
   private render(): void {
-    this.container.innerHTML = `
+    setSafeHtml(this.container, `
       <div class="map-controls-toolbar">
         <!-- Mobile quick actions -->
         <div class="mobile-control-row">
@@ -157,7 +158,7 @@ export class MapControls {
         </div>
         </div>
       </div>
-    `;
+    `);
 
     this.attachEventListeners();
   }

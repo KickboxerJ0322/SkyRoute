@@ -1,3 +1,4 @@
+import { setSafeHtml } from '../utils/safeHtml';
 type UsagePayload = {
   total_calls?: number;
   total_pages?: number;
@@ -24,7 +25,7 @@ export class InfoView {
 
   public async show(): Promise<void> {
     this.root.hidden = false;
-    this.root.innerHTML = `
+    setSafeHtml(this.root, `
       <div class="info-stack" aria-label="SkyRoute information">
         <section class="info-card">
           <div class="info-card-title">SkyRouteについて</div>
@@ -68,7 +69,7 @@ export class InfoView {
           </div>
         </section>
       </div>
-    `;
+    `);
     await this.loadUsage();
   }
 
@@ -95,7 +96,7 @@ export class InfoView {
         .sort((a,b)=>Number(b.resource_cost||0)-Number(a.resource_cost||0))
         .slice(0,5);
 
-      node.innerHTML = `
+      setSafeHtml(node, `
         <div class="usage-period">${escapeHtml(periodLabel)}・日本時間</div>
         <div class="usage-total"><span>参考利用額</span><strong>$${cost.toFixed(3)}</strong></div>
         <div class="usage-stats">
@@ -105,14 +106,14 @@ export class InfoView {
         </div>
         <div class="usage-free">Personalプランの月$5無料枠を目安にすると、残りは <strong>$${freeRemaining.toFixed(2)}</strong> です。</div>
         ${top.length ? '<details><summary>利用額が大きいAPI</summary><div class="usage-breakdown">' + top.map(item=>'<div><span>'+escapeHtml(item.operation||'API')+'</span><span>'+Number(item.total_resource_calls||0)+'回 / $'+Number(item.resource_cost||0).toFixed(3)+'</span></div>').join('') + '</div></details>' : ''}
-      `;
+      `);
     } catch (error) {
       const message=error instanceof Error?error.message:'USAGE_UNAVAILABLE';
-      node.innerHTML = `
+      setSafeHtml(node, `
         <div class="usage-error-title">AeroAPIの利用状況を取得できませんでした。</div>
         <div class="usage-error-code">${escapeHtml(message)}</div>
         <div class="usage-error-help">Cloud Runログの <code>aeroapi-upstream</code> を確認すると、FlightAware側のHTTPステータスと理由を確認できます。</div>
-      `;
+      `);
     }
   }
 }
