@@ -1,4 +1,5 @@
-﻿import { createServer } from 'node:http';
+﻿import { createHash, timingSafeEqual } from 'node:crypto';
+import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,12 +20,41 @@ async function readJson(req, maxBytes=65536) {
   }
   try { return JSON.parse(body || '{}'); } catch { throw new ApiError(400,'INVALID_JSON'); }
 }
+function credentialDigest(credentials) {
+  return createHash('sha256').update(credentials, 'utf8').digest();
+}
+
+function createBasicAuthCheck() {
+  const password = process.env.SKYROUTE_BASIC_AUTH_PASSWORD;
+  if (!password) {
+    if (process.env.K_SERVICE) {
+      throw new Error('SKYROUTE_BASIC_AUTH_PASSWORD is required on Cloud Run');
+    }
+    return () => true;
+  }
+
+  const expected = credentialDigest(`skyroute:${password}`);
+  return (authorization) => {
+    const match = /^Basic +([A-Za-z0-9+/]+={0,2})$/i.exec(authorization ?? '');
+    if (!match) return false;
+    const credentials = Buffer.from(match[1], 'base64').toString('utf8');
+    return timingSafeEqual(credentialDigest(credentials), expected);
+  };
+}
+
 export function createApp({api=createAeroApi(),ai=createFlightCommentator(),tts=createTts(),sigmet=createSigmetService(),nowcast=createNowcastService(),aviationWeather=createAviationWeatherService(),dist=resolve('dist')}={}) {
+  const isAuthorized = createBasicAuthCheck();
   return createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
     try {
       const url=new URL(req.url,'http://localhost');
+      const isHealthCheck = url.pathname === '/api/health' &&
+        (req.method === 'GET' || req.method === 'HEAD');
+      if (!isHealthCheck && !isAuthorized(req.headers.authorization)) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="SkyRoute", charset="UTF-8"');
+        return json(401, { error: 'UNAUTHORIZED' });
+      }
       if(url.pathname==='/api/ai/flight-commentary') {
         if(req.method!=='POST') return json(405,{error:'METHOD_NOT_ALLOWED'});
         const payload=await readJson(req);
